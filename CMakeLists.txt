@@ -15,6 +15,7 @@ find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 add_library(securekit
   src/aead.cpp
   src/base64.cpp
+  src/compare.cpp
   src/error.cpp
   src/hash.cpp
   src/hex.cpp
@@ -61,6 +62,7 @@ if(SECUREKIT_BUILD_TESTS)
   add_executable(securekit_tests
     tests/aead_test.cpp
     tests/base64_test.cpp
+    tests/compare_test.cpp
     tests/hash_test.cpp
     tests/hex_test.cpp
     tests/public_headers_test.cpp

@@ -23,6 +23,7 @@ The current identity is:
 - Hex encode and decode.
 - Base64 encode and decode.
 - SHA-256 digest.
+- Constant-time byte comparison for equal-length secret values.
 - Cryptographically secure random bytes.
 - AES-256-GCM packet encryption and decryption.
 
@@ -33,6 +34,7 @@ The current identity is:
 - File or streaming encryption in v1.
 - Custom string classes or allocators.
 - User-selected algorithms or caller-selected nonces.
+- Text encoding or string-to-byte conversion helpers.
 - Secure key storage.
 - Guaranteed key erasure.
 - Homegrown cryptographic primitives.
@@ -169,6 +171,9 @@ int main()
 }
 ```
 
+`bytes_from_text` is example-side code. SecureKit accepts byte spans and does not
+define text encoding conversion helpers in v1.
+
 ## Public API
 
 ```cpp
@@ -179,6 +184,10 @@ std::string securekit::base64_encode(std::span<const std::byte> input);
 securekit::bytes securekit::base64_decode(std::string_view input);
 
 securekit::digest256 securekit::sha256(std::span<const std::byte> input);
+
+bool securekit::constant_time_equal(
+	std::span<const std::byte> left,
+	std::span<const std::byte> right);
 
 securekit::bytes securekit::random_bytes(std::size_t size);
 securekit::key256 securekit::generate_key();
@@ -195,6 +204,15 @@ securekit::bytes securekit::decrypt(
 ```
 
 `securekit::error` reports library failures with `securekit::error_code`.
+
+The v1 API stays free-function oriented. Hex and Base64 decoders are strict
+only: malformed or non-canonical input raises `securekit::error`. If permissive
+decoding or non-throwing result APIs are needed later, they should be added as
+explicitly named variants instead of changing these functions.
+
+The v1 AEAD API intentionally keeps the general `encrypt` and `decrypt` names.
+Future file, streaming, or key-wrapping APIs should use distinct names instead
+of overloading these packet functions.
 
 ## AES-256-GCM Packet Format
 
@@ -225,6 +243,10 @@ SecureKit is a thin C++ API over OpenSSL 3.x. It does not:
 
 Applications remain responsible for key lifecycle, provider configuration,
 process isolation, persistence, backups, logging policy, and threat modeling.
+
+`securekit::constant_time_equal` avoids content-dependent early exits for the
+bytes it compares. It returns false for different lengths, but input lengths are
+not hidden.
 
 ## OpenSSL Providers and Backend Errors
 
