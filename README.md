@@ -261,6 +261,7 @@ cmake --install build-install-only --config Release --prefix ./install-only
 test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
+test -f ./install-only/lib/cmake/securekit/securekitTargets-release.cmake
 ```
 
 Linux static-library package check:
@@ -275,6 +276,7 @@ test ! -f ./install-static/lib/libsecurekit.so
 test -f ./install-static/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-static/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-static/lib/cmake/securekit/securekitTargets.cmake
+test -f ./install-static/lib/cmake/securekit/securekitTargets-release.cmake
 cmake -S tests/consumer -B consumer-static-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-static
 cmake --build consumer-static-build --config Release
 ./consumer-static-build/securekit_consumer

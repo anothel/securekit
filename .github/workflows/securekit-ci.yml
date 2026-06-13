@@ -137,6 +137,7 @@ jobs:
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
+          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
 
   linux-static:
     name: ubuntu-latest gcc Release static
@@ -175,6 +176,7 @@ jobs:
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
+          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
 
       - name: Configure consumer
         run: >
@@ -225,7 +227,8 @@ jobs:
             "${{ github.workspace }}/install/lib/securekit.lib",
             "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake",
             "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake",
-            "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
+            "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake",
+            "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file)) {
