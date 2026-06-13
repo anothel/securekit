@@ -1,6 +1,6 @@
-#include "amv/base64.hpp"
+#include "securekit/base64.hpp"
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
@@ -36,7 +36,7 @@ void reject_invalid_base64(std::string_view input)
 {
 	if ((input.size() % 4) != 0)
 	{
-		throw amv::error(amv::error_code::invalid_encoding, "base64 input length must be a multiple of four");
+		throw securekit::error(securekit::error_code::invalid_encoding, "base64 input length must be a multiple of four");
 	}
 
 	bool seen_padding = false;
@@ -51,31 +51,31 @@ void reject_invalid_base64(std::string_view input)
 			++padding;
 			if (padding > 2)
 			{
-				throw amv::error(amv::error_code::invalid_encoding, "base64 input has too much padding");
+				throw securekit::error(securekit::error_code::invalid_encoding, "base64 input has too much padding");
 			}
 			continue;
 		}
 
 		if (seen_padding)
 		{
-			throw amv::error(amv::error_code::invalid_encoding, "base64 input has data after padding");
+			throw securekit::error(securekit::error_code::invalid_encoding, "base64 input has data after padding");
 		}
 
 		if (decode_char(ch) < 0)
 		{
-			throw amv::error(amv::error_code::invalid_encoding, "base64 input contains an invalid character");
+			throw securekit::error(securekit::error_code::invalid_encoding, "base64 input contains an invalid character");
 		}
 	}
 
 	if (padding > 0 && input.size() < 4)
 	{
-		throw amv::error(amv::error_code::invalid_encoding, "base64 padding without data");
+		throw securekit::error(securekit::error_code::invalid_encoding, "base64 padding without data");
 	}
 }
 
 } // namespace
 
-namespace amv
+namespace securekit
 {
 
 std::string base64_encode(std::span<const std::byte> input)
@@ -160,4 +160,4 @@ bytes base64_decode(std::string_view input)
 	return output;
 }
 
-} // namespace amv
+} // namespace securekit

@@ -1,4 +1,4 @@
-#include "amv/base64.hpp"
+#include "securekit/base64.hpp"
 
 #include <array>
 #include <cstddef>
@@ -6,14 +6,14 @@
 
 #include <gtest/gtest.h>
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
 
-amv::bytes bytes_from_ascii(std::string_view text)
+securekit::bytes bytes_from_ascii(std::string_view text)
 {
-	amv::bytes out;
+	securekit::bytes out;
 	out.reserve(text.size());
 	for (char ch : text)
 	{
@@ -26,24 +26,24 @@ amv::bytes bytes_from_ascii(std::string_view text)
 
 TEST(Base64, EncodesRfc4648Vectors)
 {
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("")), "");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("f")), "Zg==");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("fo")), "Zm8=");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("foo")), "Zm9v");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("foob")), "Zm9vYg==");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("fooba")), "Zm9vYmE=");
-	EXPECT_EQ(amv::base64_encode(bytes_from_ascii("foobar")), "Zm9vYmFy");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("")), "");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("f")), "Zg==");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("fo")), "Zm8=");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("foo")), "Zm9v");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("foob")), "Zm9vYg==");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("fooba")), "Zm9vYmE=");
+	EXPECT_EQ(securekit::base64_encode(bytes_from_ascii("foobar")), "Zm9vYmFy");
 }
 
 TEST(Base64, DecodesRfc4648Vectors)
 {
-	EXPECT_EQ(amv::base64_decode(""), bytes_from_ascii(""));
-	EXPECT_EQ(amv::base64_decode("Zg=="), bytes_from_ascii("f"));
-	EXPECT_EQ(amv::base64_decode("Zm8="), bytes_from_ascii("fo"));
-	EXPECT_EQ(amv::base64_decode("Zm9v"), bytes_from_ascii("foo"));
-	EXPECT_EQ(amv::base64_decode("Zm9vYg=="), bytes_from_ascii("foob"));
-	EXPECT_EQ(amv::base64_decode("Zm9vYmE="), bytes_from_ascii("fooba"));
-	EXPECT_EQ(amv::base64_decode("Zm9vYmFy"), bytes_from_ascii("foobar"));
+	EXPECT_EQ(securekit::base64_decode(""), bytes_from_ascii(""));
+	EXPECT_EQ(securekit::base64_decode("Zg=="), bytes_from_ascii("f"));
+	EXPECT_EQ(securekit::base64_decode("Zm8="), bytes_from_ascii("fo"));
+	EXPECT_EQ(securekit::base64_decode("Zm9v"), bytes_from_ascii("foo"));
+	EXPECT_EQ(securekit::base64_decode("Zm9vYg=="), bytes_from_ascii("foob"));
+	EXPECT_EQ(securekit::base64_decode("Zm9vYmE="), bytes_from_ascii("fooba"));
+	EXPECT_EQ(securekit::base64_decode("Zm9vYmFy"), bytes_from_ascii("foobar"));
 }
 
 TEST(Base64, RejectsMalformedInput)
@@ -65,12 +65,12 @@ TEST(Base64, RejectsMalformedInput)
 	{
 		try
 		{
-			(void)amv::base64_decode(input);
-			FAIL() << "expected amv::error for " << input;
+			(void)securekit::base64_decode(input);
+			FAIL() << "expected securekit::error for " << input;
 		}
-		catch (const amv::error &e)
+		catch (const securekit::error &e)
 		{
-			EXPECT_EQ(e.code(), amv::error_code::invalid_encoding);
+			EXPECT_EQ(e.code(), securekit::error_code::invalid_encoding);
 		}
 	}
 }

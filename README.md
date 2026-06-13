@@ -1,39 +1,82 @@
-# Awesome-mix-vol.1
+# SecureKit
 
-Awesome Modules, Volume 1 (AMV) is a small C++20 library for byte-oriented
-crypto utilities.
+SecureKit is a small C++20 security utility library, formerly named
+Awesome-mix-vol.1.
 
-AMV does not implement crypto algorithms. It uses OpenSSL 3.x through a small
-C++ API.
+SecureKit does not implement crypto algorithms. It wraps OpenSSL 3.x behind a small
+byte-oriented C++ API.
+
+## What This Project Is
+
+SecureKit is for application code that needs common binary and crypto helpers without
+pulling OpenSSL calls through the whole codebase.
+
+The current identity is:
+
+- Practical C++20 utility library.
+- OpenSSL-backed crypto, not custom crypto.
+- Free-function API first.
+- Object-oriented APIs may come later if real call sites need them.
 
 ## Features
 
 - Hex encode and decode.
 - Base64 encode and decode.
-- SHA-256.
+- SHA-256 digest.
 - Cryptographically secure random bytes.
-- AES-256-GCM packet encryption.
+- AES-256-GCM packet encryption and decryption.
 
 ## Non-goals
 
-- TLS or networking.
+- TLS or networking. Use TLS libraries for that.
 - Password-based encryption.
 - File or streaming encryption in v1.
 - Custom string classes or allocators.
-- User-selected algorithms or nonces.
-- Secure key storage or guaranteed key erasure.
+- User-selected algorithms or caller-selected nonces.
+- Secure key storage.
+- Guaranteed key erasure.
+- Homegrown cryptographic primitives.
 
 ## Requirements
 
 - C++20 compiler.
 - CMake 3.20 or newer.
-- OpenSSL 3.x, version 3.0 or newer within the 3.x major release.
+- OpenSSL 3.x, version 3.0 or newer.
 
 ## Build
 
+Generic CMake:
+
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DAMV_BUILD_TESTS=OFF
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
+```
+
+Windows with vcpkg:
+
+```powershell
+cmake -S . -B build-vcpkg `
+  -DSECUREKIT_BUILD_TESTS=ON `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows
+
+cmake --build build-vcpkg --config Release
+ctest --test-dir build-vcpkg --build-config Release --output-on-failure
+```
+
+If tests cannot find OpenSSL DLLs on Windows, pass:
+
+```powershell
+-DSECUREKIT_OPENSSL_RUNTIME_DIR="path\to\vcpkg\installed\x64-windows\bin"
+```
+
+If you are not using a vcpkg toolchain file, point CMake at an OpenSSL prefix:
+
+```powershell
+cmake -S . -B build-openssl `
+  -DSECUREKIT_BUILD_TESTS=ON `
+  -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
 ```
 
 ## Install
@@ -47,91 +90,153 @@ cmake --install build --prefix /path/to/prefix --config Release
 From an installed package:
 
 ```cmake
-find_package(amv CONFIG REQUIRED)
+find_package(securekit CONFIG REQUIRED)
 
 add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE amv::amv)
+target_link_libraries(my_app PRIVATE securekit::securekit)
 ```
 
 From a source checkout:
 
 ```cmake
-add_subdirectory(path/to/Awesome-mix-vol.1)
+add_subdirectory(path/to/securekit)
 
 add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE amv::amv)
+target_link_libraries(my_app PRIVATE securekit::securekit)
 ```
 
 ## C++ Example
 
 ```cpp
-#include "amv/amv.hpp"
+#include "securekit/securekit.hpp"
 
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <string_view>
 
-amv::bytes bytes_from_text(std::string_view text) {
-  amv::bytes out;
-  out.reserve(text.size());
-  for (unsigned char ch : text) {
-    out.push_back(static_cast<std::byte>(ch));
-  }
-  return out;
+securekit::bytes bytes_from_text(std::string_view text)
+{
+	securekit::bytes out;
+	out.reserve(text.size());
+	for (unsigned char ch : text)
+	{
+		out.push_back(static_cast<std::byte>(ch));
+	}
+	return out;
 }
 
-int main() {
-  const amv::bytes message = bytes_from_text("hello amv");
+int main()
+{
+	const securekit::bytes message = bytes_from_text("hello securekit");
 
-  const std::string hex = amv::hex_encode(message);
-  const amv::bytes from_hex = amv::hex_decode(hex);
+	const std::string hex = securekit::hex_encode(message);
+	const securekit::bytes from_hex = securekit::hex_decode(hex);
 
-  const std::string b64 = amv::base64_encode(from_hex);
-  const amv::bytes from_b64 = amv::base64_decode(b64);
+	const std::string b64 = securekit::base64_encode(from_hex);
+	const securekit::bytes from_b64 = securekit::base64_decode(b64);
 
-  const amv::digest256 digest = amv::sha256(from_b64);
-  std::cout << "sha256=" << amv::hex_encode(digest) << "\n";
+	const securekit::digest256 digest = securekit::sha256(from_b64);
+	std::cout << "sha256=" << securekit::hex_encode(digest) << "\n";
 
-  const amv::key256 key = amv::generate_key();
-  const amv::bytes aad = bytes_from_text("record:v1");
-  const amv::bytes packet = amv::encrypt(from_b64, key, aad);
-  const amv::bytes plaintext = amv::decrypt(packet, key, aad);
+	const securekit::key256 key = securekit::generate_key();
+	const securekit::bytes aad = bytes_from_text("record:v1");
+	const securekit::bytes packet = securekit::encrypt(from_b64, key, aad);
+	const securekit::bytes plaintext = securekit::decrypt(packet, key, aad);
 
-  std::cout << "round trip bytes=" << plaintext.size() << "\n";
+	std::cout << "round trip bytes=" << plaintext.size() << "\n";
 }
 ```
 
+## Public API
+
+```cpp
+std::string securekit::hex_encode(std::span<const std::byte> input);
+securekit::bytes securekit::hex_decode(std::string_view input);
+
+std::string securekit::base64_encode(std::span<const std::byte> input);
+securekit::bytes securekit::base64_decode(std::string_view input);
+
+securekit::digest256 securekit::sha256(std::span<const std::byte> input);
+
+securekit::bytes securekit::random_bytes(std::size_t size);
+securekit::key256 securekit::generate_key();
+
+securekit::bytes securekit::encrypt(
+	std::span<const std::byte> plaintext,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+
+securekit::bytes securekit::decrypt(
+	std::span<const std::byte> packet,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+```
+
+`securekit::error` reports library failures with `securekit::error_code`.
+
 ## AES-256-GCM Packet Format
 
-AMV AES-GCM encryption returns one serialized packet:
+SecureKit AES-GCM encryption returns one serialized packet:
 
 | Offset | Size | Field | Value |
 | --- | ---: | --- | --- |
-| 0 | 4 | Magic | `AMV1` |
+| 0 | 4 | Magic | `SKT1` |
 | 4 | 1 | Version | `0x01` |
 | 5 | 12 | Nonce | Generated per packet |
 | 17 | N | Ciphertext | AES-256-GCM ciphertext |
 | 17 + N | 16 | Tag | AES-GCM authentication tag |
 
-The caller supplies a 32-byte key. AMV generates the packet nonce internally.
+The caller supplies a 32-byte key. SecureKit generates the packet nonce internally.
 The packet header and caller-provided AAD are authenticated. AAD is not stored
-in the packet.
+in the packet. Decryption requires the same AAD used during encryption.
 
 ## Security Boundaries
 
-AMV is a thin C++ API over OpenSSL 3.x. It does not:
+SecureKit is a thin C++ API over OpenSSL 3.x. It does not:
 
 - Store keys.
 - Derive keys from passwords.
 - Prevent key copies.
 - Guarantee memory erasure.
 - Configure OpenSSL providers.
+- Hide plaintext from process memory.
 
 Applications remain responsible for key lifecycle, provider configuration,
 process isolation, persistence, backups, logging policy, and threat modeling.
 
+## Continuous Integration
+
+GitHub Actions builds and tests:
+
+- Ubuntu GCC Release.
+- Ubuntu GCC Debug.
+- Ubuntu Clang Release.
+- Windows MSVC Release with vcpkg OpenSSL.
+- Install and consumer-project checks.
+
+Run result is only available after pushing a commit or manually starting the
+workflow in GitHub. Local equivalent:
+
+```sh
+cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
+cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
+cmake --install build --config Release --prefix ./install
+cmake -S tests/consumer -B consumer-build -DCMAKE_PREFIX_PATH=./install
+cmake --build consumer-build --config Release
+```
+
 ## Roadmap
 
-The v1 API starts with stable free functions for byte-oriented utilities.
-Future versions may add object-oriented streaming APIs.
+Near-term:
+
+- Keep free-function API stable.
+- Add more test vectors where useful.
+- Keep package consumption simple.
+
+Later:
+
+- Object-oriented APIs if repeated call sites justify them.
+- Password-based encryption with a deliberate KDF design.
+- Streaming/file encryption only with clear packet format decisions.

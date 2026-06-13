@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(
-  amv
+  securekit
   VERSION 0.1.0
-  DESCRIPTION "Awesome Modules Volume 1 crypto utilities"
+  DESCRIPTION "SecureKit security utilities"
   LANGUAGES CXX)
 
 include(CTest)
@@ -12,7 +12,7 @@ include(GNUInstallDirs)
 
 find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
-add_library(amv
+add_library(securekit
   src/aead.cpp
   src/base64.cpp
   src/error.cpp
@@ -20,32 +20,32 @@ add_library(amv
   src/hex.cpp
   src/random.cpp)
 
-add_library(amv::amv ALIAS amv)
+add_library(securekit::securekit ALIAS securekit)
 
-target_compile_features(amv PUBLIC cxx_std_20)
+target_compile_features(securekit PUBLIC cxx_std_20)
 
-target_include_directories(amv
+target_include_directories(securekit
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-target_link_libraries(amv PUBLIC OpenSSL::Crypto)
+target_link_libraries(securekit PUBLIC OpenSSL::Crypto)
 
-target_compile_definitions(amv PRIVATE AMV_BUILDING_LIBRARY)
+target_compile_definitions(securekit PRIVATE SECUREKIT_BUILDING_LIBRARY)
 
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(amv PUBLIC AMV_SHARED)
+  target_compile_definitions(securekit PUBLIC SECUREKIT_SHARED)
 endif()
 
 if(MSVC)
-  target_compile_options(amv PRIVATE /W4 /permissive-)
+  target_compile_options(securekit PRIVATE /W4 /permissive-)
 else()
-  target_compile_options(amv PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(securekit PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-option(AMV_BUILD_TESTS "Build AMV tests" ${BUILD_TESTING})
+option(SECUREKIT_BUILD_TESTS "Build SecureKit tests" ${BUILD_TESTING})
 
-if(AMV_BUILD_TESTS)
+if(SECUREKIT_BUILD_TESTS)
   include(FetchContent)
   FetchContent_Declare(
     googletest
@@ -55,7 +55,7 @@ if(AMV_BUILD_TESTS)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
 
-  add_executable(amv_tests
+  add_executable(securekit_tests
     tests/aead_test.cpp
     tests/base64_test.cpp
     tests/hash_test.cpp
@@ -63,61 +63,61 @@ if(AMV_BUILD_TESTS)
     tests/public_headers_test.cpp
     tests/random_test.cpp)
 
-  target_link_libraries(amv_tests PRIVATE amv::amv GTest::gtest_main)
-  target_compile_features(amv_tests PRIVATE cxx_std_20)
+  target_link_libraries(securekit_tests PRIVATE securekit::securekit GTest::gtest_main)
+  target_compile_features(securekit_tests PRIVATE cxx_std_20)
 
-  set(_amv_test_properties)
+  set(_securekit_test_properties)
   if(WIN32)
-    set(AMV_OPENSSL_RUNTIME_DIR "" CACHE PATH
-      "Directory containing OpenSSL runtime DLLs for AMV tests")
-    if(NOT AMV_OPENSSL_RUNTIME_DIR AND DEFINED OPENSSL_ROOT_DIR)
-      set(AMV_OPENSSL_RUNTIME_DIR "${OPENSSL_ROOT_DIR}/bin")
+    set(SECUREKIT_OPENSSL_RUNTIME_DIR "" CACHE PATH
+      "Directory containing OpenSSL runtime DLLs for SecureKit tests")
+    if(NOT SECUREKIT_OPENSSL_RUNTIME_DIR AND DEFINED OPENSSL_ROOT_DIR)
+      set(SECUREKIT_OPENSSL_RUNTIME_DIR "${OPENSSL_ROOT_DIR}/bin")
     endif()
-    if(AMV_OPENSSL_RUNTIME_DIR)
-      set(_amv_test_path "${AMV_OPENSSL_RUNTIME_DIR};$ENV{PATH}")
-      string(REPLACE ";" "\\;" _amv_test_path "${_amv_test_path}")
-      list(APPEND _amv_test_properties ENVIRONMENT "PATH=${_amv_test_path}")
-      add_custom_command(TARGET amv_tests POST_BUILD
+    if(SECUREKIT_OPENSSL_RUNTIME_DIR)
+      set(_securekit_test_path "${SECUREKIT_OPENSSL_RUNTIME_DIR};$ENV{PATH}")
+      string(REPLACE ";" "\\;" _securekit_test_path "${_securekit_test_path}")
+      list(APPEND _securekit_test_properties ENVIRONMENT "PATH=${_securekit_test_path}")
+      add_custom_command(TARGET securekit_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-          "${AMV_OPENSSL_RUNTIME_DIR}"
-          "$<TARGET_FILE_DIR:amv_tests>")
+          "${SECUREKIT_OPENSSL_RUNTIME_DIR}"
+          "$<TARGET_FILE_DIR:securekit_tests>")
     endif()
   endif()
 
   include(GoogleTest)
-  gtest_discover_tests(amv_tests
+  gtest_discover_tests(securekit_tests
     DISCOVERY_MODE PRE_TEST
-    PROPERTIES ${_amv_test_properties})
+    PROPERTIES ${_securekit_test_properties})
 endif()
 
 install(
-  TARGETS amv
-  EXPORT amvTargets
+  TARGETS securekit
+  EXPORT securekitTargets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 install(
-  DIRECTORY include/amv
+  DIRECTORY include/securekit
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(
-  EXPORT amvTargets
-  NAMESPACE amv::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/amv)
+  EXPORT securekitTargets
+  NAMESPACE securekit::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/securekit)
 
 configure_package_config_file(
-  cmake/amvConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/amvConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/amv)
+  cmake/securekitConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/securekitConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/securekit)
 
 write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/amvConfigVersion.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/securekitConfigVersion.cmake
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion)
 
 install(
   FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/amvConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/amvConfigVersion.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/amv)
+    ${CMAKE_CURRENT_BINARY_DIR}/securekitConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/securekitConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/securekit)

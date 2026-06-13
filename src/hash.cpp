@@ -1,10 +1,10 @@
-#include "amv/hash.hpp"
+#include "securekit/hash.hpp"
 
 #include <memory>
 
 #include <openssl/evp.h>
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
@@ -13,12 +13,12 @@ using DigestContext = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)>;
 
 [[noreturn]] void throw_backend_failure()
 {
-	throw amv::error(amv::error_code::backend_failure, "OpenSSL SHA-256 operation failed");
+	throw securekit::error(securekit::error_code::backend_failure, "OpenSSL SHA-256 operation failed");
 }
 
 } // namespace
 
-namespace amv
+namespace securekit
 {
 
 digest256 sha256(std::span<const std::byte> input)
@@ -57,4 +57,4 @@ digest256 sha256(std::span<const std::byte> input)
 	return output;
 }
 
-} // namespace amv
+} // namespace securekit

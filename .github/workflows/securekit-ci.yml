@@ -1,4 +1,4 @@
-name: CMake
+name: SecureKit CI
 
 on:
   push:
@@ -46,22 +46,22 @@ jobs:
         env:
           CC: gcc
           CXX: g++
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DAMV_BUILD_TESTS=ON
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSECUREKIT_BUILD_TESTS=ON
 
       - name: Configure CMake (Clang)
         if: matrix.compiler == 'clang'
         env:
           CC: clang
           CXX: clang++
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DAMV_BUILD_TESTS=ON
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSECUREKIT_BUILD_TESTS=ON
 
       - name: Configure CMake (MSVC)
         if: matrix.compiler == 'msvc'
         run: >
-          cmake -S . -B build -DAMV_BUILD_TESTS=ON
+          cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows
-          -DAMV_OPENSSL_RUNTIME_DIR="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+          -DSECUREKIT_OPENSSL_RUNTIME_DIR="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}

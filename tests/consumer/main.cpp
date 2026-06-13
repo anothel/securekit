@@ -1,14 +1,14 @@
 #include <cstddef>
 #include <string_view>
 
-#include "amv/amv.hpp"
+#include "securekit/securekit.hpp"
 
 namespace
 {
 
-amv::bytes ascii_bytes(std::string_view text)
+securekit::bytes ascii_bytes(std::string_view text)
 {
-	amv::bytes result;
+	securekit::bytes result;
 	result.reserve(text.size());
 	for (const char ch : text)
 	{
@@ -21,12 +21,12 @@ amv::bytes ascii_bytes(std::string_view text)
 
 int main()
 {
-	const auto plaintext = ascii_bytes("AMV consumer sample plaintext");
-	const auto aad = ascii_bytes("AMV consumer sample aad");
-	const auto key = amv::generate_key();
+	const auto plaintext = ascii_bytes("SecureKit consumer sample plaintext");
+	const auto aad = ascii_bytes("SecureKit consumer sample aad");
+	const auto key = securekit::generate_key();
 
-	const auto packet = amv::encrypt(plaintext, key, aad);
-	const auto roundtrip = amv::decrypt(packet, key, aad);
+	const auto packet = securekit::encrypt(plaintext, key, aad);
+	const auto roundtrip = securekit::decrypt(packet, key, aad);
 
 	return roundtrip == plaintext ? 0 : 1;
 }

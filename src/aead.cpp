@@ -1,4 +1,4 @@
-#include "amv/aead.hpp"
+#include "securekit/aead.hpp"
 
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -12,12 +12,12 @@
 #include <span>
 #include <string>
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
 
-constexpr std::array<std::byte, 4> kMagic{std::byte{'A'}, std::byte{'M'}, std::byte{'V'}, std::byte{'1'}};
+constexpr std::array<std::byte, 4> kMagic{std::byte{'S'}, std::byte{'K'}, std::byte{'T'}, std::byte{'1'}};
 constexpr std::byte kVersion{0x01};
 constexpr std::size_t kMagicSize = kMagic.size();
 constexpr std::size_t kVersionSize = 1;
@@ -30,24 +30,24 @@ using CipherContext = std::unique_ptr<EVP_CIPHER_CTX, decltype(&EVP_CIPHER_CTX_f
 
 [[noreturn]] void throw_backend_failure()
 {
-	throw amv::error(amv::error_code::backend_failure, "OpenSSL AES-256-GCM operation failed");
+	throw securekit::error(securekit::error_code::backend_failure, "OpenSSL AES-256-GCM operation failed");
 }
 
 [[noreturn]] void throw_invalid_packet()
 {
-	throw amv::error(amv::error_code::invalid_packet, "Invalid AEAD packet");
+	throw securekit::error(securekit::error_code::invalid_packet, "Invalid AEAD packet");
 }
 
 [[noreturn]] void throw_authentication_failed()
 {
-	throw amv::error(amv::error_code::authentication_failed, "AEAD authentication failed");
+	throw securekit::error(securekit::error_code::authentication_failed, "AEAD authentication failed");
 }
 
 void check_update_size(std::size_t size, const char *name)
 {
 	if (size > static_cast<std::size_t>(std::numeric_limits<int>::max()))
 	{
-		throw amv::error(amv::error_code::invalid_input, std::string(name) + " exceeds OpenSSL update limit");
+		throw securekit::error(securekit::error_code::invalid_input, std::string(name) + " exceeds OpenSSL update limit");
 	}
 }
 
@@ -103,7 +103,7 @@ CipherContext make_context()
 	return context;
 }
 
-bool initialize_encrypt_context(EVP_CIPHER_CTX *context, const amv::key256 &key, std::span<const std::byte> nonce)
+bool initialize_encrypt_context(EVP_CIPHER_CTX *context, const securekit::key256 &key, std::span<const std::byte> nonce)
 {
 	const auto key_bytes = std::span<const std::byte>(key);
 	const bool cipher_initialized = EVP_EncryptInit_ex(context, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1;
@@ -113,7 +113,7 @@ bool initialize_encrypt_context(EVP_CIPHER_CTX *context, const amv::key256 &key,
 	return cipher_initialized && nonce_size_set && key_and_nonce_initialized;
 }
 
-bool initialize_decrypt_context(EVP_CIPHER_CTX *context, const amv::key256 &key, std::span<const std::byte> nonce)
+bool initialize_decrypt_context(EVP_CIPHER_CTX *context, const securekit::key256 &key, std::span<const std::byte> nonce)
 {
 	const auto key_bytes = std::span<const std::byte>(key);
 	const bool cipher_initialized = EVP_DecryptInit_ex(context, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1;
@@ -162,7 +162,7 @@ bool decrypt_ciphertext(EVP_CIPHER_CTX *context, std::span<const std::byte> ciph
 
 } // namespace
 
-namespace amv
+namespace securekit
 {
 
 bytes encrypt(std::span<const std::byte> plaintext, const key256 &key, std::span<const std::byte> aad)
@@ -272,4 +272,4 @@ bytes decrypt(std::span<const std::byte> packet, const key256 &key, std::span<co
 	return plaintext;
 }
 
-} // namespace amv
+} // namespace securekit

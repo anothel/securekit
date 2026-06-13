@@ -1,18 +1,18 @@
-#ifndef AMV_TYPES_HPP_
-#define AMV_TYPES_HPP_
+#ifndef SECUREKIT_TYPES_HPP_
+#define SECUREKIT_TYPES_HPP_
 
 #include <array>
 #include <cstddef>
 #include <span>
 #include <vector>
 
-namespace amv
+namespace securekit
 {
 
 using bytes = std::vector<std::byte>;
 using key256 = std::array<std::byte, 32>;
 using digest256 = std::array<std::byte, 32>;
 
-} // namespace amv
+} // namespace securekit
 
-#endif // AMV_TYPES_HPP_
+#endif // SECUREKIT_TYPES_HPP_

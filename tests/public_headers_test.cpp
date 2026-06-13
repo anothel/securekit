@@ -1,19 +1,19 @@
-#include "amv/aead.hpp"
-#include "amv/amv.hpp"
-#include "amv/base64.hpp"
-#include "amv/error.hpp"
-#include "amv/hash.hpp"
-#include "amv/hex.hpp"
-#include "amv/random.hpp"
-#include "amv/types.hpp"
+#include "securekit/aead.hpp"
+#include "securekit/base64.hpp"
+#include "securekit/error.hpp"
+#include "securekit/hash.hpp"
+#include "securekit/hex.hpp"
+#include "securekit/random.hpp"
+#include "securekit/securekit.hpp"
+#include "securekit/types.hpp"
 
 #include <gtest/gtest.h>
 
 TEST(PublicHeaders, TypeAliasesAreAvailable)
 {
-	amv::bytes data;
-	amv::key256 key{};
-	amv::digest256 digest{};
+	securekit::bytes data;
+	securekit::key256 key{};
+	securekit::digest256 digest{};
 
 	EXPECT_TRUE(data.empty());
 	EXPECT_EQ(key.size(), 32u);

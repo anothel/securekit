@@ -1,11 +1,11 @@
-#include "amv/random.hpp"
+#include "securekit/random.hpp"
 
 #include <algorithm>
 #include <limits>
 
 #include <openssl/rand.h>
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
@@ -18,7 +18,7 @@ void fill_random(unsigned char *output, std::size_t size)
 		const auto chunk = static_cast<int>(chunk_size);
 		if (RAND_bytes(output, chunk) != 1)
 		{
-			throw amv::error(amv::error_code::backend_failure, "OpenSSL RAND_bytes failed");
+			throw securekit::error(securekit::error_code::backend_failure, "OpenSSL RAND_bytes failed");
 		}
 		output += chunk;
 		size -= static_cast<std::size_t>(chunk);
@@ -27,7 +27,7 @@ void fill_random(unsigned char *output, std::size_t size)
 
 } // namespace
 
-namespace amv
+namespace securekit
 {
 
 bytes random_bytes(std::size_t size)
@@ -54,4 +54,4 @@ key256 generate_key()
 	return key;
 }
 
-} // namespace amv
+} // namespace securekit

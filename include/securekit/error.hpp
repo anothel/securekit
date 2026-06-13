@@ -1,12 +1,12 @@
-#ifndef AMV_ERROR_HPP_
-#define AMV_ERROR_HPP_
+#ifndef SECUREKIT_ERROR_HPP_
+#define SECUREKIT_ERROR_HPP_
 
 #include <stdexcept>
 #include <string>
 
-#include "amv/export.hpp"
+#include "securekit/export.hpp"
 
-namespace amv
+namespace securekit
 {
 
 enum class error_code
@@ -18,7 +18,7 @@ enum class error_code
 	backend_failure,
 };
 
-class AMV_API error : public std::runtime_error
+class SECUREKIT_API error : public std::runtime_error
 {
 public:
 	error(error_code code, std::string message);
@@ -29,6 +29,6 @@ private:
 	error_code code_;
 };
 
-} // namespace amv
+} // namespace securekit
 
-#endif // AMV_ERROR_HPP_
+#endif // SECUREKIT_ERROR_HPP_

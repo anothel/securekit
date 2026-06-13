@@ -1,6 +1,6 @@
-#include "amv/hex.hpp"
+#include "securekit/hex.hpp"
 
-#include "amv/error.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
@@ -30,7 +30,7 @@ int decode_nibble(char value)
 
 } // namespace
 
-namespace amv
+namespace securekit
 {
 
 std::string hex_encode(std::span<const std::byte> input)
@@ -76,4 +76,4 @@ bytes hex_decode(std::string_view input)
 	return result;
 }
 
-} // namespace amv
+} // namespace securekit
