@@ -75,6 +75,21 @@ void expect_authentication_failed(Func &&func)
 	expect_error(std::forward<Func>(func), securekit::error_code::authentication_failed);
 }
 
+template <typename Func>
+void expect_generic_authentication_failure(Func &&func)
+{
+	try
+	{
+		std::forward<Func>(func)();
+		FAIL() << "expected securekit::error";
+	}
+	catch (const securekit::error &e)
+	{
+		EXPECT_EQ(e.code(), securekit::error_code::authentication_failed);
+		EXPECT_STREQ(e.what(), "AEAD authentication failed");
+	}
+}
+
 } // namespace
 
 TEST(Aead, RoundTripsBinaryPlaintext)
@@ -124,6 +139,32 @@ TEST(Aead, AuthenticatesAdditionalData)
 
 	EXPECT_EQ(securekit::decrypt(packet, key, aad), plaintext);
 	expect_authentication_failed([&] { (void)securekit::decrypt(packet, key, wrong_aad); });
+}
+
+TEST(Aead, AuthenticationFailuresUseGenericMessage)
+{
+	const securekit::key256 key = key_from_seed(0x70);
+	const securekit::key256 wrong_key = key_from_seed(0x71);
+	const securekit::bytes plaintext = bytes_from_ascii("secret");
+	const securekit::bytes aad = bytes_from_ascii("aad");
+	const securekit::bytes wrong_aad = bytes_from_ascii("other aad");
+
+	const securekit::bytes packet = securekit::encrypt(plaintext, key, aad);
+
+	securekit::bytes bad_nonce = packet;
+	bad_nonce[kHeaderSize] ^= std::byte{0x01};
+
+	securekit::bytes bad_ciphertext = packet;
+	bad_ciphertext[kHeaderSize + kNonceSize] ^= std::byte{0x01};
+
+	securekit::bytes bad_tag = packet;
+	bad_tag[bad_tag.size() - 1] ^= std::byte{0x01};
+
+	expect_generic_authentication_failure([&] { (void)securekit::decrypt(packet, key, wrong_aad); });
+	expect_generic_authentication_failure([&] { (void)securekit::decrypt(packet, wrong_key, aad); });
+	expect_generic_authentication_failure([&] { (void)securekit::decrypt(bad_nonce, key, aad); });
+	expect_generic_authentication_failure([&] { (void)securekit::decrypt(bad_ciphertext, key, aad); });
+	expect_generic_authentication_failure([&] { (void)securekit::decrypt(bad_tag, key, aad); });
 }
 
 TEST(Aead, DecryptsKnownAes256GcmPacketVector)
