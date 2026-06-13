@@ -1,8 +1,10 @@
 #include "securekit/file.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -59,6 +61,17 @@ securekit::bytes bytes_from_text(std::string_view text)
 	for (const unsigned char ch : text)
 	{
 		out.push_back(static_cast<std::byte>(ch));
+	}
+	return out;
+}
+
+securekit::bytes bytes_from_values(std::initializer_list<unsigned int> values)
+{
+	securekit::bytes out;
+	out.reserve(values.size());
+	for (const unsigned int value : values)
+	{
+		out.push_back(static_cast<std::byte>(value & 0xffu));
 	}
 	return out;
 }
@@ -137,6 +150,119 @@ TEST(File, RoundTripsEmptyFile)
 	EXPECT_TRUE(read_file(opened_path).empty());
 
 	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, OpensKnownSkf1Fixture)
+{
+	const auto sealed_path = test_path("known-fixture.skf");
+	const auto opened_path = test_path("known-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::key256 key{};
+	const securekit::bytes aad = bytes_from_text("fixture:aad");
+	const securekit::bytes fixture = bytes_from_values({
+	    0x53,
+	    0x4b,
+	    0x46,
+	    0x31,
+	    0x01,
+	    0x01,
+	    0x00,
+	    0x10,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x01,
+	    0x02,
+	    0x03,
+	    0x04,
+	    0x05,
+	    0x06,
+	    0x07,
+	    0x08,
+	    0x09,
+	    0x0a,
+	    0x0b,
+	    0x0c,
+	    0x0d,
+	    0x0e,
+	    0x0f,
+	    0x10,
+	    0x11,
+	    0x12,
+	    0x13,
+	    0x14,
+	    0x15,
+	    0x16,
+	    0x17,
+	    0x18,
+	    0x19,
+	    0x1a,
+	    0x1b,
+	    0x1c,
+	    0x1d,
+	    0x1e,
+	    0x1f,
+	    0xa0,
+	    0xa1,
+	    0xa2,
+	    0xa3,
+	    0xa4,
+	    0xa5,
+	    0xa6,
+	    0xa7,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x11,
+	    0x01,
+	    0xd5,
+	    0x8b,
+	    0x80,
+	    0xe6,
+	    0x11,
+	    0xa8,
+	    0xa9,
+	    0x0f,
+	    0x26,
+	    0xba,
+	    0xcd,
+	    0xc5,
+	    0x29,
+	    0x25,
+	    0x22,
+	    0x1e,
+	    0xb4,
+	    0xff,
+	    0x58,
+	    0x9e,
+	    0x2d,
+	    0x66,
+	    0xe0,
+	    0x43,
+	    0x93,
+	    0x60,
+	    0xec,
+	    0xa7,
+	    0x0f,
+	    0x0e,
+	    0xa2,
+	    0xc2,
+	    0x84,
+	});
+
+	write_file(sealed_path, fixture);
+	securekit::open_file(sealed_path, opened_path, key, aad);
+
+	EXPECT_EQ(read_file(opened_path), bytes_from_text("known SKF1 vector"));
+
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
 }
