@@ -2,11 +2,16 @@
 #include "securekit/base64.hpp"
 #include "securekit/compare.hpp"
 #include "securekit/error.hpp"
+#include "securekit/file.hpp"
 #include "securekit/hash.hpp"
 #include "securekit/hex.hpp"
 #include "securekit/random.hpp"
 #include "securekit/securekit.hpp"
 #include "securekit/types.hpp"
+
+#include <filesystem>
+#include <span>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
@@ -19,4 +24,13 @@ TEST(PublicHeaders, TypeAliasesAreAvailable)
 	EXPECT_TRUE(data.empty());
 	EXPECT_EQ(key.size(), 32u);
 	EXPECT_EQ(digest.size(), 32u);
+}
+
+TEST(PublicHeaders, FileApiIsAvailable)
+{
+	static_assert(std::is_same_v<decltype(&securekit::seal_file),
+	    void (*)(const std::filesystem::path &,
+	        const std::filesystem::path &,
+	        const securekit::key256 &,
+	        std::span<const std::byte>)>);
 }

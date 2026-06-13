@@ -32,6 +32,11 @@ int decode_char(char ch)
 	return -1;
 }
 
+bool is_base64url_char(char ch)
+{
+	return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+}
+
 void reject_invalid_base64(std::string_view input)
 {
 	if ((input.size() % 4) != 0)
@@ -73,6 +78,22 @@ void reject_invalid_base64(std::string_view input)
 	}
 }
 
+void reject_invalid_base64url(std::string_view input)
+{
+	if ((input.size() % 4) == 1)
+	{
+		throw securekit::error(securekit::error_code::invalid_encoding, "base64url input has invalid length");
+	}
+
+	for (char ch : input)
+	{
+		if (!is_base64url_char(ch))
+		{
+			throw securekit::error(securekit::error_code::invalid_encoding, "base64url input contains an invalid character");
+		}
+	}
+}
+
 } // namespace
 
 namespace securekit
@@ -101,6 +122,29 @@ std::string base64_encode(std::span<const std::byte> input)
 		output.push_back(kAlphabet[((b0 << 4) | (b1 >> 4)) & 0x3fU]);
 		output.push_back(has_b1 ? kAlphabet[((b1 << 2) | (b2 >> 6)) & 0x3fU] : '=');
 		output.push_back(has_b2 ? kAlphabet[b2 & 0x3fU] : '=');
+	}
+
+	return output;
+}
+
+std::string base64url_encode(std::span<const std::byte> input)
+{
+	std::string output = base64_encode(input);
+	for (char &ch : output)
+	{
+		if (ch == '+')
+		{
+			ch = '-';
+		}
+		else if (ch == '/')
+		{
+			ch = '_';
+		}
+	}
+
+	while (!output.empty() && output.back() == '=')
+	{
+		output.pop_back();
 	}
 
 	return output;
@@ -155,6 +199,46 @@ bytes base64_decode(std::string_view input)
 	if (base64_encode(output) != input)
 	{
 		throw error(error_code::invalid_encoding, "base64 input is not in canonical form");
+	}
+
+	return output;
+}
+
+bytes base64url_decode(std::string_view input)
+{
+	reject_invalid_base64url(input);
+
+	std::string padded;
+	if (input.size() > padded.max_size() - 3)
+	{
+		throw error(error_code::invalid_input, "base64url input is too large to decode");
+	}
+	padded.reserve(input.size() + 3);
+	for (char ch : input)
+	{
+		if (ch == '-')
+		{
+			padded.push_back('+');
+		}
+		else if (ch == '_')
+		{
+			padded.push_back('/');
+		}
+		else
+		{
+			padded.push_back(ch);
+		}
+	}
+
+	while ((padded.size() % 4) != 0)
+	{
+		padded.push_back('=');
+	}
+
+	bytes output = base64_decode(padded);
+	if (base64url_encode(output) != input)
+	{
+		throw error(error_code::invalid_encoding, "base64url input is not in canonical form");
 	}
 
 	return output;

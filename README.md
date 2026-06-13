@@ -22,16 +22,21 @@ The current identity is:
 
 - Hex encode and decode.
 - Base64 encode and decode.
+- Base64URL encode and decode.
 - SHA-256 digest.
+- HMAC-SHA-256 digest.
+- HKDF-SHA-256 key derivation.
 - Constant-time byte comparison for equal-length secret values.
 - Cryptographically secure random bytes.
+- URL-safe random token generation.
 - AES-256-GCM packet encryption and decryption.
+- Chunked file sealing and opening.
 
 ## Non-goals
 
 - TLS or networking. Use TLS libraries for that.
 - Password-based encryption.
-- File or streaming encryption in v1.
+- Streaming object APIs in v1.
 - Custom string classes or allocators.
 - User-selected algorithms or caller-selected nonces.
 - Text encoding or string-to-byte conversion helpers.
@@ -162,6 +167,9 @@ int main()
 	const securekit::digest256 digest = securekit::sha256(from_b64);
 	std::cout << "sha256=" << securekit::hex_encode(digest) << "\n";
 
+	const std::string token = securekit::random_token(32);
+	std::cout << "token=" << token << "\n";
+
 	const securekit::key256 key = securekit::generate_key();
 	const securekit::bytes aad = bytes_from_text("record:v1");
 	const securekit::bytes packet = securekit::encrypt(from_b64, key, aad);
@@ -182,8 +190,18 @@ securekit::bytes securekit::hex_decode(std::string_view input);
 
 std::string securekit::base64_encode(std::span<const std::byte> input);
 securekit::bytes securekit::base64_decode(std::string_view input);
+std::string securekit::base64url_encode(std::span<const std::byte> input);
+securekit::bytes securekit::base64url_decode(std::string_view input);
 
 securekit::digest256 securekit::sha256(std::span<const std::byte> input);
+securekit::digest256 securekit::hmac_sha256(
+	std::span<const std::byte> key,
+	std::span<const std::byte> input);
+securekit::bytes securekit::hkdf_sha256(
+	std::span<const std::byte> key_material,
+	std::span<const std::byte> salt,
+	std::span<const std::byte> info,
+	std::size_t output_size);
 
 bool securekit::constant_time_equal(
 	std::span<const std::byte> left,
@@ -191,6 +209,7 @@ bool securekit::constant_time_equal(
 
 securekit::bytes securekit::random_bytes(std::size_t size);
 securekit::key256 securekit::generate_key();
+std::string securekit::random_token(std::size_t byte_size);
 
 securekit::bytes securekit::encrypt(
 	std::span<const std::byte> plaintext,
@@ -199,6 +218,18 @@ securekit::bytes securekit::encrypt(
 
 securekit::bytes securekit::decrypt(
 	std::span<const std::byte> packet,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+
+void securekit::seal_file(
+	const std::filesystem::path &input,
+	const std::filesystem::path &output,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+
+void securekit::open_file(
+	const std::filesystem::path &input,
+	const std::filesystem::path &output,
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
 ```
@@ -213,6 +244,10 @@ explicitly named variants instead of changing these functions.
 The v1 AEAD API intentionally keeps the general `encrypt` and `decrypt` names.
 Future file, streaming, or key-wrapping APIs should use distinct names instead
 of overloading these packet functions.
+
+`securekit::random_token` returns an unpadded Base64URL string from
+cryptographically secure random bytes. It rejects `byte_size == 0` with
+`securekit::error_code::invalid_input`.
 
 ## AES-256-GCM Packet Format
 
@@ -229,6 +264,19 @@ SecureKit AES-GCM encryption returns one serialized packet:
 The caller supplies a 32-byte key. SecureKit generates the packet nonce internally.
 The packet header and caller-provided AAD are authenticated. AAD is not stored
 in the packet. Decryption requires the same AAD used during encryption.
+
+## SKF1 File Format
+
+`securekit::seal_file` writes an `SKF1` file. It uses a fixed 1 MiB chunk size,
+a random per-file salt, HKDF-SHA256 to derive a per-file key, and AES-256-GCM
+for each chunk. The chunk nonce is an 8-byte random file nonce prefix plus a
+32-bit big-endian chunk index.
+
+The file header, chunk index, plaintext size, final flag, and caller-provided
+AAD are authenticated with every chunk. `open_file` rejects malformed headers,
+truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
+tag failures. Output files must not already exist; SecureKit writes a temporary
+file in the output directory and renames it only after successful completion.
 
 ## Security Boundaries
 
@@ -248,6 +296,23 @@ process isolation, persistence, backups, logging policy, and threat modeling.
 bytes it compares. It returns false for different lengths, but input lengths are
 not hidden.
 
+## Password KDF Direction
+
+SecureKit does not provide password-based encryption or password hashing APIs in
+v1. When those APIs are designed, the preferred password KDF should be Argon2id
+because it is memory-hard and is the current general-purpose recommendation for
+new password storage designs.
+
+If Argon2id is not available, scrypt is the next non-FIPS fallback. If FIPS 140
+compliance or an OpenSSL-only dependency policy is required, use
+PBKDF2-HMAC-SHA256 with a high work factor instead. PBKDF2 should not be the
+default for new non-FIPS password APIs because it is CPU-hard, not memory-hard.
+
+SecureKit should not expose a password KDF API until the parameter encoding,
+salt generation, upgrade strategy, provider/dependency story, and denial-of-service
+limits are designed together. Work factors must be benchmarked on the target
+deployment rather than treated as permanent constants.
+
 ## OpenSSL Providers and Backend Errors
 
 SecureKit uses OpenSSL's default library context and the provider configuration
@@ -256,8 +321,9 @@ already active in the process. It does not load providers, create an
 providers.
 
 Applications that require FIPS mode or custom provider selection must configure
-OpenSSL before calling SecureKit. AES-256-GCM, SHA-256, and OpenSSL's random byte
-APIs must be available from that configuration.
+OpenSSL before calling SecureKit. AES-256-GCM, SHA-256, HMAC-SHA-256,
+HKDF-SHA-256, and OpenSSL's random byte APIs must be available from that
+configuration.
 
 OpenSSL allocation, initialization, cipher, digest, or random-generation failures
 are reported as `securekit::error_code::backend_failure`. SecureKit does not add

@@ -5,6 +5,7 @@
 #include "securekit/base64.hpp"
 #include "securekit/compare.hpp"
 #include "securekit/error.hpp"
+#include "securekit/file.hpp"
 #include "securekit/hash.hpp"
 #include "securekit/hex.hpp"
 #include "securekit/random.hpp"

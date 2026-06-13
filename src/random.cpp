@@ -5,6 +5,7 @@
 
 #include <openssl/rand.h>
 
+#include "securekit/base64.hpp"
 #include "securekit/error.hpp"
 
 namespace
@@ -52,6 +53,15 @@ key256 generate_key()
 		throw error(error_code::backend_failure, "OpenSSL RAND_priv_bytes failed");
 	}
 	return key;
+}
+
+std::string random_token(std::size_t byte_size)
+{
+	if (byte_size == 0)
+	{
+		throw error(error_code::invalid_input, "random token byte size must be greater than zero");
+	}
+	return base64url_encode(random_bytes(byte_size));
 }
 
 } // namespace securekit
