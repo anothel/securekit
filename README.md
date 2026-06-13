@@ -226,6 +226,23 @@ SecureKit is a thin C++ API over OpenSSL 3.x. It does not:
 Applications remain responsible for key lifecycle, provider configuration,
 process isolation, persistence, backups, logging policy, and threat modeling.
 
+## OpenSSL Providers and Backend Errors
+
+SecureKit uses OpenSSL's default library context and the provider configuration
+already active in the process. It does not load providers, create an
+`OSSL_LIB_CTX`, set property queries, or switch between default, legacy, and FIPS
+providers.
+
+Applications that require FIPS mode or custom provider selection must configure
+OpenSSL before calling SecureKit. AES-256-GCM, SHA-256, and OpenSSL's random byte
+APIs must be available from that configuration.
+
+OpenSSL allocation, initialization, cipher, digest, or random-generation failures
+are reported as `securekit::error_code::backend_failure`. SecureKit does not add
+OpenSSL error-queue details to public exception messages. AEAD tag verification
+failures are reported separately as `securekit::error_code::authentication_failed`
+with a generic message.
+
 ## Continuous Integration
 
 GitHub Actions builds and tests:
