@@ -79,6 +79,27 @@ cmake -S . -B build-openssl `
   -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
 ```
 
+## Test Dependency
+
+When `SECUREKIT_BUILD_TESTS=ON`, CMake uses `FetchContent` to get GoogleTest
+v1.14.0. The first configure for a fresh build tree may need network access.
+After that, CMake reuses the downloaded source under the build tree.
+
+For an offline or cached test build, point CMake at an existing GoogleTest
+source checkout:
+
+```sh
+cmake -S . -B build \
+  -DSECUREKIT_BUILD_TESTS=ON \
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/path/to/googletest-src
+```
+
+For package-only builds that do not need tests, disable tests:
+
+```sh
+cmake -S . -B build-install-only -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
+```
+
 ## Install
 
 ```sh
