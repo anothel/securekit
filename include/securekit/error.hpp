@@ -18,12 +18,12 @@ enum class error_code
 	backend_failure,
 };
 
-class SECUREKIT_API error : public std::runtime_error
+class error : public std::runtime_error
 {
 public:
-	error(error_code code, std::string message);
+	SECUREKIT_API error(error_code code, std::string message);
 
-	[[nodiscard]] error_code code() const noexcept;
+	[[nodiscard]] SECUREKIT_API error_code code() const noexcept;
 
 private:
 	error_code code_;

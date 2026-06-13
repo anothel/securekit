@@ -214,6 +214,8 @@ GitHub Actions builds and tests:
 - Ubuntu Clang Release.
 - Windows MSVC Release with vcpkg OpenSSL.
 - Install and consumer-project checks.
+- Install-only package check with tests disabled.
+- Windows shared-library package and consumer check.
 
 Run result is only available after pushing a commit or manually starting the
 workflow in GitHub. Local equivalent:
@@ -223,8 +225,46 @@ cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release
 ctest --test-dir build --build-config Release --output-on-failure
 cmake --install build --config Release --prefix ./install
-cmake -S tests/consumer -B consumer-build -DCMAKE_PREFIX_PATH=./install
+cmake -S tests/consumer -B consumer-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install
 cmake --build consumer-build --config Release
+./consumer-build/securekit_consumer
+```
+
+Install-only package check:
+
+```sh
+cmake -S . -B build-install-only -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
+cmake --build build-install-only --config Release
+cmake --install build-install-only --config Release --prefix ./install-only
+test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
+test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
+test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
+```
+
+Windows shared-library package check:
+
+```powershell
+cmake -S . -B build-vcpkg-shared `
+  -DBUILD_SHARED_LIBS=ON `
+  -DSECUREKIT_BUILD_TESTS=ON `
+  -DOPENSSL_ROOT_DIR="path\to\openssl-prefix" `
+  -DSECUREKIT_OPENSSL_RUNTIME_DIR="path\to\openssl-bin"
+
+cmake --build build-vcpkg-shared --config Release
+ctest --test-dir build-vcpkg-shared --build-config Release --output-on-failure
+cmake --install build-vcpkg-shared --config Release --prefix .\install-shared
+cmake -S tests\consumer -B consumer-shared-build -DCMAKE_PREFIX_PATH=.\install-shared -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
+cmake --build consumer-shared-build --config Release
+$env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"
+.\consumer-shared-build\Release\securekit_consumer.exe
+```
+
+On Windows with dynamically linked OpenSSL, put the OpenSSL DLL directory on
+`PATH` before running the consumer executable:
+
+```powershell
+$env:PATH = "path\to\openssl-bin;$env:PATH"
+.\consumer-build\Release\securekit_consumer.exe
 ```
 
 ## Roadmap

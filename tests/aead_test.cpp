@@ -126,6 +126,67 @@ TEST(Aead, AuthenticatesAdditionalData)
 	expect_authentication_failed([&] { (void)securekit::decrypt(packet, key, wrong_aad); });
 }
 
+TEST(Aead, DecryptsKnownAes256GcmPacketVector)
+{
+	const securekit::key256 key{};
+	const securekit::bytes aad = bytes_from_ascii("record:v1");
+	const securekit::bytes expected_plaintext = bytes_from_ascii("hello securekit");
+
+	// AES-256-GCM vector with all-zero key/nonce and AAD = "SKT1\x01record:v1".
+	const securekit::bytes packet = bytes_from_values({
+	    0x53,
+	    0x4b,
+	    0x54,
+	    0x31,
+	    0x01,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0xa6,
+	    0xc2,
+	    0x2c,
+	    0x51,
+	    0x22,
+	    0x40,
+	    0x18,
+	    0x0b,
+	    0x64,
+	    0x3b,
+	    0xb7,
+	    0xb6,
+	    0xd1,
+	    0x9a,
+	    0xe9,
+	    0x1d,
+	    0x51,
+	    0xdb,
+	    0x38,
+	    0x76,
+	    0x93,
+	    0xb2,
+	    0xf1,
+	    0x65,
+	    0x22,
+	    0x06,
+	    0x13,
+	    0xf9,
+	    0x87,
+	    0x28,
+	    0xde,
+	});
+
+	EXPECT_EQ(securekit::decrypt(packet, key, aad), expected_plaintext);
+}
+
 TEST(Aead, RejectsInvalidPacketShape)
 {
 	const securekit::key256 key = key_from_seed(0x40);
