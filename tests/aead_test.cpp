@@ -128,6 +128,28 @@ TEST(Aead, RoundTripsEmptyPlaintext)
 	EXPECT_TRUE(securekit::decrypt(packet, key).empty());
 }
 
+TEST(Aead, RoundTripsLargePlaintextAndAad)
+{
+	const securekit::key256 key = key_from_seed(0x22);
+	securekit::bytes plaintext(1024 * 1024);
+	securekit::bytes aad(64 * 1024);
+
+	for (std::size_t i = 0; i < plaintext.size(); ++i)
+	{
+		plaintext[i] = static_cast<std::byte>((i * 31u) & 0xffu);
+	}
+
+	for (std::size_t i = 0; i < aad.size(); ++i)
+	{
+		aad[i] = static_cast<std::byte>((i * 17u) & 0xffu);
+	}
+
+	const securekit::bytes packet = securekit::encrypt(plaintext, key, aad);
+
+	ASSERT_EQ(packet.size(), plaintext.size() + kOverhead);
+	EXPECT_EQ(securekit::decrypt(packet, key, aad), plaintext);
+}
+
 TEST(Aead, AuthenticatesAdditionalData)
 {
 	const securekit::key256 key = key_from_seed(0x30);
