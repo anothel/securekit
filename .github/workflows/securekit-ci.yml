@@ -138,6 +138,56 @@ jobs:
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
 
+  linux-static:
+    name: ubuntu-latest gcc Release static
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
+
+      - name: Configure CMake
+        env:
+          CC: gcc
+          CXX: g++
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_SHARED_LIBS=OFF
+          -DSECUREKIT_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Install
+        run: cmake --install build --config Release --prefix "${{ github.workspace }}/install"
+
+      - name: Verify static package files
+        run: |
+          test -f "${{ github.workspace }}/install/lib/libsecurekit.a"
+          test ! -f "${{ github.workspace }}/install/lib/libsecurekit.so"
+          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
+          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
+          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
+
+      - name: Configure consumer
+        run: >
+          cmake -S tests/consumer -B consumer-build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
+
+      - name: Build consumer
+        run: cmake --build consumer-build --config Release
+
+      - name: Run consumer
+        run: ./consumer-build/securekit_consumer
+
   windows-shared:
     name: windows-latest msvc Release shared
     runs-on: windows-latest

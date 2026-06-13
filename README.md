@@ -215,6 +215,7 @@ GitHub Actions builds and tests:
 - Windows MSVC Release with vcpkg OpenSSL.
 - Install and consumer-project checks.
 - Install-only package check with tests disabled.
+- Linux static-library package and consumer check.
 - Windows shared-library package and consumer check.
 
 Run result is only available after pushing a commit or manually starting the
@@ -239,6 +240,23 @@ cmake --install build-install-only --config Release --prefix ./install-only
 test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
+```
+
+Linux static-library package check:
+
+```sh
+cmake -S . -B build-static -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DSECUREKIT_BUILD_TESTS=ON
+cmake --build build-static --config Release
+ctest --test-dir build-static --build-config Release --output-on-failure
+cmake --install build-static --config Release --prefix ./install-static
+test -f ./install-static/lib/libsecurekit.a
+test ! -f ./install-static/lib/libsecurekit.so
+test -f ./install-static/lib/cmake/securekit/securekitConfig.cmake
+test -f ./install-static/lib/cmake/securekit/securekitConfigVersion.cmake
+test -f ./install-static/lib/cmake/securekit/securekitTargets.cmake
+cmake -S tests/consumer -B consumer-static-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-static
+cmake --build consumer-static-build --config Release
+./consumer-static-build/securekit_consumer
 ```
 
 Windows shared-library package check:
