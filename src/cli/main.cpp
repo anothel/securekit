@@ -25,8 +25,11 @@ void print_help()
 	          << "  securekit hex-decode --text <hex>\n"
 	          << "  securekit base64url-encode --text <text>\n"
 	          << "  securekit base64url-decode --text <base64url>\n"
+	          << "  securekit keygen --out <path>\n"
 	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex>\n"
 	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex>\n"
+	          << "  securekit seal-file --in <path> --out <path> --key-file <path>\n"
+	          << "  securekit open-file --in <path> --out <path> --key-file <path>\n"
 	          << "  securekit help\n";
 }
 
@@ -89,6 +92,27 @@ securekit::key256 key_from_hex(std::string_view text)
 	return key;
 }
 
+std::string trim_ascii_whitespace(std::string_view text)
+{
+	const auto is_space = [](char ch) {
+		return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\f' || ch == '\v';
+	};
+
+	std::size_t first = 0;
+	while (first < text.size() && is_space(text[first]))
+	{
+		++first;
+	}
+
+	std::size_t last = text.size();
+	while (last > first && is_space(text[last - 1]))
+	{
+		--last;
+	}
+
+	return std::string(text.substr(first, last - first));
+}
+
 securekit::bytes read_file(const std::filesystem::path &path)
 {
 	std::ifstream in(path, std::ios::binary);
@@ -110,6 +134,38 @@ securekit::bytes read_file(const std::filesystem::path &path)
 		bytes.push_back(static_cast<std::byte>(ch));
 	}
 	return bytes;
+}
+
+securekit::key256 key_from_file(const std::filesystem::path &path)
+{
+	const securekit::bytes key_bytes = read_file(path);
+	std::string text;
+	text.reserve(key_bytes.size());
+	for (const std::byte byte : key_bytes)
+	{
+		text.push_back(static_cast<char>(std::to_integer<unsigned char>(byte)));
+	}
+	return key_from_hex(trim_ascii_whitespace(text));
+}
+
+void write_generated_key(const std::filesystem::path &path)
+{
+	if (std::filesystem::exists(path))
+	{
+		throw std::runtime_error("Output file already exists");
+	}
+
+	std::ofstream out(path, std::ios::binary);
+	if (!out)
+	{
+		throw std::runtime_error("failed to open output file");
+	}
+
+	out << securekit::hex_encode(securekit::generate_key()) << '\n';
+	if (!out)
+	{
+		throw std::runtime_error("failed to write output file");
+	}
 }
 
 std::size_t parse_size(std::string_view text)
@@ -184,6 +240,12 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc == 4 && is_arg(argv[1], "keygen") && is_arg(argv[2], "--out"))
+		{
+			write_generated_key(argv[3]);
+			return 0;
+		}
+
 		if (argc == 8 && is_arg(argv[1], "seal-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
 		    is_arg(argv[6], "--key-hex"))
 		{
@@ -195,6 +257,20 @@ int main(int argc, char **argv)
 		    is_arg(argv[6], "--key-hex"))
 		{
 			securekit::open_file(argv[3], argv[5], key_from_hex(argv[7]));
+			return 0;
+		}
+
+		if (argc == 8 && is_arg(argv[1], "seal-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
+		    is_arg(argv[6], "--key-file"))
+		{
+			securekit::seal_file(argv[3], argv[5], key_from_file(argv[7]));
+			return 0;
+		}
+
+		if (argc == 8 && is_arg(argv[1], "open-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
+		    is_arg(argv[6], "--key-file"))
+		{
+			securekit::open_file(argv[3], argv[5], key_from_file(argv[7]));
 			return 0;
 		}
 

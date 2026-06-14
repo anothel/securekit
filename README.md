@@ -129,13 +129,19 @@ securekit hex-encode --text abc
 securekit hex-decode --text 616263
 securekit base64url-encode --text abc
 securekit base64url-decode --text YWJj
+securekit keygen --out key.hex
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex
+securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex
 ```
 
 The CLI file commands use the existing `SKF1` file format. `--key-hex` must be
-a strict 64-character hex string for a 32-byte key. The CLI does not expose
-password prompts, password KDFs, key files, environment-variable key loading,
+a strict 64-character hex string for a 32-byte key. `keygen` writes a fresh key
+as 64 lowercase hex characters plus a trailing newline and refuses to overwrite
+an existing output file. `--key-file` reads the same text format, trimming
+leading and trailing ASCII whitespace before strict validation. The CLI does
+not expose password prompts, password KDFs, environment-variable key loading,
 AAD, or stdin/stdout streaming in this slice.
 
 Successful CLI commands write only the result plus one trailing newline to

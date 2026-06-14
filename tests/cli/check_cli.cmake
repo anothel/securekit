@@ -59,8 +59,11 @@ set(expected_help [=[Usage:
   securekit hex-decode --text <hex>
   securekit base64url-encode --text <text>
   securekit base64url-decode --text <base64url>
+  securekit keygen --out <path>
   securekit seal-file --in <path> --out <path> --key-hex <64-hex>
   securekit open-file --in <path> --out <path> --key-hex <64-hex>
+  securekit seal-file --in <path> --out <path> --key-file <path>
+  securekit open-file --in <path> --out <path> --key-file <path>
   securekit help
 ]=])
 
@@ -106,11 +109,19 @@ set(plain_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.txt")
 set(sealed_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.skf")
 set(opened_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-opened.txt")
 set(existing_output "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-existing.txt")
+set(generated_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-generated-key.hex")
+set(key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-file.skf")
+set(key_file_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-file-opened.txt")
+set(invalid_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-invalid-key.hex")
 
 file(WRITE "${plain_file}" "file command plaintext\n")
 file(REMOVE "${sealed_file}")
 file(REMOVE "${opened_file}")
+file(REMOVE "${generated_key_file}")
+file(REMOVE "${key_file_sealed}")
+file(REMOVE "${key_file_opened}")
 file(WRITE "${existing_output}" "existing")
+file(WRITE "${invalid_key_file}" "not-a-valid-key\n")
 
 run_cli_no_stdout(seal-file --in "${plain_file}" --out "${sealed_file}" --key-hex "${file_key}")
 if(NOT EXISTS "${sealed_file}")
@@ -126,3 +137,21 @@ endif()
 run_cli_failure("key must be 64 hex characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/bad-key.skf" --key-hex 00)
 run_cli_failure("File authentication failed\n" open-file --in "${sealed_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/wrong-key.txt" --key-hex "${wrong_file_key}")
 run_cli_failure("Output file already exists\n" seal-file --in "${plain_file}" --out "${existing_output}" --key-hex "${file_key}")
+
+run_cli_no_stdout(keygen --out "${generated_key_file}")
+file(READ "${generated_key_file}" generated_key)
+string(STRIP "${generated_key}" generated_key_text)
+string(LENGTH "${generated_key_text}" generated_key_length)
+if(NOT generated_key_length EQUAL 64 OR generated_key_text MATCHES "[^0-9a-f]")
+  message(FATAL_ERROR "keygen output is not 64 lowercase hex characters: [${generated_key}]")
+endif()
+
+run_cli_no_stdout(seal-file --in "${plain_file}" --out "${key_file_sealed}" --key-file "${generated_key_file}")
+run_cli_no_stdout(open-file --in "${key_file_sealed}" --out "${key_file_opened}" --key-file "${generated_key_file}")
+file(READ "${key_file_opened}" key_file_opened_text)
+if(NOT key_file_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "key-file open did not recover plaintext. got=[${key_file_opened_text}]")
+endif()
+
+run_cli_failure("Output file already exists\n" keygen --out "${generated_key_file}")
+run_cli_failure("key must be 64 hex characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/invalid-key-file.skf" --key-file "${invalid_key_file}")
