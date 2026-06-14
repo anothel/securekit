@@ -40,6 +40,15 @@ jobs:
         if: matrix.compiler == 'msvc'
         run: vcpkg install openssl:x64-windows
 
+      - name: Cache GoogleTest
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-googletest-v1.14.0-
+            ${{ runner.os }}-googletest-v1.14.0-
+
       # Linux uses runner packages and Windows uses vcpkg; add explicit OpenSSL 3.5 coverage later if needed.
       - name: Configure CMake (GCC)
         if: matrix.compiler == 'gcc'
@@ -115,6 +124,15 @@ jobs:
 
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
+
+      - name: Cache GoogleTest
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-
+            ${{ runner.os }}-googletest-v1.14.0-
 
       - name: Configure CMake
         env:
@@ -200,6 +218,15 @@ jobs:
 
       - name: Install Windows dependencies
         run: vcpkg install openssl:x64-windows
+
+      - name: Cache GoogleTest
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-msvc-Release-shared-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-msvc-Release-shared-googletest-v1.14.0-
+            ${{ runner.os }}-googletest-v1.14.0-
 
       - name: Configure CMake
         run: >
