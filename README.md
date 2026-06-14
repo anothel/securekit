@@ -129,10 +129,14 @@ securekit hex-encode --text abc
 securekit hex-decode --text 616263
 securekit base64url-encode --text abc
 securekit base64url-decode --text YWJj
+securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 ```
 
-The first CLI slice is utility-only. It does not expose file sealing, password,
-or key-management commands.
+The CLI file commands use the existing `SKF1` file format. `--key-hex` must be
+a strict 64-character hex string for a 32-byte key. The CLI does not expose
+password prompts, password KDFs, key files, environment-variable key loading,
+AAD, or stdin/stdout streaming in this slice.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,

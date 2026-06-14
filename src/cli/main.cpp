@@ -25,6 +25,8 @@ void print_help()
 	          << "  securekit hex-decode --text <hex>\n"
 	          << "  securekit base64url-encode --text <text>\n"
 	          << "  securekit base64url-decode --text <base64url>\n"
+	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex>\n"
+	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex>\n"
 	          << "  securekit help\n";
 }
 
@@ -57,6 +59,34 @@ void write_bytes(const securekit::bytes &bytes)
 bool is_arg(char *arg, std::string_view expected)
 {
 	return std::string_view(arg) == expected;
+}
+
+bool is_hex_char(char ch)
+{
+	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+}
+
+securekit::key256 key_from_hex(std::string_view text)
+{
+	if (text.size() != 64)
+	{
+		throw std::runtime_error("key must be 64 hex characters");
+	}
+	for (const char ch : text)
+	{
+		if (!is_hex_char(ch))
+		{
+			throw std::runtime_error("key must be 64 hex characters");
+		}
+	}
+
+	const securekit::bytes decoded = securekit::hex_decode(text);
+	securekit::key256 key{};
+	for (std::size_t index = 0; index < key.size(); ++index)
+	{
+		key[index] = decoded[index];
+	}
+	return key;
 }
 
 securekit::bytes read_file(const std::filesystem::path &path)
@@ -151,6 +181,20 @@ int main(int argc, char **argv)
 		if (argc == 4 && is_arg(argv[1], "base64url-decode") && is_arg(argv[2], "--text"))
 		{
 			write_bytes(securekit::base64url_decode(argv[3]));
+			return 0;
+		}
+
+		if (argc == 8 && is_arg(argv[1], "seal-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
+		    is_arg(argv[6], "--key-hex"))
+		{
+			securekit::seal_file(argv[3], argv[5], key_from_hex(argv[7]));
+			return 0;
+		}
+
+		if (argc == 8 && is_arg(argv[1], "open-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
+		    is_arg(argv[6], "--key-hex"))
+		{
+			securekit::open_file(argv[3], argv[5], key_from_hex(argv[7]));
 			return 0;
 		}
 
