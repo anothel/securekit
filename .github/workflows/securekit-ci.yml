@@ -125,15 +125,6 @@ jobs:
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
 
-      - name: Cache GoogleTest
-        uses: actions/cache@v4
-        with:
-          path: build/_deps
-          key: ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-
-            ${{ runner.os }}-googletest-v1.14.0-
-
       - name: Configure CMake
         env:
           CC: gcc
@@ -167,6 +158,15 @@ jobs:
 
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
+
+      - name: Cache GoogleTest
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-
+            ${{ runner.os }}-googletest-v1.14.0-
 
       - name: Configure CMake
         env:
