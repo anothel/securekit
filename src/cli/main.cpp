@@ -34,7 +34,103 @@ void print_help()
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path> --out <path> --key-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit help\n";
+	          << "  securekit help [command]\n";
+}
+
+std::string_view token_usage()
+{
+	return "Usage:\n  securekit token <byte-size>";
+}
+
+std::string_view sha256_usage()
+{
+	return "Usage:\n  securekit sha256 --text <text>\n  securekit sha256 --file <path>";
+}
+
+std::string_view hex_encode_usage()
+{
+	return "Usage:\n  securekit hex-encode --text <text>";
+}
+
+std::string_view hex_decode_usage()
+{
+	return "Usage:\n  securekit hex-decode --text <hex>";
+}
+
+std::string_view base64url_encode_usage()
+{
+	return "Usage:\n  securekit base64url-encode --text <text>";
+}
+
+std::string_view base64url_decode_usage()
+{
+	return "Usage:\n  securekit base64url-decode --text <base64url>";
+}
+
+std::string_view keygen_usage()
+{
+	return "Usage:\n  securekit keygen --out <path>";
+}
+
+std::string_view file_command_usage(std::string_view command)
+{
+	if (command == "seal-file")
+	{
+		return "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) "
+		       "[--aad-text <text>|--aad-hex <hex>]";
+	}
+	return "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) "
+	       "[--aad-text <text>|--aad-hex <hex>]";
+}
+
+bool print_command_help(std::string_view command)
+{
+	if (command == "token")
+	{
+		std::cout << token_usage() << '\n';
+		return true;
+	}
+	if (command == "sha256")
+	{
+		std::cout << sha256_usage() << '\n';
+		return true;
+	}
+	if (command == "hex-encode")
+	{
+		std::cout << hex_encode_usage() << '\n';
+		return true;
+	}
+	if (command == "hex-decode")
+	{
+		std::cout << hex_decode_usage() << '\n';
+		return true;
+	}
+	if (command == "base64url-encode")
+	{
+		std::cout << base64url_encode_usage() << '\n';
+		return true;
+	}
+	if (command == "base64url-decode")
+	{
+		std::cout << base64url_decode_usage() << '\n';
+		return true;
+	}
+	if (command == "keygen")
+	{
+		std::cout << keygen_usage() << '\n';
+		return true;
+	}
+	if (command == "seal-file")
+	{
+		std::cout << file_command_usage(command) << '\n';
+		return true;
+	}
+	if (command == "open-file")
+	{
+		std::cout << file_command_usage(command) << '\n';
+		return true;
+	}
+	return false;
 }
 
 int fail(std::string_view message)
@@ -192,11 +288,11 @@ struct file_command_options
 	bool has_aad = false;
 };
 
-void reject_duplicate(bool already_set)
+void reject_duplicate(bool already_set, std::string_view option)
 {
 	if (already_set)
 	{
-		throw std::runtime_error("unsupported command");
+		throw std::runtime_error(std::string("duplicate option: ") + std::string(option));
 	}
 }
 
@@ -204,7 +300,7 @@ file_command_options parse_file_command_options(int argc, char **argv)
 {
 	if (argc < 8 || ((argc - 2) % 2) != 0)
 	{
-		throw std::runtime_error("unsupported command");
+		throw std::runtime_error(std::string(file_command_usage(argv[1])));
 	}
 
 	file_command_options options;
@@ -215,37 +311,43 @@ file_command_options parse_file_command_options(int argc, char **argv)
 
 		if (option == "--in")
 		{
-			reject_duplicate(options.has_input);
+			reject_duplicate(options.has_input, option);
 			options.input = std::filesystem::path(value);
 			options.has_input = true;
 		}
 		else if (option == "--out")
 		{
-			reject_duplicate(options.has_output);
+			reject_duplicate(options.has_output, option);
 			options.output = std::filesystem::path(value);
 			options.has_output = true;
 		}
 		else if (option == "--key-hex" || option == "--key-file")
 		{
-			reject_duplicate(options.has_key);
+			if (options.has_key)
+			{
+				throw std::runtime_error("conflicting key options");
+			}
 			options.key = key_from_option(option, value);
 			options.has_key = true;
 		}
 		else if (option == "--aad-text" || option == "--aad-hex")
 		{
-			reject_duplicate(options.has_aad);
+			if (options.has_aad)
+			{
+				throw std::runtime_error("conflicting AAD options");
+			}
 			options.aad = aad_from_option(option, value);
 			options.has_aad = true;
 		}
 		else
 		{
-			throw std::runtime_error("unsupported command");
+			throw std::runtime_error(std::string("unsupported file option: ") + std::string(option));
 		}
 	}
 
 	if (!options.has_input || !options.has_output || !options.has_key)
 	{
-		throw std::runtime_error("unsupported command");
+		throw std::runtime_error(std::string(file_command_usage(argv[1])));
 	}
 
 	return options;
@@ -295,16 +397,36 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (argc == 1)
+		{
+			print_help();
+			return 0;
+		}
+
 		if (argc == 2 && (std::string_view(argv[1]) == "help" || std::string_view(argv[1]) == "--help"))
 		{
 			print_help();
 			return 0;
 		}
 
+		if (argc == 3 && is_arg(argv[1], "help"))
+		{
+			if (print_command_help(argv[2]))
+			{
+				return 0;
+			}
+			return fail("unsupported command");
+		}
+
 		if (argc == 3 && is_arg(argv[1], "token"))
 		{
 			std::cout << securekit::random_token(parse_size(argv[2])) << '\n';
 			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "token"))
+		{
+			return fail(token_usage());
 		}
 
 		if (argc == 4 && is_arg(argv[1], "sha256") && is_arg(argv[2], "--text"))
@@ -319,10 +441,20 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc >= 2 && is_arg(argv[1], "sha256"))
+		{
+			return fail(sha256_usage());
+		}
+
 		if (argc == 4 && is_arg(argv[1], "hex-encode") && is_arg(argv[2], "--text"))
 		{
 			std::cout << securekit::hex_encode(bytes_from_text(argv[3])) << '\n';
 			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "hex-encode"))
+		{
+			return fail(hex_encode_usage());
 		}
 
 		if (argc == 4 && is_arg(argv[1], "hex-decode") && is_arg(argv[2], "--text"))
@@ -331,10 +463,20 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc >= 2 && is_arg(argv[1], "hex-decode"))
+		{
+			return fail(hex_decode_usage());
+		}
+
 		if (argc == 4 && is_arg(argv[1], "base64url-encode") && is_arg(argv[2], "--text"))
 		{
 			std::cout << securekit::base64url_encode(bytes_from_text(argv[3])) << '\n';
 			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "base64url-encode"))
+		{
+			return fail(base64url_encode_usage());
 		}
 
 		if (argc == 4 && is_arg(argv[1], "base64url-decode") && is_arg(argv[2], "--text"))
@@ -343,10 +485,20 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc >= 2 && is_arg(argv[1], "base64url-decode"))
+		{
+			return fail(base64url_decode_usage());
+		}
+
 		if (argc == 4 && is_arg(argv[1], "keygen") && is_arg(argv[2], "--out"))
 		{
 			write_generated_key(argv[3]);
 			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "keygen"))
+		{
+			return fail(keygen_usage());
 		}
 
 		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))

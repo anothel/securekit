@@ -130,6 +130,7 @@ securekit hex-decode --text 616263
 securekit base64url-encode --text abc
 securekit base64url-decode --text YWJj
 securekit keygen --out key.hex
+securekit help seal-file
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex
@@ -160,6 +161,12 @@ write a short message to stderr, and do not write stdout. Text arguments are
 treated as raw bytes in the active process encoding; the CLI does not normalize
 or transcode Unicode. Decode commands use the same strict validation as the C++
 APIs.
+
+Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
+usage text. `securekit help <command>` prints command-specific usage for the
+supported commands. Known commands with the wrong shape print that command's
+usage to stderr. File command option conflicts report the specific duplicate,
+conflicting key source, conflicting AAD source, or unsupported file option.
 
 ## Consume With CMake
 
