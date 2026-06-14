@@ -143,6 +143,7 @@ jobs:
 
       - name: Verify package files
         run: |
+          test -f "${{ github.workspace }}/install/bin/securekit"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
@@ -189,6 +190,7 @@ jobs:
 
       - name: Verify static package files
         run: |
+          test -f "${{ github.workspace }}/install/bin/securekit"
           test -f "${{ github.workspace }}/install/lib/libsecurekit.a"
           test ! -f "${{ github.workspace }}/install/lib/libsecurekit.so"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
@@ -250,6 +252,7 @@ jobs:
         shell: pwsh
         run: |
           $files = @(
+            "${{ github.workspace }}/install/bin/securekit.exe",
             "${{ github.workspace }}/install/bin/securekit.dll",
             "${{ github.workspace }}/install/lib/securekit.lib",
             "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake",

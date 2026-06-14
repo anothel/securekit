@@ -407,6 +407,7 @@ Install-only package check:
 cmake -S . -B build-install-only -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
 cmake --build build-install-only --config Release
 cmake --install build-install-only --config Release --prefix ./install-only
+test -f ./install-only/bin/securekit
 test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
@@ -420,6 +421,7 @@ cmake -S . -B build-static -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LI
 cmake --build build-static --config Release
 ctest --test-dir build-static --build-config Release --output-on-failure
 cmake --install build-static --config Release --prefix ./install-static
+test -f ./install-static/bin/securekit
 test -f ./install-static/lib/libsecurekit.a
 test ! -f ./install-static/lib/libsecurekit.so
 test -f ./install-static/lib/cmake/securekit/securekitConfig.cmake
@@ -443,6 +445,7 @@ cmake -S . -B build-vcpkg-shared `
 cmake --build build-vcpkg-shared --config Release
 ctest --test-dir build-vcpkg-shared --build-config Release --output-on-failure
 cmake --install build-vcpkg-shared --config Release --prefix .\install-shared
+Test-Path .\install-shared\bin\securekit.exe
 cmake -S tests\consumer -B consumer-shared-build -DCMAKE_PREFIX_PATH=.\install-shared -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
 cmake --build consumer-shared-build --config Release
 $env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"
