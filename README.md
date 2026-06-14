@@ -454,4 +454,4 @@ Later:
 
 - Object-oriented APIs if repeated call sites justify them.
 - Password-based encryption with a deliberate KDF design.
-- Streaming/file encryption only with clear packet format decisions.
+- Streaming APIs if repeated call sites need incremental processing.
