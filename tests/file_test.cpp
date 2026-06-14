@@ -331,7 +331,7 @@ TEST(File, RejectsMalformedHeader)
 	write_file(plain_path, bytes_from_text("header"));
 	securekit::seal_file(plain_path, sealed_path, key);
 
-	for (const std::size_t offset : {0u, 4u, 5u, 9u})
+	for (const std::size_t offset : {0u, 1u, 2u, 3u, 4u, 5u, 6u, 9u})
 	{
 		securekit::bytes sealed = read_file(sealed_path);
 		sealed[offset] ^= std::byte{0x01};

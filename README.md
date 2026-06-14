@@ -275,6 +275,27 @@ a random per-file salt, HKDF-SHA256 to derive a per-file key, and AES-256-GCM
 for each chunk. The chunk nonce is an 8-byte random file nonce prefix plus a
 32-bit big-endian chunk index.
 
+File header:
+
+| Offset | Size | Field | Value |
+| --- | ---: | --- | --- |
+| 0 | 4 | Magic | `SKF1` |
+| 4 | 1 | Version | `0x01` |
+| 5 | 1 | Algorithm | `0x01` for AES-256-GCM with HKDF-SHA256 |
+| 6 | 4 | Chunk size | `0x00100000` big-endian, 1 MiB |
+| 10 | 32 | Salt | Random per file |
+| 42 | 8 | Nonce prefix | Random per file |
+
+Each chunk record:
+
+| Offset | Size | Field | Value |
+| --- | ---: | --- | --- |
+| 0 | 4 | Chunk index | Big-endian, starts at 0 |
+| 4 | 4 | Plaintext size | Big-endian, 0 to 1 MiB |
+| 8 | 1 | Final flag | `0x00` non-final, `0x01` final |
+| 9 | N | Ciphertext | AES-256-GCM ciphertext |
+| 9 + N | 16 | Tag | AES-GCM authentication tag |
+
 The file header, chunk index, plaintext size, final flag, and caller-provided
 AAD are authenticated with every chunk. `open_file` rejects malformed headers,
 truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
