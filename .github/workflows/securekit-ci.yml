@@ -81,6 +81,24 @@ jobs:
       - name: Install
         run: cmake --install build --config ${{ matrix.build_type }} --prefix "${{ github.workspace }}/install"
 
+      - name: Check installed CLI
+        if: matrix.compiler != 'msvc'
+        run: >
+          cmake
+          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
+          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
+          -P tests/package/check_installed_cli.cmake
+
+      - name: Check installed CLI (MSVC)
+        if: matrix.compiler == 'msvc'
+        shell: pwsh
+        run: |
+          $env:PATH = "${{ github.workspace }}/install/bin;$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
+          cmake `
+            -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit.exe" `
+            -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli" `
+            -P tests/package/check_installed_cli.cmake
+
       - name: Configure consumer
         if: matrix.compiler != 'msvc'
         run: >
@@ -149,6 +167,13 @@ jobs:
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
 
+      - name: Check installed CLI
+        run: >
+          cmake
+          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
+          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
+          -P tests/package/check_installed_cli.cmake
+
   linux-static:
     name: ubuntu-latest gcc Release static
     runs-on: ubuntu-latest
@@ -197,6 +222,13 @@ jobs:
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
           test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
+
+      - name: Check installed CLI
+        run: >
+          cmake
+          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
+          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
+          -P tests/package/check_installed_cli.cmake
 
       - name: Configure consumer
         run: >
@@ -265,6 +297,15 @@ jobs:
               throw "Missing $file"
             }
           }
+
+      - name: Check installed CLI
+        shell: pwsh
+        run: |
+          $env:PATH = "${{ github.workspace }}/install/bin;$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
+          cmake `
+            -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit.exe" `
+            -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli" `
+            -P tests/package/check_installed_cli.cmake
 
       - name: Configure consumer
         run: >

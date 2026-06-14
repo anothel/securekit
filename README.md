@@ -432,6 +432,7 @@ cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release
 ctest --test-dir build --build-config Release --output-on-failure
 cmake --install build --config Release --prefix ./install
+cmake -DSECUREKIT_CLI=./install/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./installed-cli-check -P tests/package/check_installed_cli.cmake
 cmake -S tests/consumer -B consumer-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install
 cmake --build consumer-build --config Release
 ./consumer-build/securekit_consumer
@@ -448,6 +449,7 @@ test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets-release.cmake
+cmake -DSECUREKIT_CLI=./install-only/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./install-only-cli-check -P tests/package/check_installed_cli.cmake
 ```
 
 Linux static-library package check:
@@ -464,6 +466,7 @@ test -f ./install-static/lib/cmake/securekit/securekitConfig.cmake
 test -f ./install-static/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-static/lib/cmake/securekit/securekitTargets.cmake
 test -f ./install-static/lib/cmake/securekit/securekitTargets-release.cmake
+cmake -DSECUREKIT_CLI=./install-static/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./install-static-cli-check -P tests/package/check_installed_cli.cmake
 cmake -S tests/consumer -B consumer-static-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-static
 cmake --build consumer-static-build --config Release
 ./consumer-static-build/securekit_consumer
@@ -482,9 +485,10 @@ cmake --build build-vcpkg-shared --config Release
 ctest --test-dir build-vcpkg-shared --build-config Release --output-on-failure
 cmake --install build-vcpkg-shared --config Release --prefix .\install-shared
 Test-Path .\install-shared\bin\securekit.exe
+$env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"
+cmake -DSECUREKIT_CLI=.\install-shared\bin\securekit.exe -DSECUREKIT_CLI_WORK_DIR=.\install-shared-cli-check -P tests\package\check_installed_cli.cmake
 cmake -S tests\consumer -B consumer-shared-build -DCMAKE_PREFIX_PATH=.\install-shared -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
 cmake --build consumer-shared-build --config Release
-$env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"
 .\consumer-shared-build\Release\securekit_consumer.exe
 ```
 
