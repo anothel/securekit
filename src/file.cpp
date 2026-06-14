@@ -439,7 +439,15 @@ void seal_file(const std::filesystem::path &input, const std::filesystem::path &
 			}
 
 			const auto plaintext_size = static_cast<std::uint32_t>(read_count);
-			const bool is_final = plaintext_size < kChunkSize;
+			bool is_final = plaintext_size < kChunkSize;
+			if (!is_final && in.peek() == std::char_traits<char>::eof())
+			{
+				if (in.bad())
+				{
+					throw_backend_failure("File read failed");
+				}
+				is_final = true;
+			}
 			const RecordHeader record = make_record_header(chunk_index, plaintext_size, is_final ? kFinal : kNotFinal);
 			const auto nonce = make_nonce(header, chunk_index);
 			const bytes chunk_aad = make_chunk_aad(header, record, aad);

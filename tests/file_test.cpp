@@ -76,6 +76,16 @@ securekit::bytes bytes_from_values(std::initializer_list<unsigned int> values)
 	return out;
 }
 
+securekit::bytes patterned_bytes(std::size_t size, unsigned int multiplier)
+{
+	securekit::bytes out(size);
+	for (std::size_t i = 0; i < out.size(); ++i)
+	{
+		out[i] = static_cast<std::byte>((i * multiplier) & 0xffu);
+	}
+	return out;
+}
+
 template <typename Func>
 void expect_error(Func &&func, securekit::error_code expected)
 {
@@ -437,6 +447,41 @@ TEST(File, DetectsTruncationAppendAndReorder)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, RoundTripsChunkBoundarySizes)
+{
+	constexpr std::size_t chunk_size = 1024u * 1024u;
+	constexpr std::size_t header_size = 50u;
+	constexpr std::size_t per_record_overhead = 9u + 16u;
+	const securekit::key256 key = key_from_seed(0x70);
+	const securekit::bytes aad = bytes_from_text("chunk-boundary");
+
+	for (const std::size_t size : {chunk_size - 1u, chunk_size, chunk_size + 1u, chunk_size * 2u, (chunk_size * 2u) + 1u})
+	{
+		SCOPED_TRACE(size);
+		const auto plain_path = test_path("plain-boundary-" + std::to_string(size) + ".bin");
+		const auto sealed_path = test_path("sealed-boundary-" + std::to_string(size) + ".skf");
+		const auto opened_path = test_path("opened-boundary-" + std::to_string(size) + ".bin");
+		std::filesystem::remove(plain_path);
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+
+		const securekit::bytes plaintext = patterned_bytes(size, 17u);
+		write_file(plain_path, plaintext);
+
+		securekit::seal_file(plain_path, sealed_path, key, aad);
+		const securekit::bytes sealed = read_file(sealed_path);
+		const std::size_t record_count = (size + chunk_size - 1u) / chunk_size;
+		EXPECT_EQ(sealed.size(), header_size + size + (record_count * per_record_overhead));
+
+		securekit::open_file(sealed_path, opened_path, key, aad);
+		EXPECT_EQ(read_file(opened_path), plaintext);
+
+		std::filesystem::remove(plain_path);
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+	}
 }
 
 TEST(File, RoundTripsMultiChunkFile)
