@@ -60,10 +60,10 @@ set(expected_help [=[Usage:
   securekit base64url-encode --text <text>
   securekit base64url-decode --text <base64url>
   securekit keygen --out <path>
-  securekit seal-file --in <path> --out <path> --key-hex <64-hex>
-  securekit open-file --in <path> --out <path> --key-hex <64-hex>
-  securekit seal-file --in <path> --out <path> --key-file <path>
-  securekit open-file --in <path> --out <path> --key-file <path>
+  securekit seal-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
+  securekit open-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
+  securekit seal-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
+  securekit open-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
   securekit help
 ]=])
 
@@ -113,6 +113,12 @@ set(generated_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-generated-key.
 set(key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-file.skf")
 set(key_file_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-file-opened.txt")
 set(invalid_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-invalid-key.hex")
+set(aad_text_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-text.skf")
+set(aad_text_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-text-opened.txt")
+set(aad_wrong_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-wrong-opened.txt")
+set(aad_missing_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-missing-opened.txt")
+set(aad_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-hex.skf")
+set(aad_hex_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-hex-opened.txt")
 
 file(WRITE "${plain_file}" "file command plaintext\n")
 file(REMOVE "${sealed_file}")
@@ -120,6 +126,12 @@ file(REMOVE "${opened_file}")
 file(REMOVE "${generated_key_file}")
 file(REMOVE "${key_file_sealed}")
 file(REMOVE "${key_file_opened}")
+file(REMOVE "${aad_text_sealed}")
+file(REMOVE "${aad_text_opened}")
+file(REMOVE "${aad_wrong_opened}")
+file(REMOVE "${aad_missing_opened}")
+file(REMOVE "${aad_hex_sealed}")
+file(REMOVE "${aad_hex_opened}")
 file(WRITE "${existing_output}" "existing")
 file(WRITE "${invalid_key_file}" "not-a-valid-key\n")
 
@@ -155,3 +167,22 @@ endif()
 
 run_cli_failure("Output file already exists\n" keygen --out "${generated_key_file}")
 run_cli_failure("key must be 64 hex characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/invalid-key-file.skf" --key-file "${invalid_key_file}")
+
+run_cli_no_stdout(seal-file --in "${plain_file}" --out "${aad_text_sealed}" --key-file "${generated_key_file}" --aad-text record:v1)
+run_cli_no_stdout(open-file --in "${aad_text_sealed}" --out "${aad_text_opened}" --key-file "${generated_key_file}" --aad-text record:v1)
+file(READ "${aad_text_opened}" aad_text_opened_text)
+if(NOT aad_text_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "AAD text open did not recover plaintext. got=[${aad_text_opened_text}]")
+endif()
+
+run_cli_failure("File authentication failed\n" open-file --in "${aad_text_sealed}" --out "${aad_wrong_opened}" --key-file "${generated_key_file}" --aad-text record:v2)
+run_cli_failure("File authentication failed\n" open-file --in "${aad_text_sealed}" --out "${aad_missing_opened}" --key-file "${generated_key_file}")
+
+run_cli_no_stdout(seal-file --in "${plain_file}" --out "${aad_hex_sealed}" --key-hex "${file_key}" --aad-hex 7265636f72643a7631)
+run_cli_no_stdout(open-file --in "${aad_hex_sealed}" --out "${aad_hex_opened}" --key-hex "${file_key}" --aad-hex 7265636f72643a7631)
+file(READ "${aad_hex_opened}" aad_hex_opened_text)
+if(NOT aad_hex_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "AAD hex open did not recover plaintext. got=[${aad_hex_opened_text}]")
+endif()
+
+run_cli_failure("hex input must contain an even number of characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/invalid-aad-hex.skf" --key-hex "${file_key}" --aad-hex abc)

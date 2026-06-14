@@ -134,15 +134,23 @@ securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex
 securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex
+securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex --aad-text record:v1
+securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex --aad-text record:v1
+securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
+securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
 ```
 
 The CLI file commands use the existing `SKF1` file format. `--key-hex` must be
 a strict 64-character hex string for a 32-byte key. `keygen` writes a fresh key
 as 64 lowercase hex characters plus a trailing newline and refuses to overwrite
 an existing output file. `--key-file` reads the same text format, trimming
-leading and trailing ASCII whitespace before strict validation. The CLI does
-not expose password prompts, password KDFs, environment-variable key loading,
-AAD, or stdin/stdout streaming in this slice.
+leading and trailing ASCII whitespace before strict validation. File commands
+can also take optional AAD with either `--aad-text` or `--aad-hex`; the same AAD
+bytes must be provided to `open-file`, and AAD is authenticated but not stored in
+the `SKF1` file. `--aad-text` uses the argument bytes directly. `--aad-hex`
+strictly decodes hex to bytes. The CLI does not expose password prompts,
+password KDFs, environment-variable key loading, or stdin/stdout streaming in
+this slice.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,

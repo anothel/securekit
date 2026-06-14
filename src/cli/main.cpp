@@ -26,10 +26,14 @@ void print_help()
 	          << "  securekit base64url-encode --text <text>\n"
 	          << "  securekit base64url-decode --text <base64url>\n"
 	          << "  securekit keygen --out <path>\n"
-	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex>\n"
-	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex>\n"
-	          << "  securekit seal-file --in <path> --out <path> --key-file <path>\n"
-	          << "  securekit open-file --in <path> --out <path> --key-file <path>\n"
+	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit seal-file --in <path> --out <path> --key-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit open-file --in <path> --out <path> --key-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit help\n";
 }
 
@@ -148,6 +152,34 @@ securekit::key256 key_from_file(const std::filesystem::path &path)
 	return key_from_hex(trim_ascii_whitespace(text));
 }
 
+securekit::key256 key_from_option(std::string_view option, std::string_view value)
+{
+	if (option == "--key-hex")
+	{
+		return key_from_hex(value);
+	}
+	if (option == "--key-file")
+	{
+		return key_from_file(std::filesystem::path(value));
+	}
+
+	throw std::runtime_error("unsupported command");
+}
+
+securekit::bytes aad_from_option(std::string_view option, std::string_view value)
+{
+	if (option == "--aad-text")
+	{
+		return bytes_from_text(value);
+	}
+	if (option == "--aad-hex")
+	{
+		return securekit::hex_decode(value);
+	}
+
+	throw std::runtime_error("unsupported command");
+}
+
 void write_generated_key(const std::filesystem::path &path)
 {
 	if (std::filesystem::exists(path))
@@ -246,31 +278,20 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		if (argc == 8 && is_arg(argv[1], "seal-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
-		    is_arg(argv[6], "--key-hex"))
+		if ((argc == 8 || argc == 10) && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")) &&
+		    is_arg(argv[2], "--in") && is_arg(argv[4], "--out"))
 		{
-			securekit::seal_file(argv[3], argv[5], key_from_hex(argv[7]));
-			return 0;
-		}
+			const securekit::key256 key = key_from_option(argv[6], argv[7]);
+			const securekit::bytes aad = argc == 10 ? aad_from_option(argv[8], argv[9]) : securekit::bytes{};
 
-		if (argc == 8 && is_arg(argv[1], "open-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
-		    is_arg(argv[6], "--key-hex"))
-		{
-			securekit::open_file(argv[3], argv[5], key_from_hex(argv[7]));
-			return 0;
-		}
-
-		if (argc == 8 && is_arg(argv[1], "seal-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
-		    is_arg(argv[6], "--key-file"))
-		{
-			securekit::seal_file(argv[3], argv[5], key_from_file(argv[7]));
-			return 0;
-		}
-
-		if (argc == 8 && is_arg(argv[1], "open-file") && is_arg(argv[2], "--in") && is_arg(argv[4], "--out") &&
-		    is_arg(argv[6], "--key-file"))
-		{
-			securekit::open_file(argv[3], argv[5], key_from_file(argv[7]));
+			if (is_arg(argv[1], "seal-file"))
+			{
+				securekit::seal_file(argv[3], argv[5], key, aad);
+			}
+			else
+			{
+				securekit::open_file(argv[3], argv[5], key, aad);
+			}
 			return 0;
 		}
 
