@@ -45,6 +45,20 @@ else()
   target_compile_options(securekit PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+add_executable(securekit_cli
+  src/cli/main.cpp)
+
+set_target_properties(securekit_cli PROPERTIES OUTPUT_NAME securekit)
+
+target_link_libraries(securekit_cli PRIVATE securekit::securekit)
+target_compile_features(securekit_cli PRIVATE cxx_std_20)
+
+if(MSVC)
+  target_compile_options(securekit_cli PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(securekit_cli PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 option(SECUREKIT_BUILD_TESTS "Build SecureKit tests" ${BUILD_TESTING})
 
 if(SECUREKIT_BUILD_TESTS)
@@ -98,6 +112,15 @@ if(SECUREKIT_BUILD_TESTS)
   gtest_discover_tests(securekit_tests
     DISCOVERY_MODE PRE_TEST
     PROPERTIES ${_securekit_test_properties})
+
+  add_test(
+    NAME Cli.UtilityCommands
+    COMMAND ${CMAKE_COMMAND}
+      -DSECUREKIT_CLI=$<TARGET_FILE:securekit_cli>
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/check_cli.cmake)
+  if(_securekit_test_properties)
+    set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})
+  endif()
 endif()
 
 install(
@@ -106,6 +129,10 @@ install(
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(
+  TARGETS securekit_cli
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(
   DIRECTORY include/securekit

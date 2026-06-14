@@ -117,6 +117,21 @@ cmake -S . -B build-install-only -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
 cmake --install build --prefix /path/to/prefix --config Release
 ```
 
+## CLI
+
+When installed, SecureKit also provides a small `securekit` utility executable:
+
+```sh
+securekit token 32
+securekit sha256 --text abc
+securekit sha256 --file path/to/file.bin
+securekit hex-encode --text abc
+securekit base64url-encode --text abc
+```
+
+The first CLI slice is utility-only. It does not expose file sealing, password,
+or key-management commands.
+
 ## Consume With CMake
 
 From an installed package:
