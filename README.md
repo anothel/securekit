@@ -148,9 +148,11 @@ leading and trailing ASCII whitespace before strict validation. File commands
 can also take optional AAD with either `--aad-text` or `--aad-hex`; the same AAD
 bytes must be provided to `open-file`, and AAD is authenticated but not stored in
 the `SKF1` file. `--aad-text` uses the argument bytes directly. `--aad-hex`
-strictly decodes hex to bytes. The CLI does not expose password prompts,
-password KDFs, environment-variable key loading, or stdin/stdout streaming in
-this slice.
+strictly decodes hex to bytes. File command options may be supplied in any
+order, but each command must provide exactly one input path, one output path, and
+one key source. At most one AAD option may be provided. The CLI does not expose
+password prompts, password KDFs, environment-variable key loading, or
+stdin/stdout streaming in this slice.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,

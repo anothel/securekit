@@ -180,6 +180,77 @@ securekit::bytes aad_from_option(std::string_view option, std::string_view value
 	throw std::runtime_error("unsupported command");
 }
 
+struct file_command_options
+{
+	std::filesystem::path input;
+	std::filesystem::path output;
+	securekit::key256 key{};
+	securekit::bytes aad;
+	bool has_input = false;
+	bool has_output = false;
+	bool has_key = false;
+	bool has_aad = false;
+};
+
+void reject_duplicate(bool already_set)
+{
+	if (already_set)
+	{
+		throw std::runtime_error("unsupported command");
+	}
+}
+
+file_command_options parse_file_command_options(int argc, char **argv)
+{
+	if (argc < 8 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error("unsupported command");
+	}
+
+	file_command_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--in")
+		{
+			reject_duplicate(options.has_input);
+			options.input = std::filesystem::path(value);
+			options.has_input = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else if (option == "--key-hex" || option == "--key-file")
+		{
+			reject_duplicate(options.has_key);
+			options.key = key_from_option(option, value);
+			options.has_key = true;
+		}
+		else if (option == "--aad-text" || option == "--aad-hex")
+		{
+			reject_duplicate(options.has_aad);
+			options.aad = aad_from_option(option, value);
+			options.has_aad = true;
+		}
+		else
+		{
+			throw std::runtime_error("unsupported command");
+		}
+	}
+
+	if (!options.has_input || !options.has_output || !options.has_key)
+	{
+		throw std::runtime_error("unsupported command");
+	}
+
+	return options;
+}
+
 void write_generated_key(const std::filesystem::path &path)
 {
 	if (std::filesystem::exists(path))
@@ -278,19 +349,17 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		if ((argc == 8 || argc == 10) && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")) &&
-		    is_arg(argv[2], "--in") && is_arg(argv[4], "--out"))
+		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))
 		{
-			const securekit::key256 key = key_from_option(argv[6], argv[7]);
-			const securekit::bytes aad = argc == 10 ? aad_from_option(argv[8], argv[9]) : securekit::bytes{};
+			const file_command_options options = parse_file_command_options(argc, argv);
 
 			if (is_arg(argv[1], "seal-file"))
 			{
-				securekit::seal_file(argv[3], argv[5], key, aad);
+				securekit::seal_file(options.input, options.output, options.key, options.aad);
 			}
 			else
 			{
-				securekit::open_file(argv[3], argv[5], key, aad);
+				securekit::open_file(options.input, options.output, options.key, options.aad);
 			}
 			return 0;
 		}
