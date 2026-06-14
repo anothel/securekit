@@ -134,6 +134,13 @@ securekit base64url-decode --text YWJj
 The first CLI slice is utility-only. It does not expose file sealing, password,
 or key-management commands.
 
+Successful CLI commands write only the result plus one trailing newline to
+stdout. Usage, parse, file, or decoding failures return a non-zero exit code,
+write a short message to stderr, and do not write stdout. Text arguments are
+treated as raw bytes in the active process encoding; the CLI does not normalize
+or transcode Unicode. Decode commands use the same strict validation as the C++
+APIs.
+
 ## Consume With CMake
 
 From an installed package:
