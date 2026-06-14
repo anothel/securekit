@@ -48,6 +48,14 @@ int main()
 	const auto aad = ascii_bytes("SecureKit consumer sample aad");
 	const auto key = securekit::generate_key();
 
+	const auto from_hex = securekit::hex_decode(securekit::hex_encode(plaintext));
+	const auto from_base64 = securekit::base64_decode(securekit::base64_encode(from_hex));
+	const auto from_base64url = securekit::base64url_decode(securekit::base64url_encode(from_base64));
+	const auto digest = securekit::sha256(ascii_bytes("abc"));
+	const auto hmac = securekit::hmac_sha256(ascii_bytes("key"), ascii_bytes("The quick brown fox jumps over the lazy dog"));
+	const auto hkdf = securekit::hkdf_sha256(ascii_bytes("ikm"), ascii_bytes("salt"), ascii_bytes("info"), 16);
+	const auto random = securekit::random_bytes(8);
+
 	const auto packet = securekit::encrypt(plaintext, key, aad);
 	const auto roundtrip = securekit::decrypt(packet, key, aad);
 	const std::string token = securekit::random_token(32);
@@ -68,5 +76,12 @@ int main()
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
 
-	return roundtrip == plaintext && opened == plaintext && !token.empty() ? 0 : 1;
+	const bool utility_api_ok = from_base64url == plaintext &&
+	                            securekit::hex_encode(digest) ==
+	                                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" &&
+	                            securekit::hex_encode(hmac) ==
+	                                "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8" &&
+	                            hkdf.size() == 16 && random.size() == 8 && securekit::constant_time_equal(digest, digest);
+
+	return utility_api_ok && roundtrip == plaintext && opened == plaintext && !token.empty() ? 0 : 1;
 }

@@ -48,17 +48,20 @@ endif()
 option(SECUREKIT_BUILD_TESTS "Build SecureKit tests" ${BUILD_TESTING})
 
 if(SECUREKIT_BUILD_TESTS)
-  include(FetchContent)
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.14.0)
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-  set(_securekit_build_shared_libs "${BUILD_SHARED_LIBS}")
-  set(BUILD_SHARED_LIBS OFF)
-  FetchContent_MakeAvailable(googletest)
-  set(BUILD_SHARED_LIBS "${_securekit_build_shared_libs}")
+  find_package(GTest CONFIG QUIET)
+  if(NOT GTest_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG v1.14.0)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(_securekit_build_shared_libs "${BUILD_SHARED_LIBS}")
+    set(BUILD_SHARED_LIBS OFF)
+    FetchContent_MakeAvailable(googletest)
+    set(BUILD_SHARED_LIBS "${_securekit_build_shared_libs}")
+  endif()
 
   add_executable(securekit_tests
     tests/aead_test.cpp

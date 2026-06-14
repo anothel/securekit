@@ -88,8 +88,9 @@ cmake -S . -B build-openssl `
 
 ## Test Dependency
 
-When `SECUREKIT_BUILD_TESTS=ON`, CMake uses `FetchContent` to get GoogleTest
-v1.14.0. The first configure for a fresh build tree may need network access.
+When `SECUREKIT_BUILD_TESTS=ON`, CMake first looks for an installed `GTest`
+package. If none is found, it uses `FetchContent` to get GoogleTest v1.14.0.
+The first configure for a fresh fallback build tree may need network access.
 After that, CMake reuses the downloaded source under the build tree.
 
 GitHub Actions caches `build/_deps` for jobs that build tests, so successful CI
