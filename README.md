@@ -126,7 +126,9 @@ securekit token 32
 securekit sha256 --text abc
 securekit sha256 --file path/to/file.bin
 securekit hex-encode --text abc
+securekit hex-decode --text 616263
 securekit base64url-encode --text abc
+securekit base64url-decode --text YWJj
 ```
 
 The first CLI slice is utility-only. It does not expose file sealing, password,

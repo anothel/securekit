@@ -22,7 +22,9 @@ void print_help()
 	          << "  securekit sha256 --text <text>\n"
 	          << "  securekit sha256 --file <path>\n"
 	          << "  securekit hex-encode --text <text>\n"
+	          << "  securekit hex-decode --text <hex>\n"
 	          << "  securekit base64url-encode --text <text>\n"
+	          << "  securekit base64url-decode --text <base64url>\n"
 	          << "  securekit help\n";
 }
 
@@ -41,6 +43,15 @@ securekit::bytes bytes_from_text(std::string_view text)
 		bytes.push_back(static_cast<std::byte>(ch));
 	}
 	return bytes;
+}
+
+void write_bytes(const securekit::bytes &bytes)
+{
+	for (const std::byte byte : bytes)
+	{
+		std::cout.put(static_cast<char>(std::to_integer<unsigned char>(byte)));
+	}
+	std::cout << '\n';
 }
 
 bool is_arg(char *arg, std::string_view expected)
@@ -125,9 +136,21 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc == 4 && is_arg(argv[1], "hex-decode") && is_arg(argv[2], "--text"))
+		{
+			write_bytes(securekit::hex_decode(argv[3]));
+			return 0;
+		}
+
 		if (argc == 4 && is_arg(argv[1], "base64url-encode") && is_arg(argv[2], "--text"))
 		{
 			std::cout << securekit::base64url_encode(bytes_from_text(argv[3])) << '\n';
+			return 0;
+		}
+
+		if (argc == 4 && is_arg(argv[1], "base64url-decode") && is_arg(argv[2], "--text"))
+		{
+			write_bytes(securekit::base64url_decode(argv[3]));
 			return 0;
 		}
 
