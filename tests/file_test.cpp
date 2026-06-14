@@ -105,6 +105,20 @@ void expect_authentication_failed(auto &&func)
 	expect_error(std::forward<decltype(func)>(func), securekit::error_code::authentication_failed);
 }
 
+void expect_generic_authentication_failure(auto &&func)
+{
+	try
+	{
+		std::forward<decltype(func)>(func)();
+		FAIL() << "expected securekit::error";
+	}
+	catch (const securekit::error &ex)
+	{
+		EXPECT_EQ(ex.code(), securekit::error_code::authentication_failed);
+		EXPECT_STREQ(ex.what(), "File authentication failed");
+	}
+}
+
 void expect_invalid_packet(auto &&func)
 {
 	expect_error(std::forward<decltype(func)>(func), securekit::error_code::invalid_packet);
@@ -348,6 +362,45 @@ TEST(File, RejectsWrongKeyAndAad)
 
 	expect_authentication_failed([&] { securekit::open_file(sealed_path, opened_path, wrong_key, aad); });
 	expect_authentication_failed([&] { securekit::open_file(sealed_path, opened_path, key, bytes_from_text("wrong aad")); });
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, AuthenticationFailuresUseGenericMessage)
+{
+	const auto plain_path = test_path("plain-generic-auth.bin");
+	const auto sealed_path = test_path("sealed-generic-auth.skf");
+	const auto opened_path = test_path("opened-generic-auth.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::key256 key = key_from_seed(0x42);
+	const securekit::key256 wrong_key = key_from_seed(0x43);
+	const securekit::bytes aad = bytes_from_text("aad");
+	write_file(plain_path, bytes_from_text("secret"));
+	securekit::seal_file(plain_path, sealed_path, key, aad);
+
+	const securekit::bytes original = read_file(sealed_path);
+	const std::size_t ciphertext_offset = 50u + 9u;
+	const std::size_t tag_offset = original.size() - 16u;
+
+	securekit::bytes bad_ciphertext = original;
+	bad_ciphertext[ciphertext_offset] ^= std::byte{0x01};
+
+	securekit::bytes bad_tag = original;
+	bad_tag[tag_offset] ^= std::byte{0x01};
+
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, wrong_key, aad); });
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, key, bytes_from_text("wrong aad")); });
+
+	write_file(sealed_path, bad_ciphertext);
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, key, aad); });
+
+	write_file(sealed_path, bad_tag);
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, key, aad); });
 
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
