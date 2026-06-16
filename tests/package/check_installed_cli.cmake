@@ -59,6 +59,8 @@ file(MAKE_DIRECTORY "${SECUREKIT_CLI_WORK_DIR}")
 set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n" sha256 --text abc)
+run_cli(0 "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843\n" hmac-sha256 --key-hex 4a656665 --text "what do ya want for nothing?")
+run_cli(0 "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865\n" hkdf-sha256 --key-hex 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --salt-hex 000102030405060708090a0b0c --info-hex f0f1f2f3f4f5f6f7f8f9 --out-size 42)
 run_cli(0 "616263\n" hex-encode --text abc)
 run_cli(0 "abc\n" hex-decode --text 616263)
 

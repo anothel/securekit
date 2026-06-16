@@ -21,6 +21,12 @@ void print_help()
 	          << "  securekit token <byte-size>\n"
 	          << "  securekit sha256 --text <text>\n"
 	          << "  securekit sha256 --file <path>\n"
+	          << "  securekit hmac-sha256 --key-hex <hex> --text <text>\n"
+	          << "  securekit hmac-sha256 --key-hex <hex> --file <path>\n"
+	          << "  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-hex <hex> --out-size "
+	             "<byte-size>\n"
+	          << "  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-text <text> --out-size "
+	             "<byte-size>\n"
 	          << "  securekit hex-encode --text <text>\n"
 	          << "  securekit hex-decode --text <hex>\n"
 	          << "  securekit base64url-encode --text <text>\n"
@@ -45,6 +51,19 @@ std::string_view token_usage()
 std::string_view sha256_usage()
 {
 	return "Usage:\n  securekit sha256 --text <text>\n  securekit sha256 --file <path>";
+}
+
+std::string_view hmac_sha256_usage()
+{
+	return "Usage:\n  securekit hmac-sha256 --key-hex <hex> --text <text>\n  securekit hmac-sha256 --key-hex "
+	       "<hex> --file <path>";
+}
+
+std::string_view hkdf_sha256_usage()
+{
+	return "Usage:\n  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-hex <hex> --out-size "
+	       "<byte-size>\n  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-text <text> --out-size "
+	       "<byte-size>";
 }
 
 std::string_view hex_encode_usage()
@@ -93,6 +112,16 @@ bool print_command_help(std::string_view command)
 	if (command == "sha256")
 	{
 		std::cout << sha256_usage() << '\n';
+		return true;
+	}
+	if (command == "hmac-sha256")
+	{
+		std::cout << hmac_sha256_usage() << '\n';
+		return true;
+	}
+	if (command == "hkdf-sha256")
+	{
+		std::cout << hkdf_sha256_usage() << '\n';
 		return true;
 	}
 	if (command == "hex-encode")
@@ -444,6 +473,46 @@ int main(int argc, char **argv)
 		if (argc >= 2 && is_arg(argv[1], "sha256"))
 		{
 			return fail(sha256_usage());
+		}
+
+		if (argc == 6 && is_arg(argv[1], "hmac-sha256") && is_arg(argv[2], "--key-hex") &&
+		    is_arg(argv[4], "--text"))
+		{
+			std::cout << securekit::hex_encode(
+			                 securekit::hmac_sha256(securekit::hex_decode(argv[3]), bytes_from_text(argv[5])))
+			          << '\n';
+			return 0;
+		}
+
+		if (argc == 6 && is_arg(argv[1], "hmac-sha256") && is_arg(argv[2], "--key-hex") &&
+		    is_arg(argv[4], "--file"))
+		{
+			std::cout
+			    << securekit::hex_encode(securekit::hmac_sha256(securekit::hex_decode(argv[3]), read_file(argv[5])))
+			    << '\n';
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "hmac-sha256"))
+		{
+			return fail(hmac_sha256_usage());
+		}
+
+		if (argc == 10 && is_arg(argv[1], "hkdf-sha256") && is_arg(argv[2], "--key-hex") &&
+		    is_arg(argv[4], "--salt-hex") && is_arg(argv[8], "--out-size") &&
+		    (is_arg(argv[6], "--info-hex") || is_arg(argv[6], "--info-text")))
+		{
+			const securekit::bytes info = is_arg(argv[6], "--info-hex") ? securekit::hex_decode(argv[7])
+			                                                            : bytes_from_text(argv[7]);
+			std::cout << securekit::hex_encode(securekit::hkdf_sha256(
+			                 securekit::hex_decode(argv[3]), securekit::hex_decode(argv[5]), info, parse_size(argv[9])))
+			          << '\n';
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "hkdf-sha256"))
+		{
+			return fail(hkdf_sha256_usage());
 		}
 
 		if (argc == 4 && is_arg(argv[1], "hex-encode") && is_arg(argv[2], "--text"))

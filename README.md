@@ -125,6 +125,10 @@ When installed, SecureKit also provides a small `securekit` utility executable:
 securekit token 32
 securekit sha256 --text abc
 securekit sha256 --file path/to/file.bin
+securekit hmac-sha256 --key-hex 4a656665 --text "what do ya want for nothing?"
+securekit hmac-sha256 --key-hex 4a656665 --file path/to/file.bin
+securekit hkdf-sha256 --key-hex 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --salt-hex 000102030405060708090a0b0c --info-hex f0f1f2f3f4f5f6f7f8f9 --out-size 42
+securekit hkdf-sha256 --key-hex 4a656665 --salt-hex 73616c74 --info-text context --out-size 32
 securekit hex-encode --text abc
 securekit hex-decode --text 616263
 securekit base64url-encode --text abc
@@ -154,6 +158,10 @@ order, but each command must provide exactly one input path, one output path, an
 one key source. At most one AAD option may be provided. The CLI does not expose
 password prompts, password KDFs, environment-variable key loading, or
 stdin/stdout streaming in this slice.
+
+`hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
+`hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
+strict hex or argument bytes, and writes the derived bytes as lowercase hex.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,

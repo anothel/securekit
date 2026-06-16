@@ -55,6 +55,10 @@ set(expected_help [=[Usage:
   securekit token <byte-size>
   securekit sha256 --text <text>
   securekit sha256 --file <path>
+  securekit hmac-sha256 --key-hex <hex> --text <text>
+  securekit hmac-sha256 --key-hex <hex> --file <path>
+  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-hex <hex> --out-size <byte-size>
+  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-text <text> --out-size <byte-size>
   securekit hex-encode --text <text>
   securekit hex-decode --text <hex>
   securekit base64url-encode --text <text>
@@ -69,6 +73,8 @@ set(expected_help [=[Usage:
 
 set(expected_token_help "Usage:\n  securekit token <byte-size>\n")
 set(expected_sha256_help "Usage:\n  securekit sha256 --text <text>\n  securekit sha256 --file <path>\n")
+set(expected_hmac_sha256_help "Usage:\n  securekit hmac-sha256 --key-hex <hex> --text <text>\n  securekit hmac-sha256 --key-hex <hex> --file <path>\n")
+set(expected_hkdf_sha256_help "Usage:\n  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-hex <hex> --out-size <byte-size>\n  securekit hkdf-sha256 --key-hex <hex> --salt-hex <hex> --info-text <text> --out-size <byte-size>\n")
 set(expected_hex_encode_help "Usage:\n  securekit hex-encode --text <text>\n")
 set(expected_hex_decode_help "Usage:\n  securekit hex-decode --text <hex>\n")
 set(expected_base64url_encode_help "Usage:\n  securekit base64url-encode --text <text>\n")
@@ -82,6 +88,8 @@ run_cli(0 "${expected_help}" help)
 run_cli(0 "${expected_help}" --help)
 run_cli(0 "${expected_token_help}" help token)
 run_cli(0 "${expected_sha256_help}" help sha256)
+run_cli(0 "${expected_hmac_sha256_help}" help hmac-sha256)
+run_cli(0 "${expected_hkdf_sha256_help}" help hkdf-sha256)
 run_cli(0 "${expected_hex_encode_help}" help hex-encode)
 run_cli(0 "${expected_hex_decode_help}" help hex-decode)
 run_cli(0 "${expected_base64url_encode_help}" help base64url-encode)
@@ -91,6 +99,8 @@ run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "${expected_open_file_help}" help open-file)
 run_cli_failure("unsupported command\n" help unknown-command)
 run_cli(0 "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n" sha256 --text abc)
+run_cli(0 "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843\n" hmac-sha256 --key-hex 4a656665 --text "what do ya want for nothing?")
+run_cli(0 "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865\n" hkdf-sha256 --key-hex 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --salt-hex 000102030405060708090a0b0c --info-hex f0f1f2f3f4f5f6f7f8f9 --out-size 42)
 run_cli(0 "616263\n" hex-encode --text abc)
 run_cli(0 "abc\n" hex-decode --text 616263)
 run_cli(0 "YWJj\n" base64url-encode --text abc)
@@ -99,6 +109,7 @@ run_cli(0 "abc\n" base64url-decode --text YWJj)
 set(fixture "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-fixture.txt")
 file(WRITE "${fixture}" "abc")
 run_cli(0 "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n" sha256 --file "${fixture}")
+run_cli(0 "7cf4ec4f741f51cb0d887013c46251d6f4175643c4f422906a1aaec688cc13e8\n" hmac-sha256 --key-hex 4a656665 --file "${fixture}")
 
 execute_process(
   COMMAND "${SECUREKIT_CLI}" token 16
@@ -120,6 +131,8 @@ run_cli_failure("byte-size must be a positive decimal integer\n" token 16x)
 run_cli_failure("unsupported command\n" unknown-command)
 run_cli_failure("${expected_token_help}" token)
 run_cli_failure("${expected_sha256_help}" sha256 --bad-flag abc)
+run_cli_failure("${expected_hmac_sha256_help}" hmac-sha256 --bad-flag abc)
+run_cli_failure("byte-size must be a positive decimal integer\n" hkdf-sha256 --key-hex 0b --salt-hex 00 --info-hex 00 --out-size 0)
 run_cli_failure("${expected_hex_encode_help}" hex-encode)
 run_cli_failure("${expected_hex_decode_help}" hex-decode)
 run_cli_failure("${expected_base64url_encode_help}" base64url-encode)
