@@ -16,7 +16,8 @@ The current identity is:
 - Practical C++20 utility library.
 - OpenSSL-backed crypto, not custom crypto.
 - Free-function API first.
-- Object-oriented APIs may come later if real call sites need them.
+- Distinct packet streaming objects where incremental AEAD is useful.
+- Additional object-oriented APIs may come later if real call sites need them.
 
 ## Features
 
@@ -30,6 +31,7 @@ The current identity is:
 - Cryptographically secure random bytes.
 - URL-safe random token generation.
 - AES-256-GCM packet encryption and decryption.
+- Move-only packet streaming encryptor and decryptor for `SKT1`.
 - AES-256-GCM key wrapping helpers.
 - Chunked file sealing and opening.
 
@@ -37,7 +39,7 @@ The current identity is:
 
 - TLS or networking. Use TLS libraries for that.
 - Password-based encryption.
-- Streaming object APIs in v1.
+- Generic streaming object families beyond the `SKT1` packet slice.
 - Custom string classes or allocators.
 - User-selected algorithms or caller-selected nonces.
 - Text encoding or string-to-byte conversion helpers.
@@ -259,6 +261,30 @@ int main()
 `bytes_from_text` is example-side code. SecureKit accepts byte spans and does not
 define text encoding conversion helpers in v1.
 
+## Streaming Packet Example
+
+```cpp
+securekit::packet_encryptor encryptor(key, aad);
+securekit::bytes packet = encryptor.begin();
+securekit::bytes chunk = encryptor.update(plaintext);
+securekit::bytes tag = encryptor.finalize();
+packet.insert(packet.end(), chunk.begin(), chunk.end());
+packet.insert(packet.end(), tag.begin(), tag.end());
+
+securekit::packet_decryptor decryptor(key, aad);
+std::span<const std::byte> packet_span(packet);
+decryptor.begin(packet_span.first(17));
+securekit::bytes roundtrip = decryptor.update(packet_span.subspan(17, plaintext.size()));
+securekit::bytes trailing = decryptor.finalize(packet_span.last(16));
+roundtrip.insert(roundtrip.end(), trailing.begin(), trailing.end());
+```
+
+`packet_encryptor::begin()` returns the serialized `SKT1` packet prefix
+(`header + nonce`). `packet_decryptor::begin()` expects that same 17-byte
+prefix. `packet_decryptor::update()` returns decrypted bytes before tag
+verification completes, so callers must treat those bytes as untrusted until
+`finalize()` succeeds.
+
 ## Public API
 
 ```cpp
@@ -298,6 +324,30 @@ securekit::bytes securekit::decrypt(
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
 
+namespace securekit {
+
+class packet_encryptor {
+public:
+	explicit packet_encryptor(const key256 &key, std::span<const std::byte> aad = {});
+	packet_encryptor(packet_encryptor &&) noexcept;
+	packet_encryptor &operator=(packet_encryptor &&) noexcept;
+	bytes begin();
+	bytes update(std::span<const std::byte> plaintext);
+	bytes finalize();
+};
+
+class packet_decryptor {
+public:
+	explicit packet_decryptor(const key256 &key, std::span<const std::byte> aad = {});
+	packet_decryptor(packet_decryptor &&) noexcept;
+	packet_decryptor &operator=(packet_decryptor &&) noexcept;
+	void begin(std::span<const std::byte> packet_prefix);
+	bytes update(std::span<const std::byte> ciphertext);
+	bytes finalize(std::span<const std::byte> tag);
+};
+
+} // namespace securekit
+
 securekit::bytes securekit::wrap_key(
 	const securekit::key256 &key_to_wrap,
 	const securekit::key256 &wrapping_key,
@@ -323,14 +373,15 @@ void securekit::open_file(
 
 `securekit::error` reports library failures with `securekit::error_code`.
 
-The v1 API stays free-function oriented. Hex and Base64 decoders are strict
+The base API stays free-function oriented. Hex and Base64 decoders are strict
 only: malformed or non-canonical input raises `securekit::error`. If permissive
 decoding or non-throwing result APIs are needed later, they should be added as
 explicitly named variants instead of changing these functions.
 
-The v1 AEAD API intentionally keeps the general `encrypt` and `decrypt` names.
-Future file, streaming, or key-wrapping APIs should use distinct names instead
-of overloading these packet functions.
+The packet API intentionally keeps the general `encrypt` and `decrypt` names.
+Incremental packet processing uses distinct `packet_encryptor` and
+`packet_decryptor` names instead of overloading those free functions. Both
+streaming classes are move-only and one-shot.
 
 `securekit::wrap_key` uses the same `SKT1` packet format as `encrypt` to wrap a
 single 32-byte `securekit::key256` with another 32-byte wrapping key. It accepts
@@ -356,6 +407,24 @@ SecureKit AES-GCM encryption returns one serialized packet:
 The caller supplies a 32-byte key. SecureKit generates the packet nonce internally.
 The packet header and caller-provided AAD are authenticated. AAD is not stored
 in the packet. Decryption requires the same AAD used during encryption.
+
+## Packet Streaming
+
+`packet_encryptor` and `packet_decryptor` use the same `SKT1` wire format as the
+free functions, but split it into:
+
+- `begin()` / `begin(packet_prefix)` for the 17-byte packet prefix.
+- `update()` for ciphertext or plaintext chunks.
+- `finalize()` for the 16-byte authentication tag.
+
+The classes are move-only and one-shot. Construction fixes the key and AAD for
+the whole packet. Invalid sequencing raises
+`securekit::error_code::invalid_input`. Malformed prefixes or malformed tag
+sizes raise `securekit::error_code::invalid_packet`.
+
+`packet_decryptor::update()` yields plaintext before authentication is complete.
+Callers must not release, persist, or trust decrypted bytes until
+`finalize(tag)` returns successfully.
 
 ## SKF1 File Format
 
@@ -549,4 +618,4 @@ Later:
 
 - Object-oriented APIs if repeated call sites justify them.
 - Password-based encryption with a deliberate KDF design.
-- Streaming APIs if repeated call sites need incremental processing.
+- Additional streaming APIs if repeated call sites need other incremental formats.

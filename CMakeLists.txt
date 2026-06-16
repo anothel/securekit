@@ -21,6 +21,7 @@ add_library(securekit
   src/hash.cpp
   src/hex.cpp
   src/key_wrap.cpp
+  src/packet_stream.cpp
   src/random.cpp)
 
 add_library(securekit::securekit ALIAS securekit)
@@ -86,6 +87,7 @@ if(SECUREKIT_BUILD_TESTS)
     tests/hash_test.cpp
     tests/hex_test.cpp
     tests/key_wrap_test.cpp
+    tests/packet_stream_test.cpp
     tests/public_headers_test.cpp
     tests/random_test.cpp)
 

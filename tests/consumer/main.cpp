@@ -10,6 +10,9 @@
 namespace
 {
 
+constexpr std::size_t kPacketPrefixSize = 17;
+constexpr std::size_t kPacketTagSize = 16;
+
 securekit::bytes ascii_bytes(std::string_view text)
 {
 	securekit::bytes result;
@@ -58,6 +61,22 @@ int main()
 
 	const auto packet = securekit::encrypt(plaintext, key, aad);
 	const auto roundtrip = securekit::decrypt(packet, key, aad);
+	securekit::packet_encryptor packet_encryptor(key, aad);
+	auto streaming_packet = packet_encryptor.begin();
+	const auto stream_part1 = packet_encryptor.update(std::span<const std::byte>(plaintext).first(10));
+	const auto stream_part2 = packet_encryptor.update(std::span<const std::byte>(plaintext).subspan(10));
+	const auto stream_tag = packet_encryptor.finalize();
+	streaming_packet.insert(streaming_packet.end(), stream_part1.begin(), stream_part1.end());
+	streaming_packet.insert(streaming_packet.end(), stream_part2.begin(), stream_part2.end());
+	streaming_packet.insert(streaming_packet.end(), stream_tag.begin(), stream_tag.end());
+	const auto streaming_roundtrip = securekit::decrypt(streaming_packet, key, aad);
+
+	securekit::packet_decryptor packet_decryptor(key, aad);
+	const std::span<const std::byte> packet_span(packet);
+	packet_decryptor.begin(packet_span.first(kPacketPrefixSize));
+	const auto streaming_plaintext = packet_decryptor.update(packet_span.subspan(kPacketPrefixSize, plaintext.size()));
+	const auto streaming_tail = packet_decryptor.finalize(packet_span.last(kPacketTagSize));
+
 	const auto wrapped_key = securekit::wrap_key(key, key, aad);
 	const auto unwrapped_key = securekit::unwrap_key(wrapped_key, key, aad);
 	const std::string token = securekit::random_token(32);
@@ -85,5 +104,9 @@ int main()
 	                                "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8" &&
 	                            hkdf.size() == 16 && random.size() == 8 && securekit::constant_time_equal(digest, digest);
 
-	return utility_api_ok && roundtrip == plaintext && unwrapped_key == key && opened == plaintext && !token.empty() ? 0 : 1;
+	return utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
+	               streaming_plaintext == plaintext && streaming_tail.empty() && unwrapped_key == key &&
+	               opened == plaintext && !token.empty()
+	           ? 0
+	           : 1;
 }
