@@ -64,8 +64,8 @@ set(expected_help [=[Usage:
   securekit base64url-encode --text <text>
   securekit base64url-decode --text <base64url>
   securekit keygen --out <path>
-  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>
-  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>
+  securekit wrap-key (--key-hex <64-hex>|--key-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]
+  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]
   securekit seal-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit open-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit seal-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
@@ -82,8 +82,8 @@ set(expected_hex_decode_help "Usage:\n  securekit hex-decode --text <hex>\n")
 set(expected_base64url_encode_help "Usage:\n  securekit base64url-encode --text <text>\n")
 set(expected_base64url_decode_help "Usage:\n  securekit base64url-decode --text <base64url>\n")
 set(expected_keygen_help "Usage:\n  securekit keygen --out <path>\n")
-set(expected_wrap_key_help "Usage:\n  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>\n")
-set(expected_unwrap_key_help "Usage:\n  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>\n")
+set(expected_wrap_key_help "Usage:\n  securekit wrap-key (--key-hex <64-hex>|--key-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n")
+set(expected_unwrap_key_help "Usage:\n  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n")
 set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 set(expected_open_file_help "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 
@@ -104,6 +104,7 @@ run_cli(0 "${expected_unwrap_key_help}" help unwrap-key)
 run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "${expected_open_file_help}" help open-file)
 run_cli_failure("unsupported command\n" help unknown-command)
+
 run_cli(0 "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n" sha256 --text abc)
 run_cli(0 "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843\n" hmac-sha256 --key-hex 4a656665 --text "what do ya want for nothing?")
 run_cli(0 "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865\n" hkdf-sha256 --key-hex 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --salt-hex 000102030405060708090a0b0c --info-hex f0f1f2f3f4f5f6f7f8f9 --out-size 42)
@@ -154,9 +155,17 @@ set(file_key "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 set(key_to_wrap "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f")
 set(wrapping_key "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f")
 set(wrong_file_key "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+set(key_to_wrap_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-to-wrap.hex")
+set(wrapping_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-wrapping-key.hex")
+set(wrapped_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-wrapped-key.skt")
+set(unwrapped_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-unwrapped-key.hex")
+set(wrapped_key_reordered_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-wrapped-key-reordered.skt")
+set(unwrapped_key_reordered_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-unwrapped-key-reordered.hex")
 set(plain_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.txt")
 set(sealed_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.skf")
 set(opened_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-opened.txt")
+set(unwrapped_key_sealed_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-unwrapped-key-sealed.skf")
+set(unwrapped_key_opened_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-unwrapped-key-opened.txt")
 set(existing_output "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-existing.txt")
 set(generated_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-generated-key.hex")
 set(key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-key-file.skf")
@@ -174,8 +183,16 @@ set(reordered_key_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordere
 set(reordered_key_hex_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-hex-opened.txt")
 
 file(WRITE "${plain_file}" "file command plaintext\n")
+file(WRITE "${key_to_wrap_file}" "${key_to_wrap}\n")
+file(WRITE "${wrapping_key_file}" "${wrapping_key}\n")
+file(REMOVE "${wrapped_key_file}")
+file(REMOVE "${unwrapped_key_file}")
+file(REMOVE "${wrapped_key_reordered_file}")
+file(REMOVE "${unwrapped_key_reordered_file}")
 file(REMOVE "${sealed_file}")
 file(REMOVE "${opened_file}")
+file(REMOVE "${unwrapped_key_sealed_file}")
+file(REMOVE "${unwrapped_key_opened_file}")
 file(REMOVE "${generated_key_file}")
 file(REMOVE "${key_file_sealed}")
 file(REMOVE "${key_file_opened}")
@@ -209,6 +226,36 @@ run_cli(0 "${key_to_wrap}\n" unwrap-key --packet-hex "${wrapped_key_packet}" --w
 run_cli_failure("AEAD authentication failed\n" unwrap-key --packet-hex "${wrapped_key_packet}" --wrapping-key-hex "${wrong_file_key}")
 run_cli_failure("hex input must contain an even number of characters\n" unwrap-key --packet-hex 123 --wrapping-key-hex "${wrapping_key}")
 
+run_cli_no_stdout(wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --out "${wrapped_key_file}")
+file(READ "${wrapped_key_file}" wrapped_key_file_hex HEX)
+string(LENGTH "${wrapped_key_file_hex}" wrapped_key_file_hex_length)
+if(NOT wrapped_key_file_hex_length EQUAL 130 OR NOT wrapped_key_file_hex MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "wrap-key --out did not write a binary SKT1 packet")
+endif()
+
+run_cli_no_stdout(unwrap-key --packet-file "${wrapped_key_file}" --wrapping-key-file "${wrapping_key_file}" --out "${unwrapped_key_file}")
+file(READ "${unwrapped_key_file}" unwrapped_key_text)
+if(NOT unwrapped_key_text STREQUAL "${key_to_wrap}\n")
+  message(FATAL_ERROR "unwrap-key --out did not write a key-file compatible hex key. got=[${unwrapped_key_text}]")
+endif()
+
+run_cli_no_stdout(wrap-key --out "${wrapped_key_reordered_file}" --wrapping-key-file "${wrapping_key_file}" --key-file "${key_to_wrap_file}")
+run_cli_no_stdout(unwrap-key --out "${unwrapped_key_reordered_file}" --wrapping-key-file "${wrapping_key_file}" --packet-file "${wrapped_key_reordered_file}")
+file(READ "${unwrapped_key_reordered_file}" unwrapped_key_reordered_text)
+if(NOT unwrapped_key_reordered_text STREQUAL "${key_to_wrap}\n")
+  message(FATAL_ERROR "reordered unwrap-key did not write the wrapped key. got=[${unwrapped_key_reordered_text}]")
+endif()
+
+run_cli_failure("Output file already exists\n" wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --out "${wrapped_key_file}")
+run_cli_failure("Output file already exists\n" unwrap-key --packet-file "${wrapped_key_file}" --wrapping-key-file "${wrapping_key_file}" --out "${unwrapped_key_file}")
+run_cli_failure("conflicting key options\n" wrap-key --key-hex "${key_to_wrap}" --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}")
+run_cli_failure("conflicting wrapping key options\n" wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-hex "${wrapping_key}" --wrapping-key-file "${wrapping_key_file}")
+run_cli_failure("conflicting packet options\n" unwrap-key --packet-hex "${wrapped_key_packet}" --packet-file "${wrapped_key_file}" --wrapping-key-file "${wrapping_key_file}")
+run_cli_failure("duplicate option: --out\n" wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/duplicate-wrap-a.skt" --out "${CMAKE_CURRENT_BINARY_DIR}/duplicate-wrap-b.skt")
+run_cli_failure("${expected_wrap_key_help}" wrap-key --key-file "${key_to_wrap_file}")
+run_cli_failure("${expected_unwrap_key_help}" unwrap-key --packet-file "${wrapped_key_file}")
+run_cli_failure("unsupported key wrapping option: --unknown\n" wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --unknown value)
+
 run_cli_no_stdout(seal-file --in "${plain_file}" --out "${sealed_file}" --key-hex "${file_key}")
 if(NOT EXISTS "${sealed_file}")
   message(FATAL_ERROR "seal-file did not create sealed output")
@@ -218,6 +265,13 @@ run_cli_no_stdout(open-file --in "${sealed_file}" --out "${opened_file}" --key-h
 file(READ "${opened_file}" opened_text)
 if(NOT opened_text STREQUAL "file command plaintext\n")
   message(FATAL_ERROR "open-file did not recover plaintext. got=[${opened_text}]")
+endif()
+
+run_cli_no_stdout(seal-file --in "${plain_file}" --out "${unwrapped_key_sealed_file}" --key-file "${unwrapped_key_file}")
+run_cli_no_stdout(open-file --in "${unwrapped_key_sealed_file}" --out "${unwrapped_key_opened_file}" --key-file "${unwrapped_key_file}")
+file(READ "${unwrapped_key_opened_file}" unwrapped_key_opened_text)
+if(NOT unwrapped_key_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "unwrapped key file did not recover plaintext. got=[${unwrapped_key_opened_text}]")
 endif()
 
 run_cli_failure("key must be 64 hex characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/bad-key.skf" --key-hex 00)

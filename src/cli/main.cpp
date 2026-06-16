@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -32,8 +33,10 @@ void print_help()
 	          << "  securekit base64url-encode --text <text>\n"
 	          << "  securekit base64url-decode --text <base64url>\n"
 	          << "  securekit keygen --out <path>\n"
-	          << "  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>\n"
-	          << "  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>\n"
+	          << "  securekit wrap-key (--key-hex <64-hex>|--key-file <path>) "
+	             "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n"
+	          << "  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) "
+	             "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n"
 	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex> "
@@ -95,12 +98,14 @@ std::string_view keygen_usage()
 
 std::string_view wrap_key_usage()
 {
-	return "Usage:\n  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>";
+	return "Usage:\n  securekit wrap-key (--key-hex <64-hex>|--key-file <path>) "
+	       "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]";
 }
 
 std::string_view unwrap_key_usage()
 {
-	return "Usage:\n  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>";
+	return "Usage:\n  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) "
+	       "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]";
 }
 
 std::string_view file_command_usage(std::string_view command)
@@ -313,6 +318,20 @@ securekit::key256 key_from_option(std::string_view option, std::string_view valu
 	throw std::runtime_error("unsupported command");
 }
 
+securekit::key256 wrapping_key_from_option(std::string_view option, std::string_view value)
+{
+	if (option == "--wrapping-key-hex")
+	{
+		return key_from_hex(value);
+	}
+	if (option == "--wrapping-key-file")
+	{
+		return key_from_file(std::filesystem::path(value));
+	}
+
+	throw std::runtime_error("unsupported command");
+}
+
 securekit::bytes aad_from_option(std::string_view option, std::string_view value)
 {
 	if (option == "--aad-text")
@@ -337,6 +356,26 @@ struct file_command_options
 	bool has_output = false;
 	bool has_key = false;
 	bool has_aad = false;
+};
+
+struct wrap_key_options
+{
+	securekit::key256 key{};
+	securekit::key256 wrapping_key{};
+	std::filesystem::path output;
+	bool has_key = false;
+	bool has_wrapping_key = false;
+	bool has_output = false;
+};
+
+struct unwrap_key_options
+{
+	securekit::bytes packet;
+	securekit::key256 wrapping_key{};
+	std::filesystem::path output;
+	bool has_packet = false;
+	bool has_wrapping_key = false;
+	bool has_output = false;
 };
 
 void reject_duplicate(bool already_set, std::string_view option)
@@ -404,12 +443,17 @@ file_command_options parse_file_command_options(int argc, char **argv)
 	return options;
 }
 
-void write_generated_key(const std::filesystem::path &path)
+void ensure_output_file_does_not_exist(const std::filesystem::path &path)
 {
 	if (std::filesystem::exists(path))
 	{
 		throw std::runtime_error("Output file already exists");
 	}
+}
+
+void write_binary_file(const std::filesystem::path &path, std::span<const std::byte> bytes)
+{
+	ensure_output_file_does_not_exist(path);
 
 	std::ofstream out(path, std::ios::binary);
 	if (!out)
@@ -417,11 +461,135 @@ void write_generated_key(const std::filesystem::path &path)
 		throw std::runtime_error("failed to open output file");
 	}
 
-	out << securekit::hex_encode(securekit::generate_key()) << '\n';
+	out.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
 	if (!out)
 	{
 		throw std::runtime_error("failed to write output file");
 	}
+}
+
+void write_key_file(const std::filesystem::path &path, const securekit::key256 &key)
+{
+	ensure_output_file_does_not_exist(path);
+
+	std::ofstream out(path, std::ios::binary);
+	if (!out)
+	{
+		throw std::runtime_error("failed to open output file");
+	}
+
+	out << securekit::hex_encode(key) << '\n';
+	if (!out)
+	{
+		throw std::runtime_error("failed to write output file");
+	}
+}
+
+void write_generated_key(const std::filesystem::path &path)
+{
+	write_key_file(path, securekit::generate_key());
+}
+
+wrap_key_options parse_wrap_key_options(int argc, char **argv)
+{
+	if (argc < 6 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error(std::string(wrap_key_usage()));
+	}
+
+	wrap_key_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--key-hex" || option == "--key-file")
+		{
+			if (options.has_key)
+			{
+				throw std::runtime_error("conflicting key options");
+			}
+			options.key = key_from_option(option, value);
+			options.has_key = true;
+		}
+		else if (option == "--wrapping-key-hex" || option == "--wrapping-key-file")
+		{
+			if (options.has_wrapping_key)
+			{
+				throw std::runtime_error("conflicting wrapping key options");
+			}
+			options.wrapping_key = wrapping_key_from_option(option, value);
+			options.has_wrapping_key = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output, option);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else
+		{
+			throw std::runtime_error(std::string("unsupported key wrapping option: ") + std::string(option));
+		}
+	}
+
+	if (!options.has_key || !options.has_wrapping_key)
+	{
+		throw std::runtime_error(std::string(wrap_key_usage()));
+	}
+
+	return options;
+}
+
+unwrap_key_options parse_unwrap_key_options(int argc, char **argv)
+{
+	if (argc < 6 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error(std::string(unwrap_key_usage()));
+	}
+
+	unwrap_key_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--packet-hex" || option == "--packet-file")
+		{
+			if (options.has_packet)
+			{
+				throw std::runtime_error("conflicting packet options");
+			}
+			options.packet = option == "--packet-hex" ? securekit::hex_decode(value) : read_file(std::filesystem::path(value));
+			options.has_packet = true;
+		}
+		else if (option == "--wrapping-key-hex" || option == "--wrapping-key-file")
+		{
+			if (options.has_wrapping_key)
+			{
+				throw std::runtime_error("conflicting wrapping key options");
+			}
+			options.wrapping_key = wrapping_key_from_option(option, value);
+			options.has_wrapping_key = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output, option);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else
+		{
+			throw std::runtime_error(std::string("unsupported key wrapping option: ") + std::string(option));
+		}
+	}
+
+	if (!options.has_packet || !options.has_wrapping_key)
+	{
+		throw std::runtime_error(std::string(unwrap_key_usage()));
+	}
+
+	return options;
 }
 
 std::size_t parse_size(std::string_view text)
@@ -592,31 +760,34 @@ int main(int argc, char **argv)
 			return fail(keygen_usage());
 		}
 
-		if (argc == 6 && is_arg(argv[1], "wrap-key") && is_arg(argv[2], "--key-hex") &&
-		    is_arg(argv[4], "--wrapping-key-hex"))
-		{
-			std::cout << securekit::hex_encode(securekit::wrap_key(key_from_hex(argv[3]), key_from_hex(argv[5])))
-			          << '\n';
-			return 0;
-		}
-
 		if (argc >= 2 && is_arg(argv[1], "wrap-key"))
 		{
-			return fail(wrap_key_usage());
-		}
-
-		if (argc == 6 && is_arg(argv[1], "unwrap-key") && is_arg(argv[2], "--packet-hex") &&
-		    is_arg(argv[4], "--wrapping-key-hex"))
-		{
-			std::cout << securekit::hex_encode(
-			                 securekit::unwrap_key(securekit::hex_decode(argv[3]), key_from_hex(argv[5])))
-			          << '\n';
+			const wrap_key_options options = parse_wrap_key_options(argc, argv);
+			const securekit::bytes packet = securekit::wrap_key(options.key, options.wrapping_key);
+			if (options.has_output)
+			{
+				write_binary_file(options.output, packet);
+			}
+			else
+			{
+				std::cout << securekit::hex_encode(packet) << '\n';
+			}
 			return 0;
 		}
 
 		if (argc >= 2 && is_arg(argv[1], "unwrap-key"))
 		{
-			return fail(unwrap_key_usage());
+			const unwrap_key_options options = parse_unwrap_key_options(argc, argv);
+			const securekit::key256 key = securekit::unwrap_key(options.packet, options.wrapping_key);
+			if (options.has_output)
+			{
+				write_key_file(options.output, key);
+			}
+			else
+			{
+				std::cout << securekit::hex_encode(key) << '\n';
+			}
+			return 0;
 		}
 
 		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))

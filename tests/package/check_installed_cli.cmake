@@ -66,6 +66,14 @@ run_cli(0 "abc\n" hex-decode --text 616263)
 
 set(key_to_wrap "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f")
 set(wrapping_key "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f")
+set(key_to_wrap_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-key-to-wrap.hex")
+set(wrapping_key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-wrapping-key.hex")
+set(wrapped_key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-wrapped-key.skt")
+set(unwrapped_key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-unwrapped-key.hex")
+file(WRITE "${key_to_wrap_file}" "${key_to_wrap}\n")
+file(WRITE "${wrapping_key_file}" "${wrapping_key}\n")
+file(REMOVE "${wrapped_key_file}")
+file(REMOVE "${unwrapped_key_file}")
 execute_process(
   COMMAND "${SECUREKIT_CLI}" wrap-key --key-hex "${key_to_wrap}" --wrapping-key-hex "${wrapping_key}"
   RESULT_VARIABLE wrap_key_result
@@ -80,6 +88,17 @@ if(NOT wrapped_key_packet_length EQUAL 130 OR NOT wrapped_key_packet MATCHES "^5
   message(FATAL_ERROR "wrap-key did not write a hex SKT1 packet: [${wrap_key_stdout}]")
 endif()
 run_cli(0 "${key_to_wrap}\n" unwrap-key --packet-hex "${wrapped_key_packet}" --wrapping-key-hex "${wrapping_key}")
+run_cli_no_stdout(wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --out "${wrapped_key_file}")
+file(READ "${wrapped_key_file}" wrapped_key_file_hex HEX)
+string(LENGTH "${wrapped_key_file_hex}" wrapped_key_file_hex_length)
+if(NOT wrapped_key_file_hex_length EQUAL 130 OR NOT wrapped_key_file_hex MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "wrap-key --out did not write a binary SKT1 packet")
+endif()
+run_cli_no_stdout(unwrap-key --packet-file "${wrapped_key_file}" --wrapping-key-file "${wrapping_key_file}" --out "${unwrapped_key_file}")
+file(READ "${unwrapped_key_file}" unwrapped_key_text)
+if(NOT unwrapped_key_text STREQUAL "${key_to_wrap}\n")
+  message(FATAL_ERROR "unwrap-key --out did not write a key-file compatible hex key. got=[${unwrapped_key_text}]")
+endif()
 
 execute_process(
   COMMAND "${SECUREKIT_CLI}" token 16
@@ -99,12 +118,16 @@ set(plain_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-plain.txt")
 set(key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-key.hex")
 set(sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-plain.skf")
 set(opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-opened.txt")
+set(unwrapped_key_sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-unwrapped-key.skf")
+set(unwrapped_key_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-unwrapped-key-opened.txt")
 set(conflicting_key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-conflict.skf")
 
 file(WRITE "${plain_file}" "installed CLI plaintext\n")
 file(REMOVE "${key_file}")
 file(REMOVE "${sealed_file}")
 file(REMOVE "${opened_file}")
+file(REMOVE "${unwrapped_key_sealed_file}")
+file(REMOVE "${unwrapped_key_opened_file}")
 file(REMOVE "${conflicting_key_file}")
 
 run_cli_no_stdout(keygen --out "${key_file}")
@@ -120,6 +143,13 @@ run_cli_no_stdout(open-file --key-file "${key_file}" --out "${opened_file}" --aa
 file(READ "${opened_file}" opened_text)
 if(NOT opened_text STREQUAL "installed CLI plaintext\n")
   message(FATAL_ERROR "installed CLI open did not recover plaintext. got=[${opened_text}]")
+endif()
+
+run_cli_no_stdout(seal-file --in "${plain_file}" --out "${unwrapped_key_sealed_file}" --key-file "${unwrapped_key_file}")
+run_cli_no_stdout(open-file --in "${unwrapped_key_sealed_file}" --out "${unwrapped_key_opened_file}" --key-file "${unwrapped_key_file}")
+file(READ "${unwrapped_key_opened_file}" unwrapped_key_opened_text)
+if(NOT unwrapped_key_opened_text STREQUAL "installed CLI plaintext\n")
+  message(FATAL_ERROR "installed CLI unwrapped key file did not recover plaintext. got=[${unwrapped_key_opened_text}]")
 endif()
 
 run_cli_failure("conflicting key options\n" seal-file --in "${plain_file}" --out "${conflicting_key_file}" --key-file "${key_file}" --key-hex "${generated_key_text}")

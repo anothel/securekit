@@ -137,6 +137,8 @@ securekit base64url-decode --text YWJj
 securekit keygen --out key.hex
 securekit wrap-key --key-hex 101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
 securekit unwrap-key --packet-hex 534b543101... --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
+securekit wrap-key --key-file data-key.hex --wrapping-key-file wrapping-key.hex --out data-key.skt
+securekit unwrap-key --packet-file data-key.skt --wrapping-key-file wrapping-key.hex --out recovered-data-key.hex
 securekit help seal-file
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -165,10 +167,15 @@ stdin/stdout streaming in this slice.
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
 strict hex or argument bytes, and writes the derived bytes as lowercase hex.
-`wrap-key` wraps one 32-byte key with another 32-byte wrapping key and writes the
-resulting `SKT1` packet as lowercase hex. `unwrap-key` accepts that hex packet
-and writes the recovered 32-byte key as lowercase hex. The key wrapping CLI
-slice is hex-only and does not expose AAD.
+`wrap-key` wraps one 32-byte key with another 32-byte wrapping key. Key inputs
+may come from strict hex arguments or key files in the same format produced by
+`keygen`. Without `--out`, `wrap-key` writes the resulting `SKT1` packet as
+lowercase hex. With `--out`, it writes the binary `SKT1` packet and refuses to
+overwrite an existing file. `unwrap-key` accepts a wrapped key packet from
+strict hex or a binary packet file. Without `--out`, it writes the recovered
+32-byte key as lowercase hex. With `--out`, it writes a `keygen`-compatible key
+file and refuses to overwrite an existing file. The key wrapping CLI slice does
+not expose AAD.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,
