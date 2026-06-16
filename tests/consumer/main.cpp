@@ -58,6 +58,8 @@ int main()
 
 	const auto packet = securekit::encrypt(plaintext, key, aad);
 	const auto roundtrip = securekit::decrypt(packet, key, aad);
+	const auto wrapped_key = securekit::wrap_key(key, key, aad);
+	const auto unwrapped_key = securekit::unwrap_key(wrapped_key, key, aad);
 	const std::string token = securekit::random_token(32);
 
 	const auto plain_path = std::filesystem::temp_directory_path() / "securekit-consumer-plain.bin";
@@ -83,5 +85,5 @@ int main()
 	                                "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8" &&
 	                            hkdf.size() == 16 && random.size() == 8 && securekit::constant_time_equal(digest, digest);
 
-	return utility_api_ok && roundtrip == plaintext && opened == plaintext && !token.empty() ? 0 : 1;
+	return utility_api_ok && roundtrip == plaintext && unwrapped_key == key && opened == plaintext && !token.empty() ? 0 : 1;
 }

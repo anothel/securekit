@@ -30,6 +30,7 @@ The current identity is:
 - Cryptographically secure random bytes.
 - URL-safe random token generation.
 - AES-256-GCM packet encryption and decryption.
+- AES-256-GCM key wrapping helpers.
 - Chunked file sealing and opening.
 
 ## Non-goals
@@ -134,6 +135,8 @@ securekit hex-decode --text 616263
 securekit base64url-encode --text abc
 securekit base64url-decode --text YWJj
 securekit keygen --out key.hex
+securekit wrap-key --key-hex 101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
+securekit unwrap-key --packet-hex 534b543101... --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
 securekit help seal-file
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -162,6 +165,10 @@ stdin/stdout streaming in this slice.
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
 strict hex or argument bytes, and writes the derived bytes as lowercase hex.
+`wrap-key` wraps one 32-byte key with another 32-byte wrapping key and writes the
+resulting `SKT1` packet as lowercase hex. `unwrap-key` accepts that hex packet
+and writes the recovered 32-byte key as lowercase hex. The key wrapping CLI
+slice is hex-only and does not expose AAD.
 
 Successful CLI commands write only the result plus one trailing newline to
 stdout. Usage, parse, file, or decoding failures return a non-zero exit code,
@@ -284,6 +291,16 @@ securekit::bytes securekit::decrypt(
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
 
+securekit::bytes securekit::wrap_key(
+	const securekit::key256 &key_to_wrap,
+	const securekit::key256 &wrapping_key,
+	std::span<const std::byte> aad = {});
+
+securekit::key256 securekit::unwrap_key(
+	std::span<const std::byte> packet,
+	const securekit::key256 &wrapping_key,
+	std::span<const std::byte> aad = {});
+
 void securekit::seal_file(
 	const std::filesystem::path &input,
 	const std::filesystem::path &output,
@@ -307,6 +324,11 @@ explicitly named variants instead of changing these functions.
 The v1 AEAD API intentionally keeps the general `encrypt` and `decrypt` names.
 Future file, streaming, or key-wrapping APIs should use distinct names instead
 of overloading these packet functions.
+
+`securekit::wrap_key` uses the same `SKT1` packet format as `encrypt` to wrap a
+single 32-byte `securekit::key256` with another 32-byte wrapping key. It accepts
+optional AAD. `securekit::unwrap_key` authenticates and decrypts the packet, then
+rejects packets that do not contain exactly one 32-byte key.
 
 `securekit::random_token` returns an unpadded Base64URL string from
 cryptographically secure random bytes. It rejects `byte_size == 0` with

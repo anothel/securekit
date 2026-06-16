@@ -32,6 +32,8 @@ void print_help()
 	          << "  securekit base64url-encode --text <text>\n"
 	          << "  securekit base64url-decode --text <base64url>\n"
 	          << "  securekit keygen --out <path>\n"
+	          << "  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>\n"
+	          << "  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>\n"
 	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex> "
@@ -91,6 +93,16 @@ std::string_view keygen_usage()
 	return "Usage:\n  securekit keygen --out <path>";
 }
 
+std::string_view wrap_key_usage()
+{
+	return "Usage:\n  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>";
+}
+
+std::string_view unwrap_key_usage()
+{
+	return "Usage:\n  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>";
+}
+
 std::string_view file_command_usage(std::string_view command)
 {
 	if (command == "seal-file")
@@ -147,6 +159,16 @@ bool print_command_help(std::string_view command)
 	if (command == "keygen")
 	{
 		std::cout << keygen_usage() << '\n';
+		return true;
+	}
+	if (command == "wrap-key")
+	{
+		std::cout << wrap_key_usage() << '\n';
+		return true;
+	}
+	if (command == "unwrap-key")
+	{
+		std::cout << unwrap_key_usage() << '\n';
 		return true;
 	}
 	if (command == "seal-file")
@@ -568,6 +590,33 @@ int main(int argc, char **argv)
 		if (argc >= 2 && is_arg(argv[1], "keygen"))
 		{
 			return fail(keygen_usage());
+		}
+
+		if (argc == 6 && is_arg(argv[1], "wrap-key") && is_arg(argv[2], "--key-hex") &&
+		    is_arg(argv[4], "--wrapping-key-hex"))
+		{
+			std::cout << securekit::hex_encode(securekit::wrap_key(key_from_hex(argv[3]), key_from_hex(argv[5])))
+			          << '\n';
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "wrap-key"))
+		{
+			return fail(wrap_key_usage());
+		}
+
+		if (argc == 6 && is_arg(argv[1], "unwrap-key") && is_arg(argv[2], "--packet-hex") &&
+		    is_arg(argv[4], "--wrapping-key-hex"))
+		{
+			std::cout << securekit::hex_encode(
+			                 securekit::unwrap_key(securekit::hex_decode(argv[3]), key_from_hex(argv[5])))
+			          << '\n';
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "unwrap-key"))
+		{
+			return fail(unwrap_key_usage());
 		}
 
 		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))

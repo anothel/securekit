@@ -64,6 +64,23 @@ run_cli(0 "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007
 run_cli(0 "616263\n" hex-encode --text abc)
 run_cli(0 "abc\n" hex-decode --text 616263)
 
+set(key_to_wrap "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f")
+set(wrapping_key "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f")
+execute_process(
+  COMMAND "${SECUREKIT_CLI}" wrap-key --key-hex "${key_to_wrap}" --wrapping-key-hex "${wrapping_key}"
+  RESULT_VARIABLE wrap_key_result
+  OUTPUT_VARIABLE wrap_key_stdout
+  ERROR_VARIABLE wrap_key_stderr)
+if(NOT wrap_key_result EQUAL 0)
+  message(FATAL_ERROR "wrap-key failed: ${wrap_key_stderr}")
+endif()
+string(STRIP "${wrap_key_stdout}" wrapped_key_packet)
+string(LENGTH "${wrapped_key_packet}" wrapped_key_packet_length)
+if(NOT wrapped_key_packet_length EQUAL 130 OR NOT wrapped_key_packet MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "wrap-key did not write a hex SKT1 packet: [${wrap_key_stdout}]")
+endif()
+run_cli(0 "${key_to_wrap}\n" unwrap-key --packet-hex "${wrapped_key_packet}" --wrapping-key-hex "${wrapping_key}")
+
 execute_process(
   COMMAND "${SECUREKIT_CLI}" token 16
   RESULT_VARIABLE token_result

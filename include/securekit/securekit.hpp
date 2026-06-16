@@ -8,6 +8,7 @@
 #include "securekit/file.hpp"
 #include "securekit/hash.hpp"
 #include "securekit/hex.hpp"
+#include "securekit/key_wrap.hpp"
 #include "securekit/random.hpp"
 #include "securekit/types.hpp"
 

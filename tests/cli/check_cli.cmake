@@ -64,6 +64,8 @@ set(expected_help [=[Usage:
   securekit base64url-encode --text <text>
   securekit base64url-decode --text <base64url>
   securekit keygen --out <path>
+  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>
+  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>
   securekit seal-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit open-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit seal-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
@@ -80,6 +82,8 @@ set(expected_hex_decode_help "Usage:\n  securekit hex-decode --text <hex>\n")
 set(expected_base64url_encode_help "Usage:\n  securekit base64url-encode --text <text>\n")
 set(expected_base64url_decode_help "Usage:\n  securekit base64url-decode --text <base64url>\n")
 set(expected_keygen_help "Usage:\n  securekit keygen --out <path>\n")
+set(expected_wrap_key_help "Usage:\n  securekit wrap-key --key-hex <64-hex> --wrapping-key-hex <64-hex>\n")
+set(expected_unwrap_key_help "Usage:\n  securekit unwrap-key --packet-hex <hex> --wrapping-key-hex <64-hex>\n")
 set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 set(expected_open_file_help "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 
@@ -95,6 +99,8 @@ run_cli(0 "${expected_hex_decode_help}" help hex-decode)
 run_cli(0 "${expected_base64url_encode_help}" help base64url-encode)
 run_cli(0 "${expected_base64url_decode_help}" help base64url-decode)
 run_cli(0 "${expected_keygen_help}" help keygen)
+run_cli(0 "${expected_wrap_key_help}" help wrap-key)
+run_cli(0 "${expected_unwrap_key_help}" help unwrap-key)
 run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "${expected_open_file_help}" help open-file)
 run_cli_failure("unsupported command\n" help unknown-command)
@@ -138,11 +144,15 @@ run_cli_failure("${expected_hex_decode_help}" hex-decode)
 run_cli_failure("${expected_base64url_encode_help}" base64url-encode)
 run_cli_failure("${expected_base64url_decode_help}" base64url-decode)
 run_cli_failure("${expected_keygen_help}" keygen --bad-flag "${CMAKE_CURRENT_BINARY_DIR}/bad-keygen.hex")
+run_cli_failure("${expected_wrap_key_help}" wrap-key --bad-flag abc)
+run_cli_failure("${expected_unwrap_key_help}" unwrap-key --bad-flag abc)
 run_cli_failure("failed to open input file\n" sha256 --file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-missing.txt")
 run_cli_failure("hex input must contain an even number of characters\n" hex-decode --text 6)
 run_cli_failure("base64url input has invalid length\n" base64url-decode --text "=")
 
 set(file_key "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+set(key_to_wrap "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f")
+set(wrapping_key "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f")
 set(wrong_file_key "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 set(plain_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.txt")
 set(sealed_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-plain.skf")
@@ -181,6 +191,23 @@ file(REMOVE "${reordered_key_hex_sealed}")
 file(REMOVE "${reordered_key_hex_opened}")
 file(WRITE "${existing_output}" "existing")
 file(WRITE "${invalid_key_file}" "not-a-valid-key\n")
+
+execute_process(
+  COMMAND "${SECUREKIT_CLI}" wrap-key --key-hex "${key_to_wrap}" --wrapping-key-hex "${wrapping_key}"
+  RESULT_VARIABLE wrap_key_result
+  OUTPUT_VARIABLE wrap_key_stdout
+  ERROR_VARIABLE wrap_key_stderr)
+if(NOT wrap_key_result EQUAL 0)
+  message(FATAL_ERROR "wrap-key failed: ${wrap_key_stderr}")
+endif()
+string(STRIP "${wrap_key_stdout}" wrapped_key_packet)
+string(LENGTH "${wrapped_key_packet}" wrapped_key_packet_length)
+if(NOT wrapped_key_packet_length EQUAL 130 OR NOT wrapped_key_packet MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "wrap-key did not write a hex SKT1 packet: [${wrap_key_stdout}]")
+endif()
+run_cli(0 "${key_to_wrap}\n" unwrap-key --packet-hex "${wrapped_key_packet}" --wrapping-key-hex "${wrapping_key}")
+run_cli_failure("AEAD authentication failed\n" unwrap-key --packet-hex "${wrapped_key_packet}" --wrapping-key-hex "${wrong_file_key}")
+run_cli_failure("hex input must contain an even number of characters\n" unwrap-key --packet-hex 123 --wrapping-key-hex "${wrapping_key}")
 
 run_cli_no_stdout(seal-file --in "${plain_file}" --out "${sealed_file}" --key-hex "${file_key}")
 if(NOT EXISTS "${sealed_file}")
