@@ -14,6 +14,8 @@
 #include <filesystem>
 #include <iosfwd>
 #include <span>
+#include <string>
+#include <string_view>
 #include <type_traits>
 
 #include <gtest/gtest.h>
@@ -27,6 +29,51 @@ TEST(PublicHeaders, TypeAliasesAreAvailable)
 	EXPECT_TRUE(data.empty());
 	EXPECT_EQ(key.size(), 32u);
 	EXPECT_EQ(digest.size(), 32u);
+}
+
+TEST(PublicHeaders, UtilityApiSignaturesAreAvailable)
+{
+	using StringFromBytesApi = std::string (*)(std::span<const std::byte>);
+	using BytesFromStringApi = securekit::bytes (*)(std::string_view);
+	using DigestFromBytesApi = securekit::digest256 (*)(std::span<const std::byte>);
+	using HmacApi = securekit::digest256 (*)(std::span<const std::byte>, std::span<const std::byte>);
+	using HkdfApi = securekit::bytes (*)(
+	    std::span<const std::byte>,
+	    std::span<const std::byte>,
+	    std::span<const std::byte>,
+	    std::size_t);
+	using CompareApi = bool (*)(std::span<const std::byte>, std::span<const std::byte>);
+	using RandomBytesApi = securekit::bytes (*)(std::size_t);
+	using GenerateKeyApi = securekit::key256 (*)();
+	using RandomTokenApi = std::string (*)(std::size_t);
+	using AeadApi = securekit::bytes (*)(
+	    std::span<const std::byte>,
+	    const securekit::key256 &,
+	    std::span<const std::byte>);
+
+	static_assert(std::is_same_v<decltype(&securekit::hex_encode), StringFromBytesApi>);
+	static_assert(std::is_same_v<decltype(&securekit::hex_decode), BytesFromStringApi>);
+	static_assert(std::is_same_v<decltype(&securekit::base64_encode), StringFromBytesApi>);
+	static_assert(std::is_same_v<decltype(&securekit::base64_decode), BytesFromStringApi>);
+	static_assert(std::is_same_v<decltype(&securekit::base64url_encode), StringFromBytesApi>);
+	static_assert(std::is_same_v<decltype(&securekit::base64url_decode), BytesFromStringApi>);
+	static_assert(std::is_same_v<decltype(&securekit::sha256), DigestFromBytesApi>);
+	static_assert(std::is_same_v<decltype(&securekit::hmac_sha256), HmacApi>);
+	static_assert(std::is_same_v<decltype(&securekit::hkdf_sha256), HkdfApi>);
+	static_assert(std::is_same_v<decltype(&securekit::constant_time_equal), CompareApi>);
+	static_assert(std::is_same_v<decltype(&securekit::random_bytes), RandomBytesApi>);
+	static_assert(std::is_same_v<decltype(&securekit::generate_key), GenerateKeyApi>);
+	static_assert(std::is_same_v<decltype(&securekit::random_token), RandomTokenApi>);
+	static_assert(std::is_same_v<decltype(&securekit::encrypt), AeadApi>);
+	static_assert(std::is_same_v<decltype(&securekit::decrypt), AeadApi>);
+}
+
+TEST(PublicHeaders, ErrorApiIsAvailable)
+{
+	static_assert(std::is_constructible_v<securekit::error, securekit::error_code, std::string>);
+	static_assert(std::is_same_v<
+	    decltype(&securekit::error::code),
+	    securekit::error_code (securekit::error::*)() const noexcept>);
 }
 
 TEST(PublicHeaders, FileApiIsAvailable)
