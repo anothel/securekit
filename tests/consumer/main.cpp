@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <string_view>
 
@@ -39,6 +40,17 @@ securekit::bytes read_file(const std::filesystem::path &path)
 	for (const unsigned char ch : data)
 	{
 		result.push_back(static_cast<std::byte>(ch));
+	}
+	return result;
+}
+
+std::string string_from_bytes(const securekit::bytes &bytes)
+{
+	std::string result;
+	result.reserve(bytes.size());
+	for (const std::byte byte : bytes)
+	{
+		result.push_back(static_cast<char>(std::to_integer<unsigned char>(byte)));
 	}
 	return result;
 }
@@ -101,6 +113,22 @@ int main()
 	securekit::open_file_with_password(password_sealed_path, password_opened_path, password, aad);
 	const auto password_opened = read_file(password_opened_path);
 
+	std::istringstream stream_plaintext(string_from_bytes(plaintext), std::ios::in | std::ios::binary);
+	std::ostringstream stream_sealed(std::ios::out | std::ios::binary);
+	securekit::seal_file(stream_plaintext, stream_sealed, key, aad);
+	std::istringstream stream_ciphertext(stream_sealed.str(), std::ios::in | std::ios::binary);
+	std::ostringstream stream_opened_output(std::ios::out | std::ios::binary);
+	securekit::open_file(stream_ciphertext, stream_opened_output, key, aad);
+	const auto stream_opened = ascii_bytes(stream_opened_output.str());
+
+	std::istringstream password_stream_plaintext(string_from_bytes(plaintext), std::ios::in | std::ios::binary);
+	std::ostringstream password_stream_sealed(std::ios::out | std::ios::binary);
+	securekit::seal_file_with_password(password_stream_plaintext, password_stream_sealed, password, aad);
+	std::istringstream password_stream_ciphertext(password_stream_sealed.str(), std::ios::in | std::ios::binary);
+	std::ostringstream password_stream_opened_output(std::ios::out | std::ios::binary);
+	securekit::open_file_with_password(password_stream_ciphertext, password_stream_opened_output, password, aad);
+	const auto password_stream_opened = ascii_bytes(password_stream_opened_output.str());
+
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
@@ -116,7 +144,8 @@ int main()
 
 	return utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
 	               streaming_plaintext == plaintext && streaming_tail.empty() && unwrapped_key == key &&
-	               opened == plaintext && password_opened == plaintext && !token.empty()
+	               opened == plaintext && password_opened == plaintext && stream_opened == plaintext &&
+	               password_stream_opened == plaintext && !token.empty()
 	           ? 0
 	           : 1;
 }

@@ -634,7 +634,7 @@ GitHub Actions builds and tests:
 - Ubuntu Clang Release.
 - Windows MSVC Release with vcpkg OpenSSL.
 - Install and consumer-project checks.
-- Install-only package check with tests disabled.
+- Install-only package and consumer check with tests disabled.
 - Linux static-library package and consumer check.
 - Windows shared-library package and consumer check.
 
@@ -664,6 +664,9 @@ test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
 test -f ./install-only/lib/cmake/securekit/securekitTargets-release.cmake
 cmake -DSECUREKIT_CLI=./install-only/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./install-only-cli-check -P tests/package/check_installed_cli.cmake
+cmake -S tests/consumer -B consumer-install-only-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-only
+cmake --build consumer-install-only-build --config Release
+./consumer-install-only-build/securekit_consumer
 ```
 
 Linux static-library package check:
