@@ -49,6 +49,10 @@ void print_help()
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path> --out <path> --key-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit seal-file-password --in <path> --out <path> --password-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit open-file-password --in <path> --out <path> --password-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit help [command]\n";
 }
 
@@ -134,6 +138,17 @@ std::string_view file_command_usage(std::string_view command)
 	       "[--aad-text <text>|--aad-hex <hex>]";
 }
 
+std::string_view password_file_command_usage(std::string_view command)
+{
+	if (command == "seal-file-password")
+	{
+		return "Usage:\n  securekit seal-file-password --in <path> --out <path> --password-file <path> "
+		       "[--aad-text <text>|--aad-hex <hex>]";
+	}
+	return "Usage:\n  securekit open-file-password --in <path> --out <path> --password-file <path> "
+	       "[--aad-text <text>|--aad-hex <hex>]";
+}
+
 bool print_command_help(std::string_view command)
 {
 	if (command == "token")
@@ -209,6 +224,16 @@ bool print_command_help(std::string_view command)
 	if (command == "open-file")
 	{
 		std::cout << file_command_usage(command) << '\n';
+		return true;
+	}
+	if (command == "seal-file-password")
+	{
+		std::cout << password_file_command_usage(command) << '\n';
+		return true;
+	}
+	if (command == "open-file-password")
+	{
+		std::cout << password_file_command_usage(command) << '\n';
 		return true;
 	}
 	return false;
@@ -317,6 +342,16 @@ securekit::bytes read_file(const std::filesystem::path &path)
 	return bytes;
 }
 
+securekit::bytes password_from_file(const std::filesystem::path &path)
+{
+	securekit::bytes password = read_file(path);
+	if (password.empty())
+	{
+		throw std::runtime_error("password must not be empty");
+	}
+	return password;
+}
+
 securekit::key256 key_from_file(const std::filesystem::path &path)
 {
 	const securekit::bytes key_bytes = read_file(path);
@@ -380,6 +415,18 @@ struct file_command_options
 	bool has_input = false;
 	bool has_output = false;
 	bool has_key = false;
+	bool has_aad = false;
+};
+
+struct password_file_command_options
+{
+	std::filesystem::path input;
+	std::filesystem::path output;
+	securekit::bytes password;
+	securekit::bytes aad;
+	bool has_input = false;
+	bool has_output = false;
+	bool has_password = false;
 	bool has_aad = false;
 };
 
@@ -487,6 +534,60 @@ file_command_options parse_file_command_options(int argc, char **argv)
 	if (!options.has_input || !options.has_output || !options.has_key)
 	{
 		throw std::runtime_error(std::string(file_command_usage(argv[1])));
+	}
+
+	return options;
+}
+
+password_file_command_options parse_password_file_command_options(int argc, char **argv)
+{
+	if (argc < 8 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error(std::string(password_file_command_usage(argv[1])));
+	}
+
+	password_file_command_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--in")
+		{
+			reject_duplicate(options.has_input, option);
+			options.input = std::filesystem::path(value);
+			options.has_input = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output, option);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else if (option == "--password-file")
+		{
+			reject_duplicate(options.has_password, option);
+			options.password = password_from_file(std::filesystem::path(value));
+			options.has_password = true;
+		}
+		else if (option == "--aad-text" || option == "--aad-hex")
+		{
+			if (options.has_aad)
+			{
+				throw std::runtime_error("conflicting AAD options");
+			}
+			options.aad = aad_from_option(option, value);
+			options.has_aad = true;
+		}
+		else
+		{
+			throw std::runtime_error(std::string("unsupported password file option: ") + std::string(option));
+		}
+	}
+
+	if (!options.has_input || !options.has_output || !options.has_password)
+	{
+		throw std::runtime_error(std::string(password_file_command_usage(argv[1])));
 	}
 
 	return options;
@@ -1000,6 +1101,21 @@ int main(int argc, char **argv)
 			else
 			{
 				securekit::open_file(options.input, options.output, options.key, options.aad);
+			}
+			return 0;
+		}
+
+		if (argc >= 2 && (is_arg(argv[1], "seal-file-password") || is_arg(argv[1], "open-file-password")))
+		{
+			const password_file_command_options options = parse_password_file_command_options(argc, argv);
+
+			if (is_arg(argv[1], "seal-file-password"))
+			{
+				securekit::seal_file_with_password(options.input, options.output, options.password, options.aad);
+			}
+			else
+			{
+				securekit::open_file_with_password(options.input, options.output, options.password, options.aad);
 			}
 			return 0;
 		}

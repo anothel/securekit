@@ -34,11 +34,12 @@ The current identity is:
 - Move-only packet streaming encryptor and decryptor for `SKT1`.
 - AES-256-GCM key wrapping helpers.
 - Chunked file sealing and opening.
+- Password-based chunked file sealing and opening with `SKP1` and scrypt.
 
 ## Non-goals
 
 - TLS or networking. Use TLS libraries for that.
-- Password-based encryption.
+- Generic password hashing or general-purpose password KDF APIs.
 - Generic streaming object families beyond the `SKT1` packet slice.
 - Custom string classes or allocators.
 - User-selected algorithms or caller-selected nonces.
@@ -154,14 +155,23 @@ securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex --aad-
 securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex --aad-text record:v1
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
+securekit help seal-file-password
+securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin
+securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin
+securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin --aad-text record:v1
+securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin --aad-text record:v1
 ```
 
 The packet CLI commands use the `SKT1` packet format, and the file commands use
-the existing `SKF1` file format. `--key-hex` must be a strict 64-character hex
-string for a 32-byte key. `keygen` writes a fresh key as 64 lowercase hex
-characters plus a trailing newline and refuses to overwrite an existing output
-file. `--key-file` reads the same text format, trimming leading and trailing
-ASCII whitespace before strict validation.
+the `SKF1` or `SKP1` file formats. `seal-file` and `open-file` use `SKF1` with
+a caller-provided 32-byte key. `seal-file-password` and `open-file-password` use
+`SKP1` with scrypt-derived keys from `--password-file`. `--key-hex` must be a
+strict 64-character hex string for a 32-byte key. `keygen` writes a fresh key as
+64 lowercase hex characters plus a trailing newline and refuses to overwrite an
+existing output file. `--key-file` reads the same text format, trimming leading
+and trailing ASCII whitespace before strict validation. `--password-file` reads
+raw bytes exactly, without trimming or normalization; empty password files are
+rejected.
 
 `encrypt` accepts either `--text` or `--in` plus exactly one key source. Without
 `--out`, it writes the resulting `SKT1` packet as lowercase hex. With `--out`,
@@ -172,14 +182,15 @@ trailing newline. With `--out`, it writes the raw plaintext bytes to a file and
 refuses to overwrite an existing file.
 
 Packet and file commands can also take optional AAD with either `--aad-text` or
-`--aad-hex`; the same AAD bytes must be provided to `decrypt` or `open-file`,
-and AAD is authenticated but not stored in the packet or file. `--aad-text`
-uses the argument bytes directly. `--aad-hex` strictly decodes hex to bytes.
+`--aad-hex`; the same AAD bytes must be provided to `decrypt`, `open-file`, or
+`open-file-password`, and AAD is authenticated but not stored in the packet or
+file. `--aad-text` uses the argument bytes directly. `--aad-hex` strictly
+decodes hex to bytes.
 Packet and file command options may be supplied in any order, but each command
-must provide exactly one input source and one key source. File commands also
-require exactly one output path. At most one AAD option may be provided. The
-CLI does not expose password prompts, password KDFs, environment-variable key
-loading, or stdin/stdout streaming in this slice.
+must provide exactly one input source and one key source or password source.
+File commands also require exactly one output path. At most one AAD option may
+be provided. The CLI does not expose password prompts, password text arguments,
+environment-variable key loading, or stdin/stdout streaming in this slice.
 
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
@@ -385,6 +396,18 @@ void securekit::open_file(
 	const std::filesystem::path &output,
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
+
+void securekit::seal_file_with_password(
+	const std::filesystem::path &input,
+	const std::filesystem::path &output,
+	std::span<const std::byte> password,
+	std::span<const std::byte> aad = {});
+
+void securekit::open_file_with_password(
+	const std::filesystem::path &input,
+	const std::filesystem::path &output,
+	std::span<const std::byte> password,
+	std::span<const std::byte> aad = {});
 ```
 
 `securekit::error` reports library failures with `securekit::error_code`.
@@ -476,12 +499,53 @@ truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
 tag failures. Output files must not already exist; SecureKit writes a temporary
 file in the output directory and renames it only after successful completion.
 
+## SKP1 Password File Format
+
+`securekit::seal_file_with_password` writes an `SKP1` file. It uses the same
+1 MiB chunk record format and AES-256-GCM chunk encryption as `SKF1`, but
+derives the 32-byte file key from caller-provided password bytes using OpenSSL
+scrypt. Password bytes are accepted exactly as supplied by the caller; SecureKit
+does not trim, normalize, encode, or prompt for passwords. Empty passwords are
+rejected with `securekit::error_code::invalid_input`.
+
+Fixed scrypt parameters:
+
+- `N = 32768`
+- `r = 8`
+- `p = 1`
+- `maxmem = 64 MiB`
+
+File header:
+
+| Offset | Size | Field | Value |
+| --- | ---: | --- | --- |
+| 0 | 4 | Magic | `SKP1` |
+| 4 | 1 | Version | `0x01` |
+| 5 | 1 | Cipher | `0x01` for AES-256-GCM |
+| 6 | 1 | KDF | `0x01` for scrypt |
+| 7 | 1 | Flags | `0x00` |
+| 8 | 4 | Chunk size | `0x00100000` big-endian, 1 MiB |
+| 12 | 32 | Salt | Random per file |
+| 44 | 8 | Nonce prefix | Random per file |
+| 52 | 4 | scrypt N | `32768` big-endian |
+| 56 | 4 | scrypt r | `8` big-endian |
+| 60 | 4 | scrypt p | `1` big-endian |
+
+The `SKP1` header, chunk index, plaintext size, final flag, and caller-provided
+AAD are authenticated with every chunk. `open_file_with_password` rejects
+malformed headers, unsupported scrypt parameters, truncated records, appended
+data, reordered chunks, wrong passwords, wrong AAD, and tag failures. Wrong
+passwords and tag failures report the same generic
+`securekit::error_code::authentication_failed` message as other file
+authentication failures.
+
 ## Security Boundaries
 
 SecureKit is a thin C++ API over OpenSSL 3.x. It does not:
 
 - Store keys.
-- Derive keys from passwords.
+- Provide a general-purpose password hashing API.
+- Provide a reusable password KDF API outside `SKP1` file encryption.
 - Prevent key copies.
 - Guarantee memory erasure.
 - Configure OpenSSL providers.
@@ -497,22 +561,18 @@ process isolation, persistence, backups, logging policy, and threat modeling.
 bytes it compares. It returns false for different lengths, but input lengths are
 not hidden.
 
-## Password KDF Direction
+## Password KDF Scope
 
-SecureKit does not provide password-based encryption or password hashing APIs in
-v1. When those APIs are designed, the preferred password KDF should be Argon2id
-because it is memory-hard and is the current general-purpose recommendation for
-new password storage designs.
+SecureKit's password support is limited to `SKP1` file encryption. It does not
+expose a reusable password KDF API or a password hashing API. `SKP1` currently
+uses OpenSSL scrypt with fixed parameters recorded in the file header and
+rejects headers that request different parameters.
 
-If Argon2id is not available, scrypt is the next non-FIPS fallback. If FIPS 140
-compliance or an OpenSSL-only dependency policy is required, use
-PBKDF2-HMAC-SHA256 with a high work factor instead. PBKDF2 should not be the
-default for new non-FIPS password APIs because it is CPU-hard, not memory-hard.
-
-SecureKit should not expose a password KDF API until the parameter encoding,
-salt generation, upgrade strategy, provider/dependency story, and denial-of-service
-limits are designed together. Work factors must be benchmarked on the target
-deployment rather than treated as permanent constants.
+Future password formats should be versioned as new file formats or explicit
+format revisions instead of silently changing `SKP1` behavior. Argon2id,
+PBKDF2, prompt handling, environment-variable password loading, password text
+arguments, and tunable scrypt parameters are intentionally outside this API
+slice.
 
 ## OpenSSL Providers and Backend Errors
 
@@ -523,14 +583,14 @@ providers.
 
 Applications that require FIPS mode or custom provider selection must configure
 OpenSSL before calling SecureKit. AES-256-GCM, SHA-256, HMAC-SHA-256,
-HKDF-SHA-256, and OpenSSL's random byte APIs must be available from that
-configuration.
+HKDF-SHA-256, scrypt, and OpenSSL's random byte APIs must be available from
+that configuration.
 
 OpenSSL allocation, initialization, cipher, digest, MAC, KDF, or
 random-generation failures are reported as
 `securekit::error_code::backend_failure`. SecureKit does not add OpenSSL
-error-queue details to public exception messages. AEAD packet and SKF1 chunk tag
-verification failures are reported separately as
+error-queue details to public exception messages. AEAD packet, SKF1 chunk, and
+SKP1 chunk tag verification failures are reported separately as
 `securekit::error_code::authentication_failed` with generic messages.
 
 ## Continuous Integration
@@ -633,5 +693,5 @@ Near-term:
 Later:
 
 - Object-oriented APIs if repeated call sites justify them.
-- Password-based encryption with a deliberate KDF design.
+- Additional password formats only if parameter agility or dependency changes justify them.
 - Additional streaming APIs if repeated call sites need other incremental formats.

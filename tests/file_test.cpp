@@ -562,3 +562,206 @@ TEST(File, RoundTripsMultiChunkFile)
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
 }
+
+TEST(File, PasswordRoundTripsSmallFile)
+{
+	const auto plain_path = test_path("password-plain-small.bin");
+	const auto sealed_path = test_path("password-sealed-small.skp");
+	const auto opened_path = test_path("password-opened-small.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes plaintext = bytes_from_text("hello password file sealing");
+	const securekit::bytes password = bytes_from_text("correct horse battery staple");
+	const securekit::bytes aad = bytes_from_text("password:file:test");
+	write_file(plain_path, plaintext);
+
+	securekit::seal_file_with_password(plain_path, sealed_path, password, aad);
+	const securekit::bytes sealed = read_file(sealed_path);
+	ASSERT_GE(sealed.size(), 64u + 9u + plaintext.size() + 16u);
+	EXPECT_EQ(sealed[0], std::byte{'S'});
+	EXPECT_EQ(sealed[1], std::byte{'K'});
+	EXPECT_EQ(sealed[2], std::byte{'P'});
+	EXPECT_EQ(sealed[3], std::byte{'1'});
+	EXPECT_EQ(sealed[4], std::byte{0x01});
+	EXPECT_EQ(sealed[5], std::byte{0x01});
+	EXPECT_EQ(sealed[6], std::byte{0x01});
+	EXPECT_EQ(sealed[7], std::byte{0x00});
+
+	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
+	EXPECT_EQ(read_file(opened_path), plaintext);
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRoundTripsEmptyFile)
+{
+	const auto plain_path = test_path("password-plain-empty.bin");
+	const auto sealed_path = test_path("password-sealed-empty.skp");
+	const auto opened_path = test_path("password-opened-empty.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("empty file password");
+	write_file(plain_path, {});
+
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	securekit::open_file_with_password(sealed_path, opened_path, password);
+	EXPECT_TRUE(read_file(opened_path).empty());
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRoundTripsMultiChunkFile)
+{
+	const auto plain_path = test_path("password-plain-large.bin");
+	const auto sealed_path = test_path("password-sealed-large.skp");
+	const auto opened_path = test_path("password-opened-large.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes plaintext = patterned_bytes((1024u * 1024u * 2u) + 17u, 23u);
+	const securekit::bytes password = bytes_from_text("large file password");
+	const securekit::bytes aad = bytes_from_text("password:large");
+	write_file(plain_path, plaintext);
+
+	securekit::seal_file_with_password(plain_path, sealed_path, password, aad);
+	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
+	EXPECT_EQ(read_file(opened_path), plaintext);
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsWrongPasswordAndAad)
+{
+	const auto plain_path = test_path("password-plain-auth.bin");
+	const auto sealed_path = test_path("password-sealed-auth.skp");
+	const auto opened_path = test_path("password-opened-auth.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("right password");
+	const securekit::bytes wrong_password = bytes_from_text("wrong password");
+	const securekit::bytes aad = bytes_from_text("aad");
+	write_file(plain_path, bytes_from_text("password secret"));
+	securekit::seal_file_with_password(plain_path, sealed_path, password, aad);
+
+	expect_generic_authentication_failure([&] { securekit::open_file_with_password(sealed_path, opened_path, wrong_password, aad); });
+	expect_generic_authentication_failure([&] { securekit::open_file_with_password(sealed_path, opened_path, password, bytes_from_text("wrong aad")); });
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsExistingOutputAndEmptyPassword)
+{
+	const auto plain_path = test_path("password-plain-invalid.bin");
+	const auto sealed_path = test_path("password-sealed-invalid.skp");
+	const auto opened_path = test_path("password-opened-invalid.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("non-empty password");
+	write_file(plain_path, bytes_from_text("input"));
+	write_file(sealed_path, bytes_from_text("existing"));
+
+	expect_error([&] { securekit::seal_file_with_password(plain_path, sealed_path, password); }, securekit::error_code::invalid_input);
+	EXPECT_EQ(read_file(sealed_path), bytes_from_text("existing"));
+
+	std::filesystem::remove(sealed_path);
+	expect_error([&] { securekit::seal_file_with_password(plain_path, sealed_path, securekit::bytes{}); }, securekit::error_code::invalid_input);
+
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	write_file(opened_path, bytes_from_text("existing output"));
+	expect_error([&] { securekit::open_file_with_password(sealed_path, opened_path, password); }, securekit::error_code::invalid_input);
+	EXPECT_EQ(read_file(opened_path), bytes_from_text("existing output"));
+	expect_error([&] { securekit::open_file_with_password(sealed_path, opened_path, securekit::bytes{}); }, securekit::error_code::invalid_input);
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsMalformedHeaderAndUnsupportedScryptParameters)
+{
+	const auto plain_path = test_path("password-plain-header.bin");
+	const auto sealed_path = test_path("password-sealed-header.skp");
+	const auto opened_path = test_path("password-opened-header.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("header password");
+	write_file(plain_path, bytes_from_text("header"));
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+
+	for (const std::size_t offset : {0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, 11u, 52u, 59u, 63u})
+	{
+		securekit::bytes sealed = read_file(sealed_path);
+		sealed[offset] ^= std::byte{0x01};
+		write_file(sealed_path, sealed);
+		expect_error([&] { securekit::open_file_with_password(sealed_path, opened_path, password); }, securekit::error_code::invalid_packet);
+		std::filesystem::remove(opened_path);
+	}
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordDetectsTruncationAppendAndReorder)
+{
+	const auto plain_path = test_path("password-plain-shape.bin");
+	const auto sealed_path = test_path("password-sealed-shape.skp");
+	const auto opened_path = test_path("password-opened-shape.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	securekit::bytes plaintext((1024u * 1024u * 2u) + 17u);
+	for (std::size_t i = 0; i < plaintext.size(); ++i)
+	{
+		plaintext[i] = static_cast<std::byte>((i * 19u) & 0xffu);
+	}
+
+	const securekit::bytes password = bytes_from_text("shape password");
+	write_file(plain_path, plaintext);
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	const securekit::bytes original = read_file(sealed_path);
+
+	securekit::bytes truncated = original;
+	truncated.pop_back();
+	write_file(sealed_path, truncated);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	securekit::bytes appended = original;
+	appended.push_back(std::byte{0x00});
+	write_file(sealed_path, appended);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	const std::size_t header_size = 64;
+	const std::size_t full_record_size = 9 + (1024u * 1024u) + 16;
+	securekit::bytes reordered = original;
+	std::swap_ranges(
+	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size),
+	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size),
+	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size));
+	write_file(sealed_path, reordered);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}

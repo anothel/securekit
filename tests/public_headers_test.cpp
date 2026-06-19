@@ -31,6 +31,9 @@ TEST(PublicHeaders, TypeAliasesAreAvailable)
 TEST(PublicHeaders, FileApiIsAvailable)
 {
 	static_assert(std::is_same_v<decltype(&securekit::seal_file), void (*)(const std::filesystem::path &, const std::filesystem::path &, const securekit::key256 &, std::span<const std::byte>)>);
+	static_assert(std::is_same_v<decltype(&securekit::open_file), void (*)(const std::filesystem::path &, const std::filesystem::path &, const securekit::key256 &, std::span<const std::byte>)>);
+	static_assert(std::is_same_v<decltype(&securekit::seal_file_with_password), void (*)(const std::filesystem::path &, const std::filesystem::path &, std::span<const std::byte>, std::span<const std::byte>)>);
+	static_assert(std::is_same_v<decltype(&securekit::open_file_with_password), void (*)(const std::filesystem::path &, const std::filesystem::path &, std::span<const std::byte>, std::span<const std::byte>)>);
 }
 
 TEST(PublicHeaders, KeyWrapApiIsAvailable)

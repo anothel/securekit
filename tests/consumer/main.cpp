@@ -84,18 +84,28 @@ int main()
 	const auto plain_path = std::filesystem::temp_directory_path() / "securekit-consumer-plain.bin";
 	const auto sealed_path = std::filesystem::temp_directory_path() / "securekit-consumer-sealed.skf";
 	const auto opened_path = std::filesystem::temp_directory_path() / "securekit-consumer-opened.bin";
+	const auto password_sealed_path = std::filesystem::temp_directory_path() / "securekit-consumer-password-sealed.skp";
+	const auto password_opened_path = std::filesystem::temp_directory_path() / "securekit-consumer-password-opened.bin";
+	const auto password = ascii_bytes("SecureKit consumer password");
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+	std::filesystem::remove(password_sealed_path);
+	std::filesystem::remove(password_opened_path);
 
 	write_file(plain_path, plaintext);
 	securekit::seal_file(plain_path, sealed_path, key, aad);
 	securekit::open_file(sealed_path, opened_path, key, aad);
 	const auto opened = read_file(opened_path);
+	securekit::seal_file_with_password(plain_path, password_sealed_path, password, aad);
+	securekit::open_file_with_password(password_sealed_path, password_opened_path, password, aad);
+	const auto password_opened = read_file(password_opened_path);
 
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+	std::filesystem::remove(password_sealed_path);
+	std::filesystem::remove(password_opened_path);
 
 	const bool utility_api_ok = from_base64url == plaintext &&
 	                            securekit::hex_encode(digest) ==
@@ -106,7 +116,7 @@ int main()
 
 	return utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
 	               streaming_plaintext == plaintext && streaming_tail.empty() && unwrapped_key == key &&
-	               opened == plaintext && !token.empty()
+	               opened == plaintext && password_opened == plaintext && !token.empty()
 	           ? 0
 	           : 1;
 }
