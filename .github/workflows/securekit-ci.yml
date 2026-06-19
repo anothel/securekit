@@ -75,59 +75,8 @@ jobs:
       - name: Build and test
         run: cmake --build build --config ${{ matrix.build_type }} --target check
 
-      - name: Install
-        run: cmake --install build --config ${{ matrix.build_type }} --prefix "${{ github.workspace }}/install"
-
-      - name: Check installed CLI
-        if: matrix.compiler != 'msvc'
-        run: >
-          cmake
-          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
-          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
-          -P tests/package/check_installed_cli.cmake
-
-      - name: Check installed CLI (MSVC)
-        if: matrix.compiler == 'msvc'
-        shell: pwsh
-        run: |
-          $env:PATH = "${{ github.workspace }}/install/bin;$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
-          cmake `
-            -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit.exe" `
-            -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli" `
-            -P tests/package/check_installed_cli.cmake
-
-      - name: Configure consumer
-        if: matrix.compiler != 'msvc'
-        run: >
-          cmake -S tests/consumer -B consumer-build
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-
-      - name: Configure consumer (MSVC)
-        if: matrix.compiler == 'msvc'
-        run: >
-          cmake -S tests/consumer -B consumer-build
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-
-      - name: Build consumer
-        run: cmake --build consumer-build --config ${{ matrix.build_type }}
-
-      - name: Run consumer
-        if: matrix.compiler != 'msvc'
-        run: ./consumer-build/securekit_consumer
-
-      - name: Run consumer (MSVC)
-        if: matrix.compiler == 'msvc'
-        shell: pwsh
-        run: |
-          $env:PATH = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
-          $exe = "consumer-build/${{ matrix.build_type }}/securekit_consumer.exe"
-          if (-not (Test-Path $exe)) {
-            $exe = "consumer-build/securekit_consumer.exe"
-          }
-          & $exe
+      - name: Package check
+        run: cmake --build build --config ${{ matrix.build_type }} --target package-check
 
   install-only:
     name: ubuntu-latest gcc Release install-only
@@ -150,38 +99,16 @@ jobs:
           -DBUILD_TESTING=OFF
           -DSECUREKIT_BUILD_TESTS=OFF
 
-      - name: Build
-        run: cmake --build build --config Release
-
-      - name: Install
-        run: cmake --install build --config Release --prefix "${{ github.workspace }}/install"
+      - name: Package check
+        run: cmake --build build --config Release --target package-check
 
       - name: Verify package files
         run: |
-          test -f "${{ github.workspace }}/install/bin/securekit"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
-
-      - name: Check installed CLI
-        run: >
-          cmake
-          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
-          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
-          -P tests/package/check_installed_cli.cmake
-
-      - name: Configure consumer
-        run: >
-          cmake -S tests/consumer -B consumer-build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-
-      - name: Build consumer
-        run: cmake --build consumer-build --config Release
-
-      - name: Run consumer
-        run: ./consumer-build/securekit_consumer
+          test -f "${{ github.workspace }}/build/package-check/install/bin/securekit"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfig.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake"
 
   linux-static:
     name: ubuntu-latest gcc Release static
@@ -216,37 +143,18 @@ jobs:
       - name: Build and test
         run: cmake --build build --config Release --target check
 
-      - name: Install
-        run: cmake --install build --config Release --prefix "${{ github.workspace }}/install"
+      - name: Package check
+        run: cmake --build build --config Release --target package-check
 
       - name: Verify static package files
         run: |
-          test -f "${{ github.workspace }}/install/bin/securekit"
-          test -f "${{ github.workspace }}/install/lib/libsecurekit.a"
-          test ! -f "${{ github.workspace }}/install/lib/libsecurekit.so"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake"
-          test -f "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
-
-      - name: Check installed CLI
-        run: >
-          cmake
-          -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit"
-          -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli"
-          -P tests/package/check_installed_cli.cmake
-
-      - name: Configure consumer
-        run: >
-          cmake -S tests/consumer -B consumer-build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-
-      - name: Build consumer
-        run: cmake --build consumer-build --config Release
-
-      - name: Run consumer
-        run: ./consumer-build/securekit_consumer
+          test -f "${{ github.workspace }}/build/package-check/install/bin/securekit"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/libsecurekit.a"
+          test ! -f "${{ github.workspace }}/build/package-check/install/lib/libsecurekit.so"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfig.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets.cmake"
+          test -f "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake"
 
   windows-shared:
     name: windows-latest msvc Release shared
@@ -280,52 +188,23 @@ jobs:
       - name: Build and test
         run: cmake --build build --config Release --target check
 
-      - name: Install
-        run: cmake --install build --config Release --prefix "${{ github.workspace }}/install"
+      - name: Package check
+        run: cmake --build build --config Release --target package-check
 
       - name: Verify shared package files
         shell: pwsh
         run: |
           $files = @(
-            "${{ github.workspace }}/install/bin/securekit.exe",
-            "${{ github.workspace }}/install/bin/securekit.dll",
-            "${{ github.workspace }}/install/lib/securekit.lib",
-            "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfig.cmake",
-            "${{ github.workspace }}/install/lib/cmake/securekit/securekitConfigVersion.cmake",
-            "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets.cmake",
-            "${{ github.workspace }}/install/lib/cmake/securekit/securekitTargets-release.cmake"
+            "${{ github.workspace }}/build/package-check/install/bin/securekit.exe",
+            "${{ github.workspace }}/build/package-check/install/bin/securekit.dll",
+            "${{ github.workspace }}/build/package-check/install/lib/securekit.lib",
+            "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfig.cmake",
+            "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake",
+            "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets.cmake",
+            "${{ github.workspace }}/build/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake"
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file)) {
               throw "Missing $file"
             }
           }
-
-      - name: Check installed CLI
-        shell: pwsh
-        run: |
-          $env:PATH = "${{ github.workspace }}/install/bin;$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
-          cmake `
-            -DSECUREKIT_CLI="${{ github.workspace }}/install/bin/securekit.exe" `
-            -DSECUREKIT_CLI_WORK_DIR="${{ runner.temp }}/securekit-installed-cli" `
-            -P tests/package/check_installed_cli.cmake
-
-      - name: Configure consumer
-        run: >
-          cmake -S tests/consumer -B consumer-build
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-
-      - name: Build consumer
-        run: cmake --build consumer-build --config Release
-
-      - name: Run consumer
-        shell: pwsh
-        run: |
-          $env:PATH = "${{ github.workspace }}/install/bin;$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
-          $exe = "consumer-build/Release/securekit_consumer.exe"
-          if (-not (Test-Path $exe)) {
-            $exe = "consumer-build/securekit_consumer.exe"
-          }
-          & $exe

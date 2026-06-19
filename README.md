@@ -61,6 +61,7 @@ Generic CMake:
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release --target check
+cmake --build build --config Release --target package-check
 ```
 
 Windows with vcpkg:
@@ -72,6 +73,7 @@ cmake -S . -B build-vcpkg `
   -DVCPKG_TARGET_TRIPLET=x64-windows
 
 cmake --build build-vcpkg --config Release --target check
+cmake --build build-vcpkg --config Release --target package-check
 ```
 
 If tests cannot find OpenSSL DLLs on Windows, pass:
@@ -651,28 +653,19 @@ workflow in GitHub. Local equivalent:
 ```sh
 cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release --target check
-cmake --install build --config Release --prefix ./install
-cmake -DSECUREKIT_CLI=./install/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./installed-cli-check -P tests/package/check_installed_cli.cmake
-cmake -S tests/consumer -B consumer-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install
-cmake --build consumer-build --config Release
-./consumer-build/securekit_consumer
+cmake --build build --config Release --target package-check
 ```
 
 Install-only package check:
 
 ```sh
 cmake -S . -B build-install-only -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
-cmake --build build-install-only --config Release
-cmake --install build-install-only --config Release --prefix ./install-only
-test -f ./install-only/bin/securekit
-test -f ./install-only/lib/cmake/securekit/securekitConfig.cmake
-test -f ./install-only/lib/cmake/securekit/securekitConfigVersion.cmake
-test -f ./install-only/lib/cmake/securekit/securekitTargets.cmake
-test -f ./install-only/lib/cmake/securekit/securekitTargets-release.cmake
-cmake -DSECUREKIT_CLI=./install-only/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./install-only-cli-check -P tests/package/check_installed_cli.cmake
-cmake -S tests/consumer -B consumer-install-only-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-only
-cmake --build consumer-install-only-build --config Release
-./consumer-install-only-build/securekit_consumer
+cmake --build build-install-only --config Release --target package-check
+test -f ./build-install-only/package-check/install/bin/securekit
+test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitConfig.cmake
+test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake
+test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitTargets.cmake
+test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake
 ```
 
 Linux static-library package check:
@@ -680,18 +673,14 @@ Linux static-library package check:
 ```sh
 cmake -S . -B build-static -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build-static --config Release --target check
-cmake --install build-static --config Release --prefix ./install-static
-test -f ./install-static/bin/securekit
-test -f ./install-static/lib/libsecurekit.a
-test ! -f ./install-static/lib/libsecurekit.so
-test -f ./install-static/lib/cmake/securekit/securekitConfig.cmake
-test -f ./install-static/lib/cmake/securekit/securekitConfigVersion.cmake
-test -f ./install-static/lib/cmake/securekit/securekitTargets.cmake
-test -f ./install-static/lib/cmake/securekit/securekitTargets-release.cmake
-cmake -DSECUREKIT_CLI=./install-static/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./install-static-cli-check -P tests/package/check_installed_cli.cmake
-cmake -S tests/consumer -B consumer-static-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install-static
-cmake --build consumer-static-build --config Release
-./consumer-static-build/securekit_consumer
+cmake --build build-static --config Release --target package-check
+test -f ./build-static/package-check/install/bin/securekit
+test -f ./build-static/package-check/install/lib/libsecurekit.a
+test ! -f ./build-static/package-check/install/lib/libsecurekit.so
+test -f ./build-static/package-check/install/lib/cmake/securekit/securekitConfig.cmake
+test -f ./build-static/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake
+test -f ./build-static/package-check/install/lib/cmake/securekit/securekitTargets.cmake
+test -f ./build-static/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake
 ```
 
 Windows shared-library package check:
@@ -704,22 +693,19 @@ cmake -S . -B build-vcpkg-shared `
   -DSECUREKIT_OPENSSL_RUNTIME_DIR="path\to\openssl-bin"
 
 cmake --build build-vcpkg-shared --config Release --target check
-cmake --install build-vcpkg-shared --config Release --prefix .\install-shared
-Test-Path .\install-shared\bin\securekit.exe
-$env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"
-cmake -DSECUREKIT_CLI=.\install-shared\bin\securekit.exe -DSECUREKIT_CLI_WORK_DIR=.\install-shared-cli-check -P tests\package\check_installed_cli.cmake
-cmake -S tests\consumer -B consumer-shared-build -DCMAKE_PREFIX_PATH=.\install-shared -DOPENSSL_ROOT_DIR="path\to\openssl-prefix"
-cmake --build consumer-shared-build --config Release
-.\consumer-shared-build\Release\securekit_consumer.exe
+cmake --build build-vcpkg-shared --config Release --target package-check
+Test-Path .\build-vcpkg-shared\package-check\install\bin\securekit.exe
+Test-Path .\build-vcpkg-shared\package-check\install\bin\securekit.dll
+Test-Path .\build-vcpkg-shared\package-check\install\lib\securekit.lib
+Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitConfig.cmake
+Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitConfigVersion.cmake
+Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitTargets.cmake
+Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitTargets-release.cmake
 ```
 
-On Windows with dynamically linked OpenSSL, put the OpenSSL DLL directory on
-`PATH` before running the consumer executable:
-
-```powershell
-$env:PATH = "path\to\openssl-bin;$env:PATH"
-.\consumer-build\Release\securekit_consumer.exe
-```
+On Windows with dynamically linked OpenSSL, pass `SECUREKIT_OPENSSL_RUNTIME_DIR`
+when configuring so `check` and `package-check` can run CLI and consumer
+executables with the OpenSSL DLL directory on `PATH`.
 
 ## Roadmap
 
