@@ -214,6 +214,58 @@ TEST(File, RoundTripsStreams)
 	EXPECT_EQ(bytes_from_text(opened_stream.str()), plaintext);
 }
 
+TEST(File, StreamFailuresUseBackendError)
+{
+	const securekit::bytes plaintext = bytes_from_text("stream failure plaintext");
+	const securekit::bytes aad = bytes_from_text("stream:failure");
+	const securekit::bytes password = bytes_from_text("stream failure password");
+	const securekit::key256 key = key_from_seed(0x23);
+
+	std::istringstream plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream sealed_stream(std::ios::binary);
+	securekit::seal_file(plain_stream, sealed_stream, key, aad);
+
+	std::istringstream password_plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream password_sealed_stream(std::ios::binary);
+	securekit::seal_file_with_password(password_plain_stream, password_sealed_stream, password, aad);
+
+	std::istringstream failed_plain_input(string_from_bytes(plaintext), std::ios::binary);
+	failed_plain_input.setstate(std::ios::badbit);
+	expect_error(
+	    [&] {
+		    std::ostringstream output(std::ios::binary);
+		    securekit::seal_file(failed_plain_input, output, key, aad);
+	    },
+	    securekit::error_code::backend_failure);
+
+	std::istringstream failed_password_plain_input(string_from_bytes(plaintext), std::ios::binary);
+	failed_password_plain_input.setstate(std::ios::badbit);
+	expect_error(
+	    [&] {
+		    std::ostringstream output(std::ios::binary);
+		    securekit::seal_file_with_password(failed_password_plain_input, output, password, aad);
+	    },
+	    securekit::error_code::backend_failure);
+
+	std::istringstream failed_sealed_input(sealed_stream.str(), std::ios::binary);
+	failed_sealed_input.setstate(std::ios::badbit);
+	expect_error(
+	    [&] {
+		    std::ostringstream output(std::ios::binary);
+		    securekit::open_file(failed_sealed_input, output, key, aad);
+	    },
+	    securekit::error_code::backend_failure);
+
+	std::istringstream failed_password_sealed_input(password_sealed_stream.str(), std::ios::binary);
+	failed_password_sealed_input.setstate(std::ios::badbit);
+	expect_error(
+	    [&] {
+		    std::ostringstream output(std::ios::binary);
+		    securekit::open_file_with_password(failed_password_sealed_input, output, password, aad);
+	    },
+	    securekit::error_code::backend_failure);
+}
+
 TEST(File, OpensKnownSkf1Fixture)
 {
 	const auto sealed_path = test_path("known-fixture.skf");

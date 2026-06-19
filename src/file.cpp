@@ -442,7 +442,15 @@ void write_all(std::ostream &out, std::span<const std::byte> data)
 bool read_exact(std::istream &in, std::byte *data, std::size_t size)
 {
 	in.read(reinterpret_cast<char *>(data), static_cast<std::streamsize>(size));
-	return static_cast<std::size_t>(in.gcount()) == size;
+	if (static_cast<std::size_t>(in.gcount()) == size)
+	{
+		return true;
+	}
+	if (in.bad() || (!in.eof() && in.fail()))
+	{
+		throw_backend_failure("File read failed");
+	}
+	return false;
 }
 
 std::ifstream open_input(const std::filesystem::path &path)
