@@ -159,6 +159,75 @@ TEST(PacketStream, DecryptsOneShotPacketWithChunkedUpdates)
 	EXPECT_TRUE(tail.empty());
 }
 
+TEST(PacketStream, DecryptsKnownPacketVectorWithChunkedUpdates)
+{
+	const securekit::key256 key{};
+	const securekit::bytes aad = bytes_from_ascii("record:v1");
+	const securekit::bytes expected_plaintext = bytes_from_ascii("hello securekit");
+	const securekit::bytes packet = bytes_from_values({
+	    0x53,
+	    0x4b,
+	    0x54,
+	    0x31,
+	    0x01,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0xa6,
+	    0xc2,
+	    0x2c,
+	    0x51,
+	    0x22,
+	    0x40,
+	    0x18,
+	    0x0b,
+	    0x64,
+	    0x3b,
+	    0xb7,
+	    0xb6,
+	    0xd1,
+	    0x9a,
+	    0xe9,
+	    0x1d,
+	    0x51,
+	    0xdb,
+	    0x38,
+	    0x76,
+	    0x93,
+	    0xb2,
+	    0xf1,
+	    0x65,
+	    0x22,
+	    0x06,
+	    0x13,
+	    0xf9,
+	    0x87,
+	    0x28,
+	    0xde,
+	});
+
+	const std::span<const std::byte> packet_span(packet);
+	const std::span<const std::byte> ciphertext = packet_span.subspan(kPrefixSize, expected_plaintext.size());
+
+	securekit::packet_decryptor decryptor(key, aad);
+	decryptor.begin(packet_span.first(kPrefixSize));
+	const securekit::bytes part1 = decryptor.update(ciphertext.first(5));
+	const securekit::bytes part2 = decryptor.update(ciphertext.subspan(5));
+	const securekit::bytes tail = decryptor.finalize(packet_span.last(kTagSize));
+
+	EXPECT_EQ(join({part1, part2, tail}), expected_plaintext);
+	EXPECT_TRUE(tail.empty());
+}
+
 TEST(PacketStream, RoundTripsEmptyPlaintext)
 {
 	const securekit::key256 key = key_from_seed(0x30);

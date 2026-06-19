@@ -291,6 +291,133 @@ TEST(File, OpensKnownSkf1Fixture)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, OpensKnownSkp1Fixture)
+{
+	const auto sealed_path = test_path("known-password-fixture.skp");
+	const auto opened_path = test_path("known-password-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("known SKP1 password");
+	const securekit::bytes aad = bytes_from_text("fixture:aad");
+	const securekit::bytes fixture = bytes_from_values({
+	    0x53,
+	    0x4b,
+	    0x50,
+	    0x31,
+	    0x01,
+	    0x01,
+	    0x01,
+	    0x00,
+	    0x00,
+	    0x10,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x01,
+	    0x02,
+	    0x03,
+	    0x04,
+	    0x05,
+	    0x06,
+	    0x07,
+	    0x08,
+	    0x09,
+	    0x0a,
+	    0x0b,
+	    0x0c,
+	    0x0d,
+	    0x0e,
+	    0x0f,
+	    0x10,
+	    0x11,
+	    0x12,
+	    0x13,
+	    0x14,
+	    0x15,
+	    0x16,
+	    0x17,
+	    0x18,
+	    0x19,
+	    0x1a,
+	    0x1b,
+	    0x1c,
+	    0x1d,
+	    0x1e,
+	    0x1f,
+	    0xa0,
+	    0xa1,
+	    0xa2,
+	    0xa3,
+	    0xa4,
+	    0xa5,
+	    0xa6,
+	    0xa7,
+	    0x00,
+	    0x00,
+	    0x80,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x08,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x01,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x00,
+	    0x11,
+	    0x01,
+	    0x8c,
+	    0x37,
+	    0xd6,
+	    0xaf,
+	    0x06,
+	    0xe9,
+	    0x10,
+	    0x22,
+	    0x19,
+	    0x83,
+	    0x4f,
+	    0xca,
+	    0xc4,
+	    0x3a,
+	    0x8a,
+	    0x4b,
+	    0x5b,
+	    0xd9,
+	    0xa6,
+	    0xb9,
+	    0xcc,
+	    0x65,
+	    0x8c,
+	    0x9e,
+	    0x3d,
+	    0x7b,
+	    0xb9,
+	    0xa6,
+	    0x28,
+	    0x07,
+	    0x9f,
+	    0xf4,
+	    0xe3,
+	});
+
+	write_file(sealed_path, fixture);
+	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
+
+	EXPECT_EQ(read_file(opened_path), bytes_from_text("known SKP1 vector"));
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
 TEST(File, RejectsExistingOutput)
 {
 	const auto plain_path = test_path("plain-output-exists.bin");
