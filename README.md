@@ -60,8 +60,7 @@ Generic CMake:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSECUREKIT_BUILD_TESTS=ON
-cmake --build build --config Release
-ctest --test-dir build --build-config Release --output-on-failure
+cmake --build build --config Release --target check
 ```
 
 Windows with vcpkg:
@@ -72,8 +71,7 @@ cmake -S . -B build-vcpkg `
   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
   -DVCPKG_TARGET_TRIPLET=x64-windows
 
-cmake --build build-vcpkg --config Release
-ctest --test-dir build-vcpkg --build-config Release --output-on-failure
+cmake --build build-vcpkg --config Release --target check
 ```
 
 If tests cannot find OpenSSL DLLs on Windows, pass:
@@ -652,8 +650,7 @@ workflow in GitHub. Local equivalent:
 
 ```sh
 cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
-cmake --build build --config Release
-ctest --test-dir build --build-config Release --output-on-failure
+cmake --build build --config Release --target check
 cmake --install build --config Release --prefix ./install
 cmake -DSECUREKIT_CLI=./install/bin/securekit -DSECUREKIT_CLI_WORK_DIR=./installed-cli-check -P tests/package/check_installed_cli.cmake
 cmake -S tests/consumer -B consumer-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./install
@@ -682,8 +679,7 @@ Linux static-library package check:
 
 ```sh
 cmake -S . -B build-static -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DSECUREKIT_BUILD_TESTS=ON
-cmake --build build-static --config Release
-ctest --test-dir build-static --build-config Release --output-on-failure
+cmake --build build-static --config Release --target check
 cmake --install build-static --config Release --prefix ./install-static
 test -f ./install-static/bin/securekit
 test -f ./install-static/lib/libsecurekit.a
@@ -707,8 +703,7 @@ cmake -S . -B build-vcpkg-shared `
   -DOPENSSL_ROOT_DIR="path\to\openssl-prefix" `
   -DSECUREKIT_OPENSSL_RUNTIME_DIR="path\to\openssl-bin"
 
-cmake --build build-vcpkg-shared --config Release
-ctest --test-dir build-vcpkg-shared --build-config Release --output-on-failure
+cmake --build build-vcpkg-shared --config Release --target check
 cmake --install build-vcpkg-shared --config Release --prefix .\install-shared
 Test-Path .\install-shared\bin\securekit.exe
 $env:PATH = ".\install-shared\bin;path\to\openssl-bin;$env:PATH"

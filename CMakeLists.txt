@@ -131,6 +131,14 @@ if(SECUREKIT_BUILD_TESTS)
   if(_securekit_test_properties)
     set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})
   endif()
+
+  add_custom_target(check
+    COMMAND ${CMAKE_CTEST_COMMAND}
+      --test-dir ${CMAKE_CURRENT_BINARY_DIR}
+      --build-config $<CONFIG>
+      --output-on-failure
+    DEPENDS securekit_cli securekit_tests
+    USES_TERMINAL)
 endif()
 
 install(
