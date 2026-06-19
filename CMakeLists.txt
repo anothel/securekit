@@ -85,6 +85,7 @@ if(SECUREKIT_BUILD_TESTS)
     tests/base64_test.cpp
     tests/compare_test.cpp
     tests/file_test.cpp
+    tests/fixture_inventory_test.cpp
     tests/hash_test.cpp
     tests/hex_test.cpp
     tests/key_wrap_test.cpp
