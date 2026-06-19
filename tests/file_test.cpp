@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
-#include <initializer_list>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -14,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "securekit/error.hpp"
+#include "fixture_utils.hpp"
 
 namespace
 {
@@ -73,17 +73,6 @@ std::string string_from_bytes(const securekit::bytes &bytes)
 	for (const std::byte byte : bytes)
 	{
 		out.push_back(static_cast<char>(std::to_integer<unsigned char>(byte)));
-	}
-	return out;
-}
-
-securekit::bytes bytes_from_values(std::initializer_list<unsigned int> values)
-{
-	securekit::bytes out;
-	out.reserve(values.size());
-	for (const unsigned int value : values)
-	{
-		out.push_back(static_cast<std::byte>(value & 0xffu));
 	}
 	return out;
 }
@@ -275,100 +264,7 @@ TEST(File, OpensKnownSkf1Fixture)
 
 	const securekit::key256 key{};
 	const securekit::bytes aad = bytes_from_text("fixture:aad");
-	const securekit::bytes fixture = bytes_from_values({
-	    0x53,
-	    0x4b,
-	    0x46,
-	    0x31,
-	    0x01,
-	    0x01,
-	    0x00,
-	    0x10,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x01,
-	    0x02,
-	    0x03,
-	    0x04,
-	    0x05,
-	    0x06,
-	    0x07,
-	    0x08,
-	    0x09,
-	    0x0a,
-	    0x0b,
-	    0x0c,
-	    0x0d,
-	    0x0e,
-	    0x0f,
-	    0x10,
-	    0x11,
-	    0x12,
-	    0x13,
-	    0x14,
-	    0x15,
-	    0x16,
-	    0x17,
-	    0x18,
-	    0x19,
-	    0x1a,
-	    0x1b,
-	    0x1c,
-	    0x1d,
-	    0x1e,
-	    0x1f,
-	    0xa0,
-	    0xa1,
-	    0xa2,
-	    0xa3,
-	    0xa4,
-	    0xa5,
-	    0xa6,
-	    0xa7,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x11,
-	    0x01,
-	    0xd5,
-	    0x8b,
-	    0x80,
-	    0xe6,
-	    0x11,
-	    0xa8,
-	    0xa9,
-	    0x0f,
-	    0x26,
-	    0xba,
-	    0xcd,
-	    0xc5,
-	    0x29,
-	    0x25,
-	    0x22,
-	    0x1e,
-	    0xb4,
-	    0xff,
-	    0x58,
-	    0x9e,
-	    0x2d,
-	    0x66,
-	    0xe0,
-	    0x43,
-	    0x93,
-	    0x60,
-	    0xec,
-	    0xa7,
-	    0x0f,
-	    0x0e,
-	    0xa2,
-	    0xc2,
-	    0x84,
-	});
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skf1-known-file.hex");
 
 	write_file(sealed_path, fixture);
 	securekit::open_file(sealed_path, opened_path, key, aad);
@@ -388,114 +284,7 @@ TEST(File, OpensKnownSkp1Fixture)
 
 	const securekit::bytes password = bytes_from_text("known SKP1 password");
 	const securekit::bytes aad = bytes_from_text("fixture:aad");
-	const securekit::bytes fixture = bytes_from_values({
-	    0x53,
-	    0x4b,
-	    0x50,
-	    0x31,
-	    0x01,
-	    0x01,
-	    0x01,
-	    0x00,
-	    0x00,
-	    0x10,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x01,
-	    0x02,
-	    0x03,
-	    0x04,
-	    0x05,
-	    0x06,
-	    0x07,
-	    0x08,
-	    0x09,
-	    0x0a,
-	    0x0b,
-	    0x0c,
-	    0x0d,
-	    0x0e,
-	    0x0f,
-	    0x10,
-	    0x11,
-	    0x12,
-	    0x13,
-	    0x14,
-	    0x15,
-	    0x16,
-	    0x17,
-	    0x18,
-	    0x19,
-	    0x1a,
-	    0x1b,
-	    0x1c,
-	    0x1d,
-	    0x1e,
-	    0x1f,
-	    0xa0,
-	    0xa1,
-	    0xa2,
-	    0xa3,
-	    0xa4,
-	    0xa5,
-	    0xa6,
-	    0xa7,
-	    0x00,
-	    0x00,
-	    0x80,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x08,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x01,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x11,
-	    0x01,
-	    0x8c,
-	    0x37,
-	    0xd6,
-	    0xaf,
-	    0x06,
-	    0xe9,
-	    0x10,
-	    0x22,
-	    0x19,
-	    0x83,
-	    0x4f,
-	    0xca,
-	    0xc4,
-	    0x3a,
-	    0x8a,
-	    0x4b,
-	    0x5b,
-	    0xd9,
-	    0xa6,
-	    0xb9,
-	    0xcc,
-	    0x65,
-	    0x8c,
-	    0x9e,
-	    0x3d,
-	    0x7b,
-	    0xb9,
-	    0xa6,
-	    0x28,
-	    0x07,
-	    0x9f,
-	    0xf4,
-	    0xe3,
-	});
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skp1-known-password-file.hex");
 
 	write_file(sealed_path, fixture);
 	securekit::open_file_with_password(sealed_path, opened_path, password, aad);

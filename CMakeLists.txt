@@ -93,6 +93,8 @@ if(SECUREKIT_BUILD_TESTS)
 
   target_link_libraries(securekit_tests PRIVATE securekit::securekit GTest::gtest_main)
   target_compile_features(securekit_tests PRIVATE cxx_std_20)
+  target_compile_definitions(securekit_tests PRIVATE
+    SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 
   set(_securekit_test_properties)
   if(WIN32)

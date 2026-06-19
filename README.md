@@ -625,6 +625,12 @@ error-queue details to public exception messages. AEAD packet, SKF1 chunk, and
 SKP1 chunk tag verification failures are reported separately as
 `securekit::error_code::authentication_failed` with generic messages.
 
+## Compatibility Fixtures
+
+Known v1 wire-format vectors live in `tests/fixtures` as lowercase hex files.
+The test suite reads these files for `SKT1`, `SKF1`, `SKP1`, and key wrapping
+coverage instead of keeping serialized packets inline in test source.
+
 ## Continuous Integration
 
 GitHub Actions builds and tests:

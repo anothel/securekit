@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "securekit/error.hpp"
+#include "fixture_utils.hpp"
 
 namespace
 {
@@ -195,57 +196,7 @@ TEST(Aead, DecryptsKnownAes256GcmPacketVector)
 	const securekit::bytes aad = bytes_from_ascii("record:v1");
 	const securekit::bytes expected_plaintext = bytes_from_ascii("hello securekit");
 
-	// AES-256-GCM vector with all-zero key/nonce and AAD = "SKT1\x01record:v1".
-	const securekit::bytes packet = bytes_from_values({
-	    0x53,
-	    0x4b,
-	    0x54,
-	    0x31,
-	    0x01,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0xa6,
-	    0xc2,
-	    0x2c,
-	    0x51,
-	    0x22,
-	    0x40,
-	    0x18,
-	    0x0b,
-	    0x64,
-	    0x3b,
-	    0xb7,
-	    0xb6,
-	    0xd1,
-	    0x9a,
-	    0xe9,
-	    0x1d,
-	    0x51,
-	    0xdb,
-	    0x38,
-	    0x76,
-	    0x93,
-	    0xb2,
-	    0xf1,
-	    0x65,
-	    0x22,
-	    0x06,
-	    0x13,
-	    0xf9,
-	    0x87,
-	    0x28,
-	    0xde,
-	});
+	const securekit::bytes packet = securekit::test::read_hex_fixture("skt1-aes256-gcm-aad.hex");
 
 	EXPECT_EQ(securekit::decrypt(packet, key, aad), expected_plaintext);
 }
@@ -254,42 +205,7 @@ TEST(Aead, DecryptsKnownEmptyAes256GcmPacketVector)
 {
 	const securekit::key256 key{};
 
-	// AES-256-GCM vector with all-zero key/nonce, empty plaintext, and AAD = "SKT1\x01".
-	const securekit::bytes packet = bytes_from_values({
-	    0x53,
-	    0x4b,
-	    0x54,
-	    0x31,
-	    0x01,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0x00,
-	    0xf4,
-	    0xe3,
-	    0x8c,
-	    0xde,
-	    0x25,
-	    0x5e,
-	    0x8b,
-	    0x15,
-	    0x30,
-	    0x65,
-	    0xd0,
-	    0x85,
-	    0x0c,
-	    0x28,
-	    0xe9,
-	    0xbf,
-	});
+	const securekit::bytes packet = securekit::test::read_hex_fixture("skt1-aes256-gcm-empty.hex");
 
 	EXPECT_TRUE(securekit::decrypt(packet, key).empty());
 }
@@ -310,51 +226,7 @@ TEST(Aead, DecryptsKnownBinaryAes256GcmPacketVectorWithAad)
 	    0x43,
 	});
 
-	// AES-256-GCM vector with key = 00..1f, nonce = f0..fb, and AAD = "SKT1\x01aad:extra".
-	const securekit::bytes packet = bytes_from_values({
-	    0x53,
-	    0x4b,
-	    0x54,
-	    0x31,
-	    0x01,
-	    0xf0,
-	    0xf1,
-	    0xf2,
-	    0xf3,
-	    0xf4,
-	    0xf5,
-	    0xf6,
-	    0xf7,
-	    0xf8,
-	    0xf9,
-	    0xfa,
-	    0xfb,
-	    0x69,
-	    0xf9,
-	    0x53,
-	    0x20,
-	    0x03,
-	    0xba,
-	    0x93,
-	    0x36,
-	    0xdc,
-	    0x49,
-	    0x0f,
-	    0x40,
-	    0xe4,
-	    0xab,
-	    0xa8,
-	    0x91,
-	    0x07,
-	    0x78,
-	    0xcc,
-	    0xea,
-	    0xd1,
-	    0xe8,
-	    0x56,
-	    0x1f,
-	    0x70,
-	});
+	const securekit::bytes packet = securekit::test::read_hex_fixture("skt1-aes256-gcm-binary-aad.hex");
 
 	EXPECT_EQ(securekit::decrypt(packet, key, aad), expected_plaintext);
 }
