@@ -2,6 +2,10 @@ if(NOT DEFINED SECUREKIT_CLI)
   message(FATAL_ERROR "SECUREKIT_CLI is required")
 endif()
 
+if(NOT DEFINED SECUREKIT_EXPECTED_VERSION)
+  message(FATAL_ERROR "SECUREKIT_EXPECTED_VERSION is required")
+endif()
+
 function(run_cli expected_exit expected_stdout)
   execute_process(
     COMMAND "${SECUREKIT_CLI}" ${ARGN}
@@ -68,6 +72,8 @@ function(run_cli_failure expected_stderr)
 endfunction()
 
 set(expected_help [=[Usage:
+  securekit version
+  securekit --version
   securekit token <byte-size>
   securekit sha256 --text <text>
   securekit sha256 --file <path>
@@ -93,6 +99,8 @@ set(expected_help [=[Usage:
   securekit help [command]
 ]=])
 
+set(expected_version "securekit ${SECUREKIT_EXPECTED_VERSION}\n")
+set(expected_version_help "Usage:\n  securekit version\n  securekit --version\n")
 set(expected_token_help "Usage:\n  securekit token <byte-size>\n")
 set(expected_sha256_help "Usage:\n  securekit sha256 --text <text>\n  securekit sha256 --file <path>\n")
 set(expected_hmac_sha256_help "Usage:\n  securekit hmac-sha256 --key-hex <hex> --text <text>\n  securekit hmac-sha256 --key-hex <hex> --file <path>\n")
@@ -114,6 +122,9 @@ set(expected_open_file_password_help "Usage:\n  securekit open-file-password --i
 run_cli(0 "${expected_help}")
 run_cli(0 "${expected_help}" help)
 run_cli(0 "${expected_help}" --help)
+run_cli(0 "${expected_version}" version)
+run_cli(0 "${expected_version}" --version)
+run_cli(0 "${expected_version_help}" help version)
 run_cli(0 "${expected_token_help}" help token)
 run_cli(0 "${expected_sha256_help}" help sha256)
 run_cli(0 "${expected_hmac_sha256_help}" help hmac-sha256)
@@ -133,6 +144,7 @@ run_cli(0 "${expected_seal_file_password_help}" help seal-file-password)
 run_cli(0 "${expected_open_file_password_help}" help open-file-password)
 run_cli_failure("unsupported command\n" help unknown-command)
 
+run_cli_failure("${expected_version_help}" version extra)
 run_cli(0 "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n" sha256 --text abc)
 run_cli(0 "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843\n" hmac-sha256 --key-hex 4a656665 --text "what do ya want for nothing?")
 run_cli(0 "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865\n" hkdf-sha256 --key-hex 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --salt-hex 000102030405060708090a0b0c --info-hex f0f1f2f3f4f5f6f7f8f9 --out-size 42)

@@ -126,6 +126,8 @@ cmake --install build --prefix /path/to/prefix --config Release
 When installed, SecureKit also provides a small `securekit` utility executable:
 
 ```sh
+securekit --version
+securekit version
 securekit token 32
 securekit sha256 --text abc
 securekit sha256 --file path/to/file.bin
@@ -217,11 +219,12 @@ the active process encoding; the CLI does not normalize or transcode Unicode.
 Decode commands use the same strict validation as the C++ APIs.
 
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
-usage text. `securekit help <command>` prints command-specific usage for the
-supported commands. Known commands with the wrong shape print that command's
-usage to stderr. Packet and file command conflicts report the specific
-duplicate, conflicting input or packet source, conflicting key source,
-conflicting AAD source, or unsupported option.
+usage text. `securekit --version` and `securekit version` print the package
+version compiled from the CMake project version. `securekit help <command>`
+prints command-specific usage for the supported commands. Known commands with
+the wrong shape print that command's usage to stderr. Packet and file command
+conflicts report the specific duplicate, conflicting input or packet source,
+conflicting key source, conflicting AAD source, or unsupported option.
 
 ## Consume With CMake
 

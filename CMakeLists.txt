@@ -54,6 +54,7 @@ set_target_properties(securekit_cli PROPERTIES OUTPUT_NAME securekit)
 
 target_link_libraries(securekit_cli PRIVATE securekit::securekit)
 target_compile_features(securekit_cli PRIVATE cxx_std_20)
+target_compile_definitions(securekit_cli PRIVATE SECUREKIT_VERSION="${PROJECT_VERSION}")
 
 if(MSVC)
   target_compile_options(securekit_cli PRIVATE /W4 /permissive-)
@@ -123,6 +124,7 @@ if(SECUREKIT_BUILD_TESTS)
     NAME Cli.UtilityCommands
     COMMAND ${CMAKE_COMMAND}
       -DSECUREKIT_CLI=$<TARGET_FILE:securekit_cli>
+      -DSECUREKIT_EXPECTED_VERSION=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/check_cli.cmake)
   if(_securekit_test_properties)
     set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})

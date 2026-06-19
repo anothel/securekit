@@ -19,12 +19,18 @@
 #include <io.h>
 #endif
 
+#ifndef SECUREKIT_VERSION
+#define SECUREKIT_VERSION "unknown"
+#endif
+
 namespace
 {
 
 void print_help()
 {
 	std::cout << "Usage:\n"
+	          << "  securekit version\n"
+	          << "  securekit --version\n"
 	          << "  securekit token <byte-size>\n"
 	          << "  securekit sha256 --text <text>\n"
 	          << "  securekit sha256 --file <path>\n"
@@ -60,6 +66,16 @@ void print_help()
 	          << "  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit help [command]\n";
+}
+
+std::string_view version_usage()
+{
+	return "Usage:\n  securekit version\n  securekit --version";
+}
+
+void print_version()
+{
+	std::cout << "securekit " << SECUREKIT_VERSION << '\n';
 }
 
 std::string_view token_usage()
@@ -157,6 +173,11 @@ std::string_view password_file_command_usage(std::string_view command)
 
 bool print_command_help(std::string_view command)
 {
+	if (command == "version")
+	{
+		std::cout << version_usage() << '\n';
+		return true;
+	}
 	if (command == "token")
 	{
 		std::cout << token_usage() << '\n';
@@ -1060,6 +1081,12 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
+		if (argc == 2 && (std::string_view(argv[1]) == "version" || std::string_view(argv[1]) == "--version"))
+		{
+			print_version();
+			return 0;
+		}
+
 		if (argc == 3 && is_arg(argv[1], "help"))
 		{
 			if (print_command_help(argv[2]))
@@ -1067,6 +1094,11 @@ int main(int argc, char **argv)
 				return 0;
 			}
 			return fail("unsupported command");
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "version"))
+		{
+			return fail(version_usage());
 		}
 
 		if (argc == 3 && is_arg(argv[1], "token"))
