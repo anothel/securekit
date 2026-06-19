@@ -66,6 +66,8 @@ set(expected_help [=[Usage:
   securekit keygen --out <path>
   securekit wrap-key (--key-hex <64-hex>|--key-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]
   securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]
+  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]
+  securekit decrypt (--packet-hex <hex>|--packet-file <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]
   securekit seal-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit open-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
   securekit seal-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
@@ -84,6 +86,8 @@ set(expected_base64url_decode_help "Usage:\n  securekit base64url-decode --text 
 set(expected_keygen_help "Usage:\n  securekit keygen --out <path>\n")
 set(expected_wrap_key_help "Usage:\n  securekit wrap-key (--key-hex <64-hex>|--key-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n")
 set(expected_unwrap_key_help "Usage:\n  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n")
+set(expected_encrypt_help "Usage:\n  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n")
+set(expected_decrypt_help "Usage:\n  securekit decrypt (--packet-hex <hex>|--packet-file <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n")
 set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 set(expected_open_file_help "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
 
@@ -101,6 +105,8 @@ run_cli(0 "${expected_base64url_decode_help}" help base64url-decode)
 run_cli(0 "${expected_keygen_help}" help keygen)
 run_cli(0 "${expected_wrap_key_help}" help wrap-key)
 run_cli(0 "${expected_unwrap_key_help}" help unwrap-key)
+run_cli(0 "${expected_encrypt_help}" help encrypt)
+run_cli(0 "${expected_decrypt_help}" help decrypt)
 run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "${expected_open_file_help}" help open-file)
 run_cli_failure("unsupported command\n" help unknown-command)
@@ -147,6 +153,8 @@ run_cli_failure("${expected_base64url_decode_help}" base64url-decode)
 run_cli_failure("${expected_keygen_help}" keygen --bad-flag "${CMAKE_CURRENT_BINARY_DIR}/bad-keygen.hex")
 run_cli_failure("${expected_wrap_key_help}" wrap-key --bad-flag abc)
 run_cli_failure("${expected_unwrap_key_help}" unwrap-key --bad-flag abc)
+run_cli_failure("${expected_encrypt_help}" encrypt --bad-flag abc)
+run_cli_failure("${expected_decrypt_help}" decrypt --bad-flag abc)
 run_cli_failure("failed to open input file\n" sha256 --file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-missing.txt")
 run_cli_failure("hex input must contain an even number of characters\n" hex-decode --text 6)
 run_cli_failure("base64url input has invalid length\n" base64url-decode --text "=")
@@ -181,10 +189,22 @@ set(reordered_key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reorder
 set(reordered_key_file_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-file-opened.txt")
 set(reordered_key_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-hex.skf")
 set(reordered_key_hex_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-hex-opened.txt")
+set(packet_zero_key "0000000000000000000000000000000000000000000000000000000000000000")
+set(packet_known_aad "534b543101000000000000000000000000a6c22c512240180b643bb7b6d19ae91d51db387693b2f165220613f98728de")
+set(packet_aad_hex "7265636f72643a7631")
+set(packet_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-key.hex")
+set(packet_input_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-plain.txt")
+set(packet_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet.skt")
+set(packet_opened_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-opened.txt")
+set(packet_reordered_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-reordered.skt")
+set(packet_reordered_opened_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-reordered-opened.txt")
+set(packet_existing_output "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-existing.txt")
 
 file(WRITE "${plain_file}" "file command plaintext\n")
 file(WRITE "${key_to_wrap_file}" "${key_to_wrap}\n")
 file(WRITE "${wrapping_key_file}" "${wrapping_key}\n")
+file(WRITE "${packet_key_file}" "${file_key}\n")
+file(WRITE "${packet_input_file}" "packet file plaintext\n")
 file(REMOVE "${wrapped_key_file}")
 file(REMOVE "${unwrapped_key_file}")
 file(REMOVE "${wrapped_key_reordered_file}")
@@ -206,7 +226,12 @@ file(REMOVE "${reordered_key_file_sealed}")
 file(REMOVE "${reordered_key_file_opened}")
 file(REMOVE "${reordered_key_hex_sealed}")
 file(REMOVE "${reordered_key_hex_opened}")
+file(REMOVE "${packet_file}")
+file(REMOVE "${packet_opened_file}")
+file(REMOVE "${packet_reordered_file}")
+file(REMOVE "${packet_reordered_opened_file}")
 file(WRITE "${existing_output}" "existing")
+file(WRITE "${packet_existing_output}" "existing")
 file(WRITE "${invalid_key_file}" "not-a-valid-key\n")
 
 execute_process(
@@ -255,6 +280,72 @@ run_cli_failure("duplicate option: --out\n" wrap-key --key-file "${key_to_wrap_f
 run_cli_failure("${expected_wrap_key_help}" wrap-key --key-file "${key_to_wrap_file}")
 run_cli_failure("${expected_unwrap_key_help}" unwrap-key --packet-file "${wrapped_key_file}")
 run_cli_failure("unsupported key wrapping option: --unknown\n" wrap-key --key-file "${key_to_wrap_file}" --wrapping-key-file "${wrapping_key_file}" --unknown value)
+
+set(packet_stdout_plaintext "packet plaintext")
+string(LENGTH "${packet_stdout_plaintext}" packet_stdout_plaintext_length)
+math(EXPR packet_stdout_hex_length "(33 + ${packet_stdout_plaintext_length}) * 2")
+execute_process(
+  COMMAND "${SECUREKIT_CLI}" encrypt --text "${packet_stdout_plaintext}" --key-hex "${file_key}"
+  RESULT_VARIABLE packet_encrypt_result
+  OUTPUT_VARIABLE packet_encrypt_stdout
+  ERROR_VARIABLE packet_encrypt_stderr)
+if(NOT packet_encrypt_result EQUAL 0)
+  message(FATAL_ERROR "encrypt failed: ${packet_encrypt_stderr}")
+endif()
+string(STRIP "${packet_encrypt_stdout}" packet_stdout_hex)
+string(LENGTH "${packet_stdout_hex}" packet_stdout_hex_actual_length)
+if(NOT packet_stdout_hex_actual_length EQUAL ${packet_stdout_hex_length} OR NOT packet_stdout_hex MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "encrypt did not write a hex SKT1 packet: [${packet_encrypt_stdout}]")
+endif()
+run_cli(0 "${packet_stdout_plaintext}\n" decrypt --packet-hex "${packet_stdout_hex}" --key-hex "${file_key}")
+run_cli(0 "hello securekit\n" decrypt --packet-hex "${packet_known_aad}" --key-hex "${packet_zero_key}" --aad-text record:v1)
+run_cli_failure("AEAD authentication failed\n" decrypt --packet-hex "${packet_known_aad}" --key-hex "${packet_zero_key}" --aad-text record:v2)
+
+execute_process(
+  COMMAND "${SECUREKIT_CLI}" encrypt --text "aad packet" --key-file "${packet_key_file}" --aad-text record:v1
+  RESULT_VARIABLE packet_aad_result
+  OUTPUT_VARIABLE packet_aad_stdout
+  ERROR_VARIABLE packet_aad_stderr)
+if(NOT packet_aad_result EQUAL 0)
+  message(FATAL_ERROR "encrypt with AAD failed: ${packet_aad_stderr}")
+endif()
+string(STRIP "${packet_aad_stdout}" packet_aad_hex_packet)
+run_cli(0 "aad packet\n" decrypt --packet-hex "${packet_aad_hex_packet}" --key-file "${packet_key_file}" --aad-hex "${packet_aad_hex}")
+run_cli_failure("AEAD authentication failed\n" decrypt --packet-hex "${packet_aad_hex_packet}" --key-file "${packet_key_file}")
+
+run_cli_no_stdout(encrypt --in "${packet_input_file}" --out "${packet_file}" --key-file "${packet_key_file}" --aad-text record:v1)
+file(READ "${packet_file}" packet_file_hex HEX)
+string(LENGTH "${packet_file_hex}" packet_file_hex_length)
+if(packet_file_hex_length LESS 66 OR NOT packet_file_hex MATCHES "^534b543101[0-9a-f]+$")
+  message(FATAL_ERROR "encrypt --out did not write a binary SKT1 packet")
+endif()
+
+run_cli_no_stdout(decrypt --packet-file "${packet_file}" --out "${packet_opened_file}" --key-file "${packet_key_file}" --aad-text record:v1)
+file(READ "${packet_opened_file}" packet_opened_text)
+if(NOT packet_opened_text STREQUAL "packet file plaintext\n")
+  message(FATAL_ERROR "decrypt --out did not recover plaintext. got=[${packet_opened_text}]")
+endif()
+
+run_cli_no_stdout(encrypt --aad-hex "${packet_aad_hex}" --out "${packet_reordered_file}" --key-file "${packet_key_file}" --in "${packet_input_file}")
+run_cli_no_stdout(decrypt --out "${packet_reordered_opened_file}" --aad-text record:v1 --packet-file "${packet_reordered_file}" --key-file "${packet_key_file}")
+file(READ "${packet_reordered_opened_file}" packet_reordered_opened_text)
+if(NOT packet_reordered_opened_text STREQUAL "packet file plaintext\n")
+  message(FATAL_ERROR "reordered packet decrypt did not recover plaintext. got=[${packet_reordered_opened_text}]")
+endif()
+
+run_cli_failure("Output file already exists\n" encrypt --in "${packet_input_file}" --out "${packet_existing_output}" --key-file "${packet_key_file}")
+run_cli_failure("Output file already exists\n" decrypt --packet-file "${packet_file}" --out "${packet_opened_file}" --key-file "${packet_key_file}" --aad-text record:v1)
+run_cli_failure("conflicting input options\n" encrypt --text abc --in "${packet_input_file}" --key-file "${packet_key_file}")
+run_cli_failure("conflicting key options\n" encrypt --text abc --key-hex "${file_key}" --key-file "${packet_key_file}")
+run_cli_failure("conflicting AAD options\n" encrypt --text abc --key-file "${packet_key_file}" --aad-text record:v1 --aad-hex "${packet_aad_hex}")
+run_cli_failure("conflicting packet options\n" decrypt --packet-hex "${packet_known_aad}" --packet-file "${packet_file}" --key-file "${packet_key_file}")
+run_cli_failure("duplicate option: --out\n" encrypt --text abc --key-file "${packet_key_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/duplicate-packet-output-a.skt" --out "${CMAKE_CURRENT_BINARY_DIR}/duplicate-packet-output-b.skt")
+run_cli_failure("${expected_encrypt_help}" encrypt --text abc)
+run_cli_failure("${expected_decrypt_help}" decrypt --packet-file "${packet_file}")
+run_cli_failure("unsupported packet option: --unknown\n" encrypt --text abc --key-file "${packet_key_file}" --unknown value)
+run_cli_failure("unsupported packet option: --unknown\n" decrypt --packet-file "${packet_file}" --key-file "${packet_key_file}" --unknown value)
+run_cli_failure("hex input must contain an even number of characters\n" decrypt --packet-hex 123 --key-file "${packet_key_file}")
+run_cli_failure("Invalid AEAD packet\n" decrypt --packet-hex 534b54310100 --key-file "${packet_key_file}")
 
 run_cli_no_stdout(seal-file --in "${plain_file}" --out "${sealed_file}" --key-hex "${file_key}")
 if(NOT EXISTS "${sealed_file}")

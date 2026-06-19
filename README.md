@@ -137,6 +137,10 @@ securekit hex-decode --text 616263
 securekit base64url-encode --text abc
 securekit base64url-decode --text YWJj
 securekit keygen --out key.hex
+securekit encrypt --text hello --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+securekit decrypt --packet-hex 534b543101000000000000000000000000a6c22c512240180b643bb7b6d19ae91d51db387693b2f165220613f98728de --key-hex 0000000000000000000000000000000000000000000000000000000000000000 --aad-text record:v1
+securekit encrypt --in plain.bin --out plain.bin.skt --key-file key.hex --aad-text record:v1
+securekit decrypt --packet-file plain.bin.skt --out plain.bin --key-file key.hex --aad-text record:v1
 securekit wrap-key --key-hex 101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
 securekit unwrap-key --packet-hex 534b543101... --wrapping-key-hex 404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
 securekit wrap-key --key-file data-key.hex --wrapping-key-file wrapping-key.hex --out data-key.skt
@@ -152,19 +156,30 @@ securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
 ```
 
-The CLI file commands use the existing `SKF1` file format. `--key-hex` must be
-a strict 64-character hex string for a 32-byte key. `keygen` writes a fresh key
-as 64 lowercase hex characters plus a trailing newline and refuses to overwrite
-an existing output file. `--key-file` reads the same text format, trimming
-leading and trailing ASCII whitespace before strict validation. File commands
-can also take optional AAD with either `--aad-text` or `--aad-hex`; the same AAD
-bytes must be provided to `open-file`, and AAD is authenticated but not stored in
-the `SKF1` file. `--aad-text` uses the argument bytes directly. `--aad-hex`
-strictly decodes hex to bytes. File command options may be supplied in any
-order, but each command must provide exactly one input path, one output path, and
-one key source. At most one AAD option may be provided. The CLI does not expose
-password prompts, password KDFs, environment-variable key loading, or
-stdin/stdout streaming in this slice.
+The packet CLI commands use the `SKT1` packet format, and the file commands use
+the existing `SKF1` file format. `--key-hex` must be a strict 64-character hex
+string for a 32-byte key. `keygen` writes a fresh key as 64 lowercase hex
+characters plus a trailing newline and refuses to overwrite an existing output
+file. `--key-file` reads the same text format, trimming leading and trailing
+ASCII whitespace before strict validation.
+
+`encrypt` accepts either `--text` or `--in` plus exactly one key source. Without
+`--out`, it writes the resulting `SKT1` packet as lowercase hex. With `--out`,
+it writes the binary packet and refuses to overwrite an existing file. `decrypt`
+accepts either `--packet-hex` or `--packet-file` plus exactly one key source.
+Without `--out`, it writes the recovered plaintext bytes to stdout plus one
+trailing newline. With `--out`, it writes the raw plaintext bytes to a file and
+refuses to overwrite an existing file.
+
+Packet and file commands can also take optional AAD with either `--aad-text` or
+`--aad-hex`; the same AAD bytes must be provided to `decrypt` or `open-file`,
+and AAD is authenticated but not stored in the packet or file. `--aad-text`
+uses the argument bytes directly. `--aad-hex` strictly decodes hex to bytes.
+Packet and file command options may be supplied in any order, but each command
+must provide exactly one input source and one key source. File commands also
+require exactly one output path. At most one AAD option may be provided. The
+CLI does not expose password prompts, password KDFs, environment-variable key
+loading, or stdin/stdout streaming in this slice.
 
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
@@ -189,8 +204,9 @@ APIs.
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
 usage text. `securekit help <command>` prints command-specific usage for the
 supported commands. Known commands with the wrong shape print that command's
-usage to stderr. File command option conflicts report the specific duplicate,
-conflicting key source, conflicting AAD source, or unsupported file option.
+usage to stderr. Packet and file command conflicts report the specific
+duplicate, conflicting input or packet source, conflicting key source,
+conflicting AAD source, or unsupported option.
 
 ## Consume With CMake
 

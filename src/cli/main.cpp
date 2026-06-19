@@ -37,6 +37,10 @@ void print_help()
 	             "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n"
 	          << "  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) "
 	             "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n"
+	          << "  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) "
+	             "[--aad-text <text>|--aad-hex <hex>] [--out <path>]\n"
+	          << "  securekit decrypt (--packet-hex <hex>|--packet-file <path>) "
+	             "(--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n"
 	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex> "
@@ -108,6 +112,17 @@ std::string_view unwrap_key_usage()
 	       "(--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]";
 }
 
+std::string_view packet_command_usage(std::string_view command)
+{
+	if (command == "encrypt")
+	{
+		return "Usage:\n  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) "
+		       "[--aad-text <text>|--aad-hex <hex>] [--out <path>]";
+	}
+	return "Usage:\n  securekit decrypt (--packet-hex <hex>|--packet-file <path>) "
+	       "(--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]";
+}
+
 std::string_view file_command_usage(std::string_view command)
 {
 	if (command == "seal-file")
@@ -174,6 +189,16 @@ bool print_command_help(std::string_view command)
 	if (command == "unwrap-key")
 	{
 		std::cout << unwrap_key_usage() << '\n';
+		return true;
+	}
+	if (command == "encrypt")
+	{
+		std::cout << packet_command_usage(command) << '\n';
+		return true;
+	}
+	if (command == "decrypt")
+	{
+		std::cout << packet_command_usage(command) << '\n';
 		return true;
 	}
 	if (command == "seal-file")
@@ -375,6 +400,30 @@ struct unwrap_key_options
 	std::filesystem::path output;
 	bool has_packet = false;
 	bool has_wrapping_key = false;
+	bool has_output = false;
+};
+
+struct encrypt_options
+{
+	securekit::bytes plaintext;
+	securekit::key256 key{};
+	securekit::bytes aad;
+	std::filesystem::path output;
+	bool has_plaintext = false;
+	bool has_key = false;
+	bool has_aad = false;
+	bool has_output = false;
+};
+
+struct decrypt_options
+{
+	securekit::bytes packet;
+	securekit::key256 key{};
+	securekit::bytes aad;
+	std::filesystem::path output;
+	bool has_packet = false;
+	bool has_key = false;
+	bool has_aad = false;
 	bool has_output = false;
 };
 
@@ -592,6 +641,126 @@ unwrap_key_options parse_unwrap_key_options(int argc, char **argv)
 	return options;
 }
 
+encrypt_options parse_encrypt_options(int argc, char **argv)
+{
+	if (argc < 6 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error(std::string(packet_command_usage(argv[1])));
+	}
+
+	encrypt_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--text" || option == "--in")
+		{
+			if (options.has_plaintext)
+			{
+				throw std::runtime_error("conflicting input options");
+			}
+			options.plaintext = option == "--text" ? bytes_from_text(value) : read_file(std::filesystem::path(value));
+			options.has_plaintext = true;
+		}
+		else if (option == "--key-hex" || option == "--key-file")
+		{
+			if (options.has_key)
+			{
+				throw std::runtime_error("conflicting key options");
+			}
+			options.key = key_from_option(option, value);
+			options.has_key = true;
+		}
+		else if (option == "--aad-text" || option == "--aad-hex")
+		{
+			if (options.has_aad)
+			{
+				throw std::runtime_error("conflicting AAD options");
+			}
+			options.aad = aad_from_option(option, value);
+			options.has_aad = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output, option);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else
+		{
+			throw std::runtime_error(std::string("unsupported packet option: ") + std::string(option));
+		}
+	}
+
+	if (!options.has_plaintext || !options.has_key)
+	{
+		throw std::runtime_error(std::string(packet_command_usage(argv[1])));
+	}
+
+	return options;
+}
+
+decrypt_options parse_decrypt_options(int argc, char **argv)
+{
+	if (argc < 6 || ((argc - 2) % 2) != 0)
+	{
+		throw std::runtime_error(std::string(packet_command_usage(argv[1])));
+	}
+
+	decrypt_options options;
+	for (int index = 2; index < argc; index += 2)
+	{
+		const std::string_view option = argv[index];
+		const std::string_view value = argv[index + 1];
+
+		if (option == "--packet-hex" || option == "--packet-file")
+		{
+			if (options.has_packet)
+			{
+				throw std::runtime_error("conflicting packet options");
+			}
+			options.packet = option == "--packet-hex" ? securekit::hex_decode(value) : read_file(std::filesystem::path(value));
+			options.has_packet = true;
+		}
+		else if (option == "--key-hex" || option == "--key-file")
+		{
+			if (options.has_key)
+			{
+				throw std::runtime_error("conflicting key options");
+			}
+			options.key = key_from_option(option, value);
+			options.has_key = true;
+		}
+		else if (option == "--aad-text" || option == "--aad-hex")
+		{
+			if (options.has_aad)
+			{
+				throw std::runtime_error("conflicting AAD options");
+			}
+			options.aad = aad_from_option(option, value);
+			options.has_aad = true;
+		}
+		else if (option == "--out")
+		{
+			reject_duplicate(options.has_output, option);
+			options.output = std::filesystem::path(value);
+			options.has_output = true;
+		}
+		else
+		{
+			throw std::runtime_error(std::string("unsupported packet option: ") + std::string(option));
+		}
+	}
+
+	if (!options.has_packet || !options.has_key)
+	{
+		throw std::runtime_error(std::string(packet_command_usage(argv[1])));
+	}
+
+	return options;
+}
+
 std::size_t parse_size(std::string_view text)
 {
 	if (text.empty())
@@ -786,6 +955,36 @@ int main(int argc, char **argv)
 			else
 			{
 				std::cout << securekit::hex_encode(key) << '\n';
+			}
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "encrypt"))
+		{
+			const encrypt_options options = parse_encrypt_options(argc, argv);
+			const securekit::bytes packet = securekit::encrypt(options.plaintext, options.key, options.aad);
+			if (options.has_output)
+			{
+				write_binary_file(options.output, packet);
+			}
+			else
+			{
+				std::cout << securekit::hex_encode(packet) << '\n';
+			}
+			return 0;
+		}
+
+		if (argc >= 2 && is_arg(argv[1], "decrypt"))
+		{
+			const decrypt_options options = parse_decrypt_options(argc, argv);
+			const securekit::bytes plaintext = securekit::decrypt(options.packet, options.key, options.aad);
+			if (options.has_output)
+			{
+				write_binary_file(options.output, plaintext);
+			}
+			else
+			{
+				write_bytes(plaintext);
 			}
 			return 0;
 		}
