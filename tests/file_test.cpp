@@ -6,6 +6,7 @@
 #include <fstream>
 #include <initializer_list>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -61,6 +62,17 @@ securekit::bytes bytes_from_text(std::string_view text)
 	for (const unsigned char ch : text)
 	{
 		out.push_back(static_cast<std::byte>(ch));
+	}
+	return out;
+}
+
+std::string string_from_bytes(const securekit::bytes &bytes)
+{
+	std::string out;
+	out.reserve(bytes.size());
+	for (const std::byte byte : bytes)
+	{
+		out.push_back(static_cast<char>(std::to_integer<unsigned char>(byte)));
 	}
 	return out;
 }
@@ -176,6 +188,30 @@ TEST(File, RoundTripsEmptyFile)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, RoundTripsStreams)
+{
+	const securekit::bytes plaintext = patterned_bytes((1024u * 1024u) + 31u, 11u);
+	const securekit::bytes aad = bytes_from_text("stream:file:test");
+	const securekit::key256 key = key_from_seed(0x22);
+
+	std::istringstream plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream sealed_stream(std::ios::binary);
+	securekit::seal_file(plain_stream, sealed_stream, key, aad);
+
+	const securekit::bytes sealed = bytes_from_text(sealed_stream.str());
+	ASSERT_GE(sealed.size(), 50u + 9u + plaintext.size() + 16u);
+	EXPECT_EQ(sealed[0], std::byte{'S'});
+	EXPECT_EQ(sealed[1], std::byte{'K'});
+	EXPECT_EQ(sealed[2], std::byte{'F'});
+	EXPECT_EQ(sealed[3], std::byte{'1'});
+
+	std::istringstream sealed_input(sealed_stream.str(), std::ios::binary);
+	std::ostringstream opened_stream(std::ios::binary);
+	securekit::open_file(sealed_input, opened_stream, key, aad);
+
+	EXPECT_EQ(bytes_from_text(opened_stream.str()), plaintext);
 }
 
 TEST(File, OpensKnownSkf1Fixture)
@@ -722,6 +758,30 @@ TEST(File, PasswordRoundTripsSmallFile)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRoundTripsStreams)
+{
+	const securekit::bytes plaintext = patterned_bytes((1024u * 1024u) + 19u, 29u);
+	const securekit::bytes password = bytes_from_text("stream password");
+	const securekit::bytes aad = bytes_from_text("stream:password:file:test");
+
+	std::istringstream plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream sealed_stream(std::ios::binary);
+	securekit::seal_file_with_password(plain_stream, sealed_stream, password, aad);
+
+	const securekit::bytes sealed = bytes_from_text(sealed_stream.str());
+	ASSERT_GE(sealed.size(), 64u + 9u + plaintext.size() + 16u);
+	EXPECT_EQ(sealed[0], std::byte{'S'});
+	EXPECT_EQ(sealed[1], std::byte{'K'});
+	EXPECT_EQ(sealed[2], std::byte{'P'});
+	EXPECT_EQ(sealed[3], std::byte{'1'});
+
+	std::istringstream sealed_input(sealed_stream.str(), std::ios::binary);
+	std::ostringstream opened_stream(std::ios::binary);
+	securekit::open_file_with_password(sealed_input, opened_stream, password, aad);
+
+	EXPECT_EQ(bytes_from_text(opened_stream.str()), plaintext);
 }
 
 TEST(File, PasswordRoundTripsEmptyFile)

@@ -36,6 +36,22 @@ function(run_cli_no_stdout)
   endif()
 endfunction()
 
+function(run_cli_pipe input_file output_file)
+  execute_process(
+    COMMAND "${SECUREKIT_CLI}" ${ARGN}
+    INPUT_FILE "${input_file}"
+    OUTPUT_FILE "${output_file}"
+    RESULT_VARIABLE result
+    ERROR_VARIABLE stderr)
+
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Expected piped command to pass, got ${result}. stderr=${stderr}")
+  endif()
+  if(NOT stderr STREQUAL "")
+    message(FATAL_ERROR "Piped command should not write stderr. stderr=[${stderr}]")
+  endif()
+endfunction()
+
 function(run_cli_failure expected_stderr)
   execute_process(
     COMMAND "${SECUREKIT_CLI}" ${ARGN}
@@ -56,8 +72,8 @@ endfunction()
 
 file(MAKE_DIRECTORY "${SECUREKIT_CLI_WORK_DIR}")
 
-set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
-set(expected_seal_file_password_help "Usage:\n  securekit seal-file-password --in <path> --out <path> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_seal_file_password_help "Usage:\n  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
 set(expected_encrypt_help "Usage:\n  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n")
 run_cli(0 "${expected_seal_file_help}" help seal-file)
 run_cli(0 "${expected_seal_file_password_help}" help seal-file-password)
@@ -127,6 +143,10 @@ set(wrong_password_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-wrong
 set(password_sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-password.skp")
 set(password_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-password-opened.txt")
 set(password_wrong_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-password-wrong-opened.txt")
+set(pipe_sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-pipe.skf")
+set(pipe_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-pipe-opened.txt")
+set(password_pipe_sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-password-pipe.skp")
+set(password_pipe_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-password-pipe-opened.txt")
 set(unwrapped_key_sealed_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-unwrapped-key.skf")
 set(unwrapped_key_opened_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-unwrapped-key-opened.txt")
 set(conflicting_key_file "${SECUREKIT_CLI_WORK_DIR}/securekit-installed-cli-conflict.skf")
@@ -145,6 +165,10 @@ file(REMOVE "${opened_file}")
 file(REMOVE "${password_sealed_file}")
 file(REMOVE "${password_opened_file}")
 file(REMOVE "${password_wrong_opened_file}")
+file(REMOVE "${pipe_sealed_file}")
+file(REMOVE "${pipe_opened_file}")
+file(REMOVE "${password_pipe_sealed_file}")
+file(REMOVE "${password_pipe_opened_file}")
 file(REMOVE "${unwrapped_key_sealed_file}")
 file(REMOVE "${unwrapped_key_opened_file}")
 file(REMOVE "${conflicting_key_file}")
@@ -182,6 +206,13 @@ if(NOT opened_text STREQUAL "installed CLI plaintext\n")
   message(FATAL_ERROR "installed CLI open did not recover plaintext. got=[${opened_text}]")
 endif()
 
+run_cli_pipe("${plain_file}" "${pipe_sealed_file}" seal-file --in - --out - --key-file "${key_file}" --aad-text record:v1)
+run_cli_pipe("${pipe_sealed_file}" "${pipe_opened_file}" open-file --in - --out - --key-file "${key_file}" --aad-text record:v1)
+file(READ "${pipe_opened_file}" pipe_opened_text)
+if(NOT pipe_opened_text STREQUAL "installed CLI plaintext\n")
+  message(FATAL_ERROR "installed CLI piped open did not recover plaintext. got=[${pipe_opened_text}]")
+endif()
+
 run_cli_no_stdout(seal-file-password --out "${password_sealed_file}" --password-file "${password_file}" --aad-text record:v1 --in "${plain_file}")
 file(READ "${password_sealed_file}" password_sealed_hex HEX)
 if(NOT password_sealed_hex MATCHES "^534b503101010100[0-9a-f]+$")
@@ -193,6 +224,13 @@ if(NOT password_opened_text STREQUAL "installed CLI plaintext\n")
   message(FATAL_ERROR "installed CLI open-file-password did not recover plaintext. got=[${password_opened_text}]")
 endif()
 run_cli_failure("File authentication failed\n" open-file-password --in "${password_sealed_file}" --out "${password_wrong_opened_file}" --password-file "${wrong_password_file}" --aad-text record:v1)
+
+run_cli_pipe("${plain_file}" "${password_pipe_sealed_file}" seal-file-password --in - --out - --password-file "${password_file}" --aad-text record:v1)
+run_cli_pipe("${password_pipe_sealed_file}" "${password_pipe_opened_file}" open-file-password --in - --out - --password-file "${password_file}" --aad-text record:v1)
+file(READ "${password_pipe_opened_file}" password_pipe_opened_text)
+if(NOT password_pipe_opened_text STREQUAL "installed CLI plaintext\n")
+  message(FATAL_ERROR "installed CLI piped password open did not recover plaintext. got=[${password_pipe_opened_text}]")
+endif()
 
 run_cli_no_stdout(encrypt --in "${plain_file}" --out "${packet_file}" --key-file "${key_file}" --aad-text record:v1)
 run_cli_no_stdout(decrypt --packet-file "${packet_file}" --out "${packet_opened_file}" --key-file "${key_file}" --aad-text record:v1)

@@ -502,6 +502,60 @@ void rename_temp_file(const std::filesystem::path &temp_path, const std::filesys
 	}
 }
 
+void seal_stream_payload(
+    std::istream &in,
+    std::ostream &out,
+    std::span<const std::byte> serialized_header,
+    std::span<const std::byte> nonce_prefix,
+    const securekit::key256 &file_key,
+    std::span<const std::byte> aad)
+{
+	write_all(out, serialized_header);
+
+	securekit::bytes buffer(kChunkSize);
+	std::uint32_t chunk_index = 0;
+	bool wrote_final = false;
+	while (!wrote_final)
+	{
+		in.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
+		const std::streamsize read_count = in.gcount();
+		if (read_count < 0)
+		{
+			throw_backend_failure("File read failed");
+		}
+		if (!in.eof() && in.fail())
+		{
+			throw_backend_failure("File read failed");
+		}
+
+		const auto plaintext_size = static_cast<std::uint32_t>(read_count);
+		bool is_final = plaintext_size < kChunkSize;
+		if (!is_final && in.peek() == std::char_traits<char>::eof())
+		{
+			if (in.bad())
+			{
+				throw_backend_failure("File read failed");
+			}
+			is_final = true;
+		}
+		const RecordHeader record = make_record_header(chunk_index, plaintext_size, is_final ? kFinal : kNotFinal);
+		const auto nonce = make_nonce(nonce_prefix, chunk_index);
+		const securekit::bytes chunk_aad = make_chunk_aad(serialized_header, record, aad);
+		const EncryptedChunk encrypted = encrypt_chunk(std::span<const std::byte>(buffer.data(), plaintext_size), file_key, nonce, chunk_aad);
+
+		write_all(out, record.serialized);
+		write_all(out, encrypted.ciphertext);
+		write_all(out, encrypted.tag);
+
+		wrote_final = is_final;
+		if (chunk_index == std::numeric_limits<std::uint32_t>::max() && !wrote_final)
+		{
+			throw securekit::error(securekit::error_code::invalid_input, "file is too large to seal");
+		}
+		++chunk_index;
+	}
+}
+
 void seal_file_payload(
     const std::filesystem::path &input,
     const std::filesystem::path &output,
@@ -516,50 +570,7 @@ void seal_file_payload(
 		std::ifstream in = open_input(input);
 		std::ofstream out = open_output(temp_path);
 
-		write_all(out, serialized_header);
-
-		securekit::bytes buffer(kChunkSize);
-		std::uint32_t chunk_index = 0;
-		bool wrote_final = false;
-		while (!wrote_final)
-		{
-			in.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
-			const std::streamsize read_count = in.gcount();
-			if (read_count < 0)
-			{
-				throw_backend_failure("File read failed");
-			}
-			if (!in.eof() && in.fail())
-			{
-				throw_backend_failure("File read failed");
-			}
-
-			const auto plaintext_size = static_cast<std::uint32_t>(read_count);
-			bool is_final = plaintext_size < kChunkSize;
-			if (!is_final && in.peek() == std::char_traits<char>::eof())
-			{
-				if (in.bad())
-				{
-					throw_backend_failure("File read failed");
-				}
-				is_final = true;
-			}
-			const RecordHeader record = make_record_header(chunk_index, plaintext_size, is_final ? kFinal : kNotFinal);
-			const auto nonce = make_nonce(nonce_prefix, chunk_index);
-			const securekit::bytes chunk_aad = make_chunk_aad(serialized_header, record, aad);
-			const EncryptedChunk encrypted = encrypt_chunk(std::span<const std::byte>(buffer.data(), plaintext_size), file_key, nonce, chunk_aad);
-
-			write_all(out, record.serialized);
-			write_all(out, encrypted.ciphertext);
-			write_all(out, encrypted.tag);
-
-			wrote_final = is_final;
-			if (chunk_index == std::numeric_limits<std::uint32_t>::max() && !wrote_final)
-			{
-				throw securekit::error(securekit::error_code::invalid_input, "file is too large to seal");
-			}
-			++chunk_index;
-		}
+		seal_stream_payload(in, out, serialized_header, nonce_prefix, file_key, aad);
 
 		out.close();
 		if (!out)
@@ -647,6 +658,13 @@ void seal_file(const std::filesystem::path &input, const std::filesystem::path &
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
+void seal_file(std::istream &input, std::ostream &output, const key256 &key, std::span<const std::byte> aad)
+{
+	const FileHeader header = make_header();
+	const key256 file_key = derive_file_key(key, header);
+	seal_stream_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
+}
+
 void open_file(const std::filesystem::path &input, const std::filesystem::path &output, const key256 &key, std::span<const std::byte> aad)
 {
 	ensure_output_does_not_exist(output);
@@ -680,6 +698,19 @@ void open_file(const std::filesystem::path &input, const std::filesystem::path &
 	}
 }
 
+void open_file(std::istream &input, std::ostream &output, const key256 &key, std::span<const std::byte> aad)
+{
+	std::array<std::byte, kHeaderSize> header_bytes{};
+	if (!read_exact(input, header_bytes.data(), header_bytes.size()))
+	{
+		throw_invalid_packet();
+	}
+	const FileHeader header = parse_header(header_bytes);
+	const key256 file_key = derive_file_key(key, header);
+
+	open_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
+}
+
 void seal_file_with_password(
     const std::filesystem::path &input,
     const std::filesystem::path &output,
@@ -691,6 +722,18 @@ void seal_file_with_password(
 	const PasswordFileHeader header = make_password_header();
 	const key256 file_key = derive_password_file_key(password, header);
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
+}
+
+void seal_file_with_password(
+    std::istream &input,
+    std::ostream &output,
+    std::span<const std::byte> password,
+    std::span<const std::byte> aad)
+{
+	require_non_empty_password(password);
+	const PasswordFileHeader header = make_password_header();
+	const key256 file_key = derive_password_file_key(password, header);
+	seal_stream_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
 void open_file_with_password(
@@ -729,6 +772,24 @@ void open_file_with_password(
 		remove_quietly(temp_path);
 		throw;
 	}
+}
+
+void open_file_with_password(
+    std::istream &input,
+    std::ostream &output,
+    std::span<const std::byte> password,
+    std::span<const std::byte> aad)
+{
+	require_non_empty_password(password);
+	std::array<std::byte, kPasswordHeaderSize> header_bytes{};
+	if (!read_exact(input, header_bytes.data(), header_bytes.size()))
+	{
+		throw_invalid_packet();
+	}
+	const PasswordFileHeader header = parse_password_header(header_bytes);
+	const key256 file_key = derive_password_file_key(password, header);
+
+	open_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
 } // namespace securekit

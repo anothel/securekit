@@ -33,6 +33,22 @@ function(run_cli_no_stdout)
   endif()
 endfunction()
 
+function(run_cli_pipe input_file output_file)
+  execute_process(
+    COMMAND "${SECUREKIT_CLI}" ${ARGN}
+    INPUT_FILE "${input_file}"
+    OUTPUT_FILE "${output_file}"
+    RESULT_VARIABLE result
+    ERROR_VARIABLE stderr)
+
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Expected piped command to pass, got ${result}. stderr=${stderr}")
+  endif()
+  if(NOT stderr STREQUAL "")
+    message(FATAL_ERROR "Piped command should not write stderr. stderr=[${stderr}]")
+  endif()
+endfunction()
+
 function(run_cli_failure expected_stderr)
   execute_process(
     COMMAND "${SECUREKIT_CLI}" ${ARGN}
@@ -68,12 +84,12 @@ set(expected_help [=[Usage:
   securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]
   securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]
   securekit decrypt (--packet-hex <hex>|--packet-file <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]
-  securekit seal-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
-  securekit open-file --in <path> --out <path> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
-  securekit seal-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
-  securekit open-file --in <path> --out <path> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
-  securekit seal-file-password --in <path> --out <path> --password-file <path> [--aad-text <text>|--aad-hex <hex>]
-  securekit open-file-password --in <path> --out <path> --password-file <path> [--aad-text <text>|--aad-hex <hex>]
+  securekit seal-file --in <path|-> --out <path|-> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
+  securekit open-file --in <path|-> --out <path|-> --key-hex <64-hex> [--aad-text <text>|--aad-hex <hex>]
+  securekit seal-file --in <path|-> --out <path|-> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
+  securekit open-file --in <path|-> --out <path|-> --key-file <path> [--aad-text <text>|--aad-hex <hex>]
+  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> [--aad-text <text>|--aad-hex <hex>]
+  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> [--aad-text <text>|--aad-hex <hex>]
   securekit help [command]
 ]=])
 
@@ -90,10 +106,10 @@ set(expected_wrap_key_help "Usage:\n  securekit wrap-key (--key-hex <64-hex>|--k
 set(expected_unwrap_key_help "Usage:\n  securekit unwrap-key (--packet-hex <hex>|--packet-file <path>) (--wrapping-key-hex <64-hex>|--wrapping-key-file <path>) [--out <path>]\n")
 set(expected_encrypt_help "Usage:\n  securekit encrypt (--text <text>|--in <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n")
 set(expected_decrypt_help "Usage:\n  securekit decrypt (--packet-hex <hex>|--packet-file <path>) (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n")
-set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
-set(expected_open_file_help "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
-set(expected_seal_file_password_help "Usage:\n  securekit seal-file-password --in <path> --out <path> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
-set(expected_open_file_password_help "Usage:\n  securekit open-file-password --in <path> --out <path> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_seal_file_help "Usage:\n  securekit seal-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_open_file_help "Usage:\n  securekit open-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_seal_file_password_help "Usage:\n  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
+set(expected_open_file_password_help "Usage:\n  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> [--aad-text <text>|--aad-hex <hex>]\n")
 
 run_cli(0 "${expected_help}")
 run_cli(0 "${expected_help}" help)
@@ -193,6 +209,8 @@ set(aad_wrong_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-wrong-opened
 set(aad_missing_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-missing-opened.txt")
 set(aad_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-hex.skf")
 set(aad_hex_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-aad-hex-opened.txt")
+set(pipe_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-pipe.skf")
+set(pipe_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-pipe-opened.txt")
 set(reordered_key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-file.skf")
 set(reordered_key_file_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-file-opened.txt")
 set(reordered_key_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-hex.skf")
@@ -208,6 +226,8 @@ set(password_aad_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-aad-
 set(password_aad_wrong_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-aad-wrong-opened.txt")
 set(password_aad_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-aad-hex.skp")
 set(password_aad_hex_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-aad-hex-opened.txt")
+set(password_pipe_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-pipe.skp")
+set(password_pipe_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-pipe-opened.txt")
 set(password_reordered_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-reordered.skp")
 set(password_reordered_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-reordered-opened.txt")
 set(packet_zero_key "0000000000000000000000000000000000000000000000000000000000000000")
@@ -246,6 +266,8 @@ file(REMOVE "${aad_wrong_opened}")
 file(REMOVE "${aad_missing_opened}")
 file(REMOVE "${aad_hex_sealed}")
 file(REMOVE "${aad_hex_opened}")
+file(REMOVE "${pipe_sealed}")
+file(REMOVE "${pipe_opened}")
 file(REMOVE "${reordered_key_file_sealed}")
 file(REMOVE "${reordered_key_file_opened}")
 file(REMOVE "${reordered_key_hex_sealed}")
@@ -258,6 +280,8 @@ file(REMOVE "${password_aad_opened}")
 file(REMOVE "${password_aad_wrong_opened}")
 file(REMOVE "${password_aad_hex_sealed}")
 file(REMOVE "${password_aad_hex_opened}")
+file(REMOVE "${password_pipe_sealed}")
+file(REMOVE "${password_pipe_opened}")
 file(REMOVE "${password_reordered_sealed}")
 file(REMOVE "${password_reordered_opened}")
 file(REMOVE "${packet_file}")
@@ -438,6 +462,17 @@ if(NOT aad_hex_opened_text STREQUAL "file command plaintext\n")
   message(FATAL_ERROR "AAD hex open did not recover plaintext. got=[${aad_hex_opened_text}]")
 endif()
 
+run_cli_pipe("${plain_file}" "${pipe_sealed}" seal-file --in - --out - --key-file "${generated_key_file}" --aad-text record:v1)
+file(READ "${pipe_sealed}" pipe_sealed_hex HEX)
+if(NOT pipe_sealed_hex MATCHES "^534b463101[0-9a-f]+$")
+  message(FATAL_ERROR "seal-file --in - --out - did not write a binary SKF1 file")
+endif()
+run_cli_pipe("${pipe_sealed}" "${pipe_opened}" open-file --in - --out - --key-file "${generated_key_file}" --aad-text record:v1)
+file(READ "${pipe_opened}" pipe_opened_text)
+if(NOT pipe_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "open-file --in - --out - did not recover plaintext. got=[${pipe_opened_text}]")
+endif()
+
 run_cli_failure("hex input must contain an even number of characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/invalid-aad-hex.skf" --key-hex "${file_key}" --aad-hex abc)
 
 run_cli_no_stdout(seal-file --out "${reordered_key_file_sealed}" --key-file "${generated_key_file}" --aad-text record:v1 --in "${plain_file}")
@@ -480,6 +515,17 @@ run_cli_no_stdout(open-file-password --in "${password_aad_hex_sealed}" --out "${
 file(READ "${password_aad_hex_opened}" password_aad_hex_opened_text)
 if(NOT password_aad_hex_opened_text STREQUAL "file command plaintext\n")
   message(FATAL_ERROR "password AAD hex open did not recover plaintext. got=[${password_aad_hex_opened_text}]")
+endif()
+
+run_cli_pipe("${plain_file}" "${password_pipe_sealed}" seal-file-password --in - --out - --password-file "${password_file}" --aad-text record:v1)
+file(READ "${password_pipe_sealed}" password_pipe_sealed_hex HEX)
+if(NOT password_pipe_sealed_hex MATCHES "^534b503101010100[0-9a-f]+$")
+  message(FATAL_ERROR "seal-file-password --in - --out - did not write a binary SKP1 file")
+endif()
+run_cli_pipe("${password_pipe_sealed}" "${password_pipe_opened}" open-file-password --in - --out - --password-file "${password_file}" --aad-text record:v1)
+file(READ "${password_pipe_opened}" password_pipe_opened_text)
+if(NOT password_pipe_opened_text STREQUAL "file command plaintext\n")
+  message(FATAL_ERROR "open-file-password --in - --out - did not recover plaintext. got=[${password_pipe_opened_text}]")
 endif()
 
 run_cli_no_stdout(seal-file-password --out "${password_reordered_sealed}" --password-file "${password_file}" --aad-text record:v1 --in "${plain_file}")

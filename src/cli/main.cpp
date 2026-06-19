@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <cstddef>
+#include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -12,6 +13,11 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace
 {
@@ -41,17 +47,17 @@ void print_help()
 	             "[--aad-text <text>|--aad-hex <hex>] [--out <path>]\n"
 	          << "  securekit decrypt (--packet-hex <hex>|--packet-file <path>) "
 	             "(--key-hex <64-hex>|--key-file <path>) [--aad-text <text>|--aad-hex <hex>] [--out <path>]\n"
-	          << "  securekit seal-file --in <path> --out <path> --key-hex <64-hex> "
+	          << "  securekit seal-file --in <path|-> --out <path|-> --key-hex <64-hex> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit open-file --in <path> --out <path> --key-hex <64-hex> "
+	          << "  securekit open-file --in <path|-> --out <path|-> --key-hex <64-hex> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit seal-file --in <path> --out <path> --key-file <path> "
+	          << "  securekit seal-file --in <path|-> --out <path|-> --key-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit open-file --in <path> --out <path> --key-file <path> "
+	          << "  securekit open-file --in <path|-> --out <path|-> --key-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit seal-file-password --in <path> --out <path> --password-file <path> "
+	          << "  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
-	          << "  securekit open-file-password --in <path> --out <path> --password-file <path> "
+	          << "  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit help [command]\n";
 }
@@ -131,10 +137,10 @@ std::string_view file_command_usage(std::string_view command)
 {
 	if (command == "seal-file")
 	{
-		return "Usage:\n  securekit seal-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) "
+		return "Usage:\n  securekit seal-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) "
 		       "[--aad-text <text>|--aad-hex <hex>]";
 	}
-	return "Usage:\n  securekit open-file --in <path> --out <path> (--key-hex <64-hex>|--key-file <path>) "
+	return "Usage:\n  securekit open-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) "
 	       "[--aad-text <text>|--aad-hex <hex>]";
 }
 
@@ -142,10 +148,10 @@ std::string_view password_file_command_usage(std::string_view command)
 {
 	if (command == "seal-file-password")
 	{
-		return "Usage:\n  securekit seal-file-password --in <path> --out <path> --password-file <path> "
+		return "Usage:\n  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> "
 		       "[--aad-text <text>|--aad-hex <hex>]";
 	}
-	return "Usage:\n  securekit open-file-password --in <path> --out <path> --password-file <path> "
+	return "Usage:\n  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
 	       "[--aad-text <text>|--aad-hex <hex>]";
 }
 
@@ -416,6 +422,8 @@ struct file_command_options
 	bool has_output = false;
 	bool has_key = false;
 	bool has_aad = false;
+	bool input_is_stdin = false;
+	bool output_is_stdout = false;
 };
 
 struct password_file_command_options
@@ -428,6 +436,8 @@ struct password_file_command_options
 	bool has_output = false;
 	bool has_password = false;
 	bool has_aad = false;
+	bool input_is_stdin = false;
+	bool output_is_stdout = false;
 };
 
 struct wrap_key_options
@@ -482,6 +492,11 @@ void reject_duplicate(bool already_set, std::string_view option)
 	}
 }
 
+bool is_standard_stream_marker(std::string_view value)
+{
+	return value == "-";
+}
+
 file_command_options parse_file_command_options(int argc, char **argv)
 {
 	if (argc < 8 || ((argc - 2) % 2) != 0)
@@ -499,12 +514,14 @@ file_command_options parse_file_command_options(int argc, char **argv)
 		{
 			reject_duplicate(options.has_input, option);
 			options.input = std::filesystem::path(value);
+			options.input_is_stdin = is_standard_stream_marker(value);
 			options.has_input = true;
 		}
 		else if (option == "--out")
 		{
 			reject_duplicate(options.has_output, option);
 			options.output = std::filesystem::path(value);
+			options.output_is_stdout = is_standard_stream_marker(value);
 			options.has_output = true;
 		}
 		else if (option == "--key-hex" || option == "--key-file")
@@ -556,12 +573,14 @@ password_file_command_options parse_password_file_command_options(int argc, char
 		{
 			reject_duplicate(options.has_input, option);
 			options.input = std::filesystem::path(value);
+			options.input_is_stdin = is_standard_stream_marker(value);
 			options.has_input = true;
 		}
 		else if (option == "--out")
 		{
 			reject_duplicate(options.has_output, option);
 			options.output = std::filesystem::path(value);
+			options.output_is_stdout = is_standard_stream_marker(value);
 			options.has_output = true;
 		}
 		else if (option == "--password-file")
@@ -638,6 +657,149 @@ void write_key_file(const std::filesystem::path &path, const securekit::key256 &
 void write_generated_key(const std::filesystem::path &path)
 {
 	write_key_file(path, securekit::generate_key());
+}
+
+void set_standard_stream_binary(int descriptor)
+{
+#ifdef _WIN32
+	if (_setmode(descriptor, _O_BINARY) == -1)
+	{
+		throw std::runtime_error("failed to set standard stream binary mode");
+	}
+#else
+	(void)descriptor;
+#endif
+}
+
+void set_stdin_binary()
+{
+#ifdef _WIN32
+	set_standard_stream_binary(_fileno(stdin));
+#else
+	set_standard_stream_binary(0);
+#endif
+}
+
+void set_stdout_binary()
+{
+#ifdef _WIN32
+	set_standard_stream_binary(_fileno(stdout));
+#else
+	set_standard_stream_binary(1);
+#endif
+}
+
+std::ifstream open_cli_input_file(const std::filesystem::path &path)
+{
+	std::ifstream input(path, std::ios::binary);
+	if (!input)
+	{
+		throw std::runtime_error("failed to open input file");
+	}
+	return input;
+}
+
+std::ofstream open_cli_output_file(const std::filesystem::path &path)
+{
+	std::ofstream output(path, std::ios::binary | std::ios::trunc);
+	if (!output)
+	{
+		throw std::runtime_error("failed to open output file");
+	}
+	return output;
+}
+
+std::filesystem::path temporary_output_path_for(const std::filesystem::path &output)
+{
+	std::filesystem::path temp_path = output;
+	temp_path += ".securekit.tmp";
+	return temp_path;
+}
+
+void remove_file_quietly(const std::filesystem::path &path)
+{
+	std::error_code ec;
+	(void)std::filesystem::remove(path, ec);
+}
+
+void rename_output_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
+{
+	std::error_code ec;
+	std::filesystem::rename(temp_path, output, ec);
+	if (ec)
+	{
+		throw std::runtime_error("failed to write output file");
+	}
+}
+
+template <typename Options, typename Operation>
+void run_streaming_file_command(const Options &options, Operation operation)
+{
+	if (options.input_is_stdin)
+	{
+		set_stdin_binary();
+	}
+	if (options.output_is_stdout)
+	{
+		set_stdout_binary();
+	}
+
+	std::ifstream input_file;
+	std::ofstream output_file;
+	std::filesystem::path temp_path;
+	bool uses_temp_output = false;
+
+	try
+	{
+		std::istream *input = &std::cin;
+		if (!options.input_is_stdin)
+		{
+			input_file = open_cli_input_file(options.input);
+			input = &input_file;
+		}
+
+		std::ostream *output = &std::cout;
+		if (!options.output_is_stdout)
+		{
+			ensure_output_file_does_not_exist(options.output);
+			temp_path = temporary_output_path_for(options.output);
+			output_file = open_cli_output_file(temp_path);
+			uses_temp_output = true;
+			output = &output_file;
+		}
+
+		operation(*input, *output);
+
+		if (options.output_is_stdout)
+		{
+			std::cout.flush();
+			if (!std::cout)
+			{
+				throw std::runtime_error("failed to write output file");
+			}
+			return;
+		}
+
+		output_file.close();
+		if (!output_file)
+		{
+			throw std::runtime_error("failed to write output file");
+		}
+		rename_output_file(temp_path, options.output);
+		uses_temp_output = false;
+	}
+	catch (...)
+	{
+		if (output_file.is_open())
+		{
+			output_file.close();
+		}
+		if (uses_temp_output)
+		{
+			remove_file_quietly(temp_path);
+		}
+		throw;
+	}
 }
 
 wrap_key_options parse_wrap_key_options(int argc, char **argv)
@@ -1093,14 +1255,33 @@ int main(int argc, char **argv)
 		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))
 		{
 			const file_command_options options = parse_file_command_options(argc, argv);
+			const bool uses_standard_stream = options.input_is_stdin || options.output_is_stdout;
 
 			if (is_arg(argv[1], "seal-file"))
 			{
-				securekit::seal_file(options.input, options.output, options.key, options.aad);
+				if (uses_standard_stream)
+				{
+					run_streaming_file_command(options, [&](std::istream &input, std::ostream &output) {
+						securekit::seal_file(input, output, options.key, options.aad);
+					});
+				}
+				else
+				{
+					securekit::seal_file(options.input, options.output, options.key, options.aad);
+				}
 			}
 			else
 			{
-				securekit::open_file(options.input, options.output, options.key, options.aad);
+				if (uses_standard_stream)
+				{
+					run_streaming_file_command(options, [&](std::istream &input, std::ostream &output) {
+						securekit::open_file(input, output, options.key, options.aad);
+					});
+				}
+				else
+				{
+					securekit::open_file(options.input, options.output, options.key, options.aad);
+				}
 			}
 			return 0;
 		}
@@ -1108,14 +1289,33 @@ int main(int argc, char **argv)
 		if (argc >= 2 && (is_arg(argv[1], "seal-file-password") || is_arg(argv[1], "open-file-password")))
 		{
 			const password_file_command_options options = parse_password_file_command_options(argc, argv);
+			const bool uses_standard_stream = options.input_is_stdin || options.output_is_stdout;
 
 			if (is_arg(argv[1], "seal-file-password"))
 			{
-				securekit::seal_file_with_password(options.input, options.output, options.password, options.aad);
+				if (uses_standard_stream)
+				{
+					run_streaming_file_command(options, [&](std::istream &input, std::ostream &output) {
+						securekit::seal_file_with_password(input, output, options.password, options.aad);
+					});
+				}
+				else
+				{
+					securekit::seal_file_with_password(options.input, options.output, options.password, options.aad);
+				}
 			}
 			else
 			{
-				securekit::open_file_with_password(options.input, options.output, options.password, options.aad);
+				if (uses_standard_stream)
+				{
+					run_streaming_file_command(options, [&](std::istream &input, std::ostream &output) {
+						securekit::open_file_with_password(input, output, options.password, options.aad);
+					});
+				}
+				else
+				{
+					securekit::open_file_with_password(options.input, options.output, options.password, options.aad);
+				}
 			}
 			return 0;
 		}

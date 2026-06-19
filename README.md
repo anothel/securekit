@@ -33,7 +33,7 @@ The current identity is:
 - AES-256-GCM packet encryption and decryption.
 - Move-only packet streaming encryptor and decryptor for `SKT1`.
 - AES-256-GCM key wrapping helpers.
-- Chunked file sealing and opening.
+- Chunked file sealing and opening with path and stream APIs.
 - Password-based chunked file sealing and opening with `SKP1` and scrypt.
 
 ## Non-goals
@@ -155,6 +155,8 @@ securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex --aad-
 securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex --aad-text record:v1
 securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
+securekit seal-file --in - --out - --key-file key.hex < plain.bin > plain.bin.skf
+securekit open-file --in - --out - --key-file key.hex < plain.bin.skf > plain.bin
 securekit help seal-file-password
 securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin
 securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin
@@ -188,9 +190,11 @@ file. `--aad-text` uses the argument bytes directly. `--aad-hex` strictly
 decodes hex to bytes.
 Packet and file command options may be supplied in any order, but each command
 must provide exactly one input source and one key source or password source.
-File commands also require exactly one output path. At most one AAD option may
-be provided. The CLI does not expose password prompts, password text arguments,
-environment-variable key loading, or stdin/stdout streaming in this slice.
+File commands also require exactly one output destination. For `seal-file`,
+`open-file`, `seal-file-password`, and `open-file-password`, `--in -` reads from
+stdin and `--out -` writes raw binary output to stdout. At most one AAD option
+may be provided. The CLI does not expose password prompts, password text
+arguments, or environment-variable key loading.
 
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
@@ -205,12 +209,12 @@ strict hex or a binary packet file. Without `--out`, it writes the recovered
 file and refuses to overwrite an existing file. The key wrapping CLI slice does
 not expose AAD.
 
-Successful CLI commands write only the result plus one trailing newline to
-stdout. Usage, parse, file, or decoding failures return a non-zero exit code,
-write a short message to stderr, and do not write stdout. Text arguments are
-treated as raw bytes in the active process encoding; the CLI does not normalize
-or transcode Unicode. Decode commands use the same strict validation as the C++
-APIs.
+Successful text-output CLI commands write the result plus one trailing newline
+to stdout. File commands with `--out -` write raw binary bytes without adding a
+newline. Usage, parse, file, or decoding failures return a non-zero exit code
+and write a short message to stderr. Text arguments are treated as raw bytes in
+the active process encoding; the CLI does not normalize or transcode Unicode.
+Decode commands use the same strict validation as the C++ APIs.
 
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
 usage text. `securekit help <command>` prints command-specific usage for the
@@ -391,9 +395,21 @@ void securekit::seal_file(
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
 
+void securekit::seal_file(
+	std::istream &input,
+	std::ostream &output,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+
 void securekit::open_file(
 	const std::filesystem::path &input,
 	const std::filesystem::path &output,
+	const securekit::key256 &key,
+	std::span<const std::byte> aad = {});
+
+void securekit::open_file(
+	std::istream &input,
+	std::ostream &output,
 	const securekit::key256 &key,
 	std::span<const std::byte> aad = {});
 
@@ -403,9 +419,21 @@ void securekit::seal_file_with_password(
 	std::span<const std::byte> password,
 	std::span<const std::byte> aad = {});
 
+void securekit::seal_file_with_password(
+	std::istream &input,
+	std::ostream &output,
+	std::span<const std::byte> password,
+	std::span<const std::byte> aad = {});
+
 void securekit::open_file_with_password(
 	const std::filesystem::path &input,
 	const std::filesystem::path &output,
+	std::span<const std::byte> password,
+	std::span<const std::byte> aad = {});
+
+void securekit::open_file_with_password(
+	std::istream &input,
+	std::ostream &output,
 	std::span<const std::byte> password,
 	std::span<const std::byte> aad = {});
 ```
@@ -496,8 +524,12 @@ Each chunk record:
 The file header, chunk index, plaintext size, final flag, and caller-provided
 AAD are authenticated with every chunk. `open_file` rejects malformed headers,
 truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
-tag failures. Output files must not already exist; SecureKit writes a temporary
-file in the output directory and renames it only after successful completion.
+tag failures. Path overload output files must not already exist; SecureKit
+writes a temporary file in the output directory and renames it only after
+successful completion. Stream overloads operate on caller-provided streams and
+do not perform output path checks or temporary-file renames. When opening from a
+stream, callers should treat plaintext output as accepted only after the
+function returns successfully.
 
 ## SKP1 Password File Format
 

@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <iosfwd>
 #include <span>
 
 #include "securekit/export.hpp"
@@ -17,9 +18,21 @@ SECUREKIT_API void seal_file(
     const key256 &key,
     std::span<const std::byte> aad = {});
 
+SECUREKIT_API void seal_file(
+    std::istream &input,
+    std::ostream &output,
+    const key256 &key,
+    std::span<const std::byte> aad = {});
+
 SECUREKIT_API void open_file(
     const std::filesystem::path &input,
     const std::filesystem::path &output,
+    const key256 &key,
+    std::span<const std::byte> aad = {});
+
+SECUREKIT_API void open_file(
+    std::istream &input,
+    std::ostream &output,
     const key256 &key,
     std::span<const std::byte> aad = {});
 
@@ -29,9 +42,21 @@ SECUREKIT_API void seal_file_with_password(
     std::span<const std::byte> password,
     std::span<const std::byte> aad = {});
 
+SECUREKIT_API void seal_file_with_password(
+    std::istream &input,
+    std::ostream &output,
+    std::span<const std::byte> password,
+    std::span<const std::byte> aad = {});
+
 SECUREKIT_API void open_file_with_password(
     const std::filesystem::path &input,
     const std::filesystem::path &output,
+    std::span<const std::byte> password,
+    std::span<const std::byte> aad = {});
+
+SECUREKIT_API void open_file_with_password(
+    std::istream &input,
+    std::ostream &output,
     std::span<const std::byte> password,
     std::span<const std::byte> aad = {});
 
