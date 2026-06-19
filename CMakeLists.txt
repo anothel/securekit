@@ -125,6 +125,7 @@ if(SECUREKIT_BUILD_TESTS)
     COMMAND ${CMAKE_COMMAND}
       -DSECUREKIT_CLI=$<TARGET_FILE:securekit_cli>
       -DSECUREKIT_EXPECTED_VERSION=${PROJECT_VERSION}
+      -DSECUREKIT_TEST_FIXTURE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/check_cli.cmake)
   if(_securekit_test_properties)
     set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})

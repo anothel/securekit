@@ -6,6 +6,11 @@ if(NOT DEFINED SECUREKIT_EXPECTED_VERSION)
   message(FATAL_ERROR "SECUREKIT_EXPECTED_VERSION is required")
 endif()
 
+if(NOT DEFINED SECUREKIT_TEST_FIXTURE_DIR)
+  get_filename_component(_securekit_test_dir "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+  set(SECUREKIT_TEST_FIXTURE_DIR "${_securekit_test_dir}/fixtures")
+endif()
+
 function(run_cli expected_exit expected_stdout)
   execute_process(
     COMMAND "${SECUREKIT_CLI}" ${ARGN}
@@ -69,6 +74,16 @@ function(run_cli_failure expected_stderr)
   if(NOT stderr STREQUAL expected_stderr)
     message(FATAL_ERROR "Unexpected stderr. Expected [${expected_stderr}], got [${stderr}]")
   endif()
+endfunction()
+
+function(read_hex_fixture output_variable name)
+  set(path "${SECUREKIT_TEST_FIXTURE_DIR}/${name}")
+  if(NOT EXISTS "${path}")
+    message(FATAL_ERROR "Missing fixture: ${path}")
+  endif()
+  file(READ "${path}" hex_text)
+  string(REGEX REPLACE "[ \t\r\n]" "" hex_text "${hex_text}")
+  set(${output_variable} "${hex_text}" PARENT_SCOPE)
 endfunction()
 
 set(expected_help [=[Usage:
@@ -243,7 +258,7 @@ set(password_pipe_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-pip
 set(password_reordered_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-reordered.skp")
 set(password_reordered_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-password-reordered-opened.txt")
 set(packet_zero_key "0000000000000000000000000000000000000000000000000000000000000000")
-set(packet_known_aad "534b543101000000000000000000000000a6c22c512240180b643bb7b6d19ae91d51db387693b2f165220613f98728de")
+read_hex_fixture(packet_known_aad "skt1-aes256-gcm-aad.hex")
 set(packet_aad_hex "7265636f72643a7631")
 set(packet_key_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-key.hex")
 set(packet_input_file "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-packet-plain.txt")
