@@ -76,6 +76,11 @@ cmake --build build-vcpkg --config Release --target check
 cmake --build build-vcpkg --config Release --target package-check
 ```
 
+`package-check` installs SecureKit, runs the installed CLI, verifies a consumer
+CMake project, builds CPack binary and source archives, and checks key files
+inside those archives. Generated archives are written under
+`<build>/package-check/artifacts`.
+
 If tests cannot find OpenSSL DLLs on Windows, pass:
 
 ```powershell
@@ -646,6 +651,7 @@ GitHub Actions builds and tests:
 - Install-only package and consumer check with tests disabled.
 - Linux static-library package and consumer check.
 - Windows shared-library package and consumer check.
+- CPack binary and source package artifact uploads.
 
 Run result is only available after pushing a commit or manually starting the
 workflow in GitHub. Local equivalent:

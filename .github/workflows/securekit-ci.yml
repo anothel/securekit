@@ -78,6 +78,12 @@ jobs:
       - name: Package check
         run: cmake --build build --config ${{ matrix.build_type }} --target package-check
 
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: securekit-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-packages
+          path: build/package-check/artifacts/*
+
   install-only:
     name: ubuntu-latest gcc Release install-only
     runs-on: ubuntu-latest
@@ -101,6 +107,12 @@ jobs:
 
       - name: Package check
         run: cmake --build build --config Release --target package-check
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: securekit-ubuntu-gcc-release-install-only-packages
+          path: build/package-check/artifacts/*
 
       - name: Verify package files
         run: |
@@ -146,6 +158,12 @@ jobs:
       - name: Package check
         run: cmake --build build --config Release --target package-check
 
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: securekit-ubuntu-gcc-release-static-packages
+          path: build/package-check/artifacts/*
+
       - name: Verify static package files
         run: |
           test -f "${{ github.workspace }}/build/package-check/install/bin/securekit"
@@ -190,6 +208,12 @@ jobs:
 
       - name: Package check
         run: cmake --build build --config Release --target package-check
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: securekit-windows-msvc-release-shared-packages
+          path: build/package-check/artifacts/*
 
       - name: Verify shared package files
         shell: pwsh
