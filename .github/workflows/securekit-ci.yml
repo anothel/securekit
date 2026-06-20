@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -46,7 +46,7 @@ jobs:
         run: vcpkg install openssl:x64-windows
 
       - name: Cache GoogleTest
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -84,7 +84,7 @@ jobs:
         run: cmake --build build --config ${{ matrix.build_type }} --target package-check
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: securekit-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-packages
           path: build/package-check/artifacts/*
@@ -95,7 +95,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
@@ -114,7 +114,7 @@ jobs:
         run: cmake --build build --config Release --target package-check
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: securekit-ubuntu-gcc-release-install-only-packages
           path: build/package-check/artifacts/*
@@ -133,13 +133,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
 
       - name: Cache GoogleTest
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -164,7 +164,7 @@ jobs:
         run: cmake --build build --config Release --target package-check
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: securekit-ubuntu-gcc-release-static-packages
           path: build/package-check/artifacts/*
@@ -185,13 +185,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Windows dependencies
         run: vcpkg install openssl:x64-windows
 
       - name: Cache GoogleTest
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: ${{ runner.os }}-msvc-Release-shared-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -215,7 +215,7 @@ jobs:
         run: cmake --build build --config Release --target package-check
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: securekit-windows-msvc-release-shared-packages
           path: build/package-check/artifacts/*
@@ -248,7 +248,7 @@ jobs:
 
     steps:
       - name: Download package artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
 
