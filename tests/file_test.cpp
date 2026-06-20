@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -69,6 +70,17 @@ securekit::bytes bytes_from_text(std::string_view text)
 	for (const unsigned char ch : text)
 	{
 		out.push_back(static_cast<std::byte>(ch));
+	}
+	return out;
+}
+
+securekit::bytes bytes_from_values(std::initializer_list<unsigned int> values)
+{
+	securekit::bytes out;
+	out.reserve(values.size());
+	for (const unsigned int value : values)
+	{
+		out.push_back(static_cast<std::byte>(value));
 	}
 	return out;
 }
@@ -282,6 +294,46 @@ TEST(File, OpensKnownSkf1Fixture)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, OpensKnownSkf1EmptyFixture)
+{
+	const auto sealed_path = test_path("known-empty-fixture.skf");
+	const auto opened_path = test_path("known-empty-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::key256 key{};
+	const securekit::bytes aad = bytes_from_text("fixture:empty");
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skf1-empty-aad.hex");
+
+	write_file(sealed_path, fixture);
+	securekit::open_file(sealed_path, opened_path, key, aad);
+
+	EXPECT_TRUE(read_file(opened_path).empty());
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, OpensKnownSkf1BinaryFixtureWithAad)
+{
+	const auto sealed_path = test_path("known-binary-fixture.skf");
+	const auto opened_path = test_path("known-binary-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::key256 key = key_from_seed(0x00);
+	const securekit::bytes aad = bytes_from_text("fixture:binary");
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skf1-binary-aad.hex");
+
+	write_file(sealed_path, fixture);
+	securekit::open_file(sealed_path, opened_path, key, aad);
+
+	EXPECT_EQ(read_file(opened_path), bytes_from_values({0x00, 0xff, 0x10, 0x20, 0x7f, 0x80, 0x41, 0x42, 0x43}));
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
 TEST(File, OpensKnownSkp1Fixture)
 {
 	const auto sealed_path = test_path("known-password-fixture.skp");
@@ -297,6 +349,26 @@ TEST(File, OpensKnownSkp1Fixture)
 	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
 
 	EXPECT_EQ(read_file(opened_path), bytes_from_text("known SKP1 vector"));
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, OpensKnownSkp1BinaryFixtureWithAad)
+{
+	const auto sealed_path = test_path("known-password-binary-fixture.skp");
+	const auto opened_path = test_path("known-password-binary-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("known SKP1 binary password");
+	const securekit::bytes aad = bytes_from_text("fixture:password:binary");
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skp1-binary-aad.hex");
+
+	write_file(sealed_path, fixture);
+	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
+
+	EXPECT_EQ(read_file(opened_path), bytes_from_values({0x00, 0x01, 0xfe, 0xff, 0x42, 0x00, 0x7f, 0x80}));
 
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);

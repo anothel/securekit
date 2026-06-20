@@ -77,6 +77,15 @@ TEST(KeyWrap, UnwrapsKnownSkt1KeyWrapFixture)
 	EXPECT_EQ(securekit::unwrap_key(packet, wrapping_key, aad), key_to_wrap);
 }
 
+TEST(KeyWrap, UnwrapsKnownZeroKeyWrapFixture)
+{
+	const securekit::key256 key_to_wrap{};
+	const securekit::key256 wrapping_key = key_from_seed(0x80);
+	const securekit::bytes packet = securekit::test::read_hex_fixture("skt1-key-wrap-zero.hex");
+
+	EXPECT_EQ(securekit::unwrap_key(packet, wrapping_key), key_to_wrap);
+}
+
 TEST(KeyWrap, RejectsWrongWrappingKey)
 {
 	const securekit::key256 key_to_wrap = key_from_seed(0x20);
