@@ -116,3 +116,25 @@ TEST(KeyWrap, RejectsPacketsThatDoNotDecryptToOneKey)
 
 	expect_error([&] { (void)securekit::unwrap_key(packet, wrapping_key); }, securekit::error_code::invalid_packet);
 }
+
+TEST(KeyWrap, RejectsMalformedWrappedKeyPackets)
+{
+	const securekit::key256 wrapping_key = key_from_seed(0x72);
+
+	expect_error(
+	    [&] { (void)securekit::unwrap_key(securekit::bytes{std::byte{'S'}, std::byte{'K'}, std::byte{'T'}}, wrapping_key); },
+	    securekit::error_code::invalid_packet);
+
+	securekit::bytes bad_version = securekit::encrypt(bytes_from_ascii("short"), wrapping_key);
+	bad_version[4] = std::byte{0x02};
+	expect_error([&] { (void)securekit::unwrap_key(bad_version, wrapping_key); }, securekit::error_code::invalid_packet);
+}
+
+TEST(KeyWrap, RejectsPacketsThatDecryptToOversizedKey)
+{
+	const securekit::key256 wrapping_key = key_from_seed(0x74);
+	const securekit::bytes long_plaintext(33, std::byte{0x42});
+	const securekit::bytes packet = securekit::encrypt(long_plaintext, wrapping_key);
+
+	expect_error([&] { (void)securekit::unwrap_key(packet, wrapping_key); }, securekit::error_code::invalid_packet);
+}

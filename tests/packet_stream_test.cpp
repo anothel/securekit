@@ -232,6 +232,31 @@ TEST(PacketStream, RejectsDecryptInvalidCallOrder)
 	expect_invalid_input([&] { (void)decryptor.finalize(std::span<const std::byte>(packet).last(kTagSize)); });
 }
 
+TEST(PacketStream, RejectsMovedFromObjects)
+{
+	const securekit::key256 key = key_from_seed(0x51);
+
+	securekit::packet_encryptor encryptor(key);
+	securekit::packet_encryptor moved_encryptor(std::move(encryptor));
+	expect_invalid_input([&] { (void)encryptor.begin(); });
+	expect_invalid_input([&] { (void)encryptor.update(bytes_from_ascii("abc")); });
+	expect_invalid_input([&] { (void)encryptor.finalize(); });
+
+	securekit::packet_decryptor decryptor(key);
+	securekit::packet_decryptor moved_decryptor(std::move(decryptor));
+	const securekit::bytes packet = securekit::encrypt(bytes_from_ascii("message"), key);
+	const std::span<const std::byte> packet_span(packet);
+	expect_invalid_input([&] { decryptor.begin(packet_span.first(kPrefixSize)); });
+	expect_invalid_input([&] { (void)decryptor.update(bytes_from_ascii("abc")); });
+	expect_invalid_input([&] { (void)decryptor.finalize(packet_span.last(kTagSize)); });
+
+	const securekit::bytes prefix = moved_encryptor.begin();
+	const securekit::bytes tag = moved_encryptor.finalize();
+	moved_decryptor.begin(prefix);
+	EXPECT_TRUE(moved_decryptor.finalize(tag).empty());
+	EXPECT_EQ(join({prefix, tag}).size(), kOverhead);
+}
+
 TEST(PacketStream, RejectsMalformedPrefixAndTag)
 {
 	const securekit::key256 key = key_from_seed(0x60);
@@ -293,6 +318,24 @@ TEST(PacketStream, RejectsMalformedPrefixAndTag)
 		    0x10,
 		}));
 	});
+}
+
+TEST(PacketStream, RejectsReuseAfterFailedFinalize)
+{
+	const securekit::key256 key = key_from_seed(0x68);
+	const securekit::key256 wrong_key = key_from_seed(0x69);
+	const securekit::bytes plaintext = bytes_from_ascii("secret");
+	const securekit::bytes packet = securekit::encrypt(plaintext, key);
+	const std::span<const std::byte> packet_span(packet);
+
+	securekit::packet_decryptor decryptor(wrong_key);
+	decryptor.begin(packet_span.first(kPrefixSize));
+	(void)decryptor.update(packet_span.subspan(kPrefixSize, plaintext.size()));
+	expect_authentication_failed([&] { (void)decryptor.finalize(packet_span.last(kTagSize)); });
+
+	expect_invalid_input([&] { decryptor.begin(packet_span.first(kPrefixSize)); });
+	expect_invalid_input([&] { (void)decryptor.update(bytes_from_ascii("abc")); });
+	expect_invalid_input([&] { (void)decryptor.finalize(packet_span.last(kTagSize)); });
 }
 
 TEST(PacketStream, RejectsWrongKeyAndAadAtFinalize)

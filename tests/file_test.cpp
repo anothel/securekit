@@ -41,6 +41,55 @@ std::filesystem::path temp_path_for(const std::filesystem::path &output)
 	return temp;
 }
 
+std::string securekit_temp_prefix_for(const std::filesystem::path &output)
+{
+	return output.filename().string() + ".securekit.";
+}
+
+bool is_securekit_temp_output_for(const std::filesystem::path &candidate, const std::filesystem::path &output)
+{
+	const std::string name = candidate.filename().string();
+	const std::string prefix = securekit_temp_prefix_for(output);
+	const std::string suffix = ".tmp";
+	return name.rfind(prefix, 0) == 0 && name.size() >= suffix.size() &&
+	       name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+void remove_securekit_temp_outputs_for(const std::filesystem::path &output)
+{
+	const std::filesystem::path directory = output.parent_path();
+	if (directory.empty() || !std::filesystem::exists(directory))
+	{
+		return;
+	}
+
+	for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator(directory))
+	{
+		if (entry.is_regular_file() && is_securekit_temp_output_for(entry.path(), output))
+		{
+			std::filesystem::remove(entry.path());
+		}
+	}
+}
+
+bool has_securekit_temp_output_for(const std::filesystem::path &output)
+{
+	const std::filesystem::path directory = output.parent_path();
+	if (directory.empty() || !std::filesystem::exists(directory))
+	{
+		return false;
+	}
+
+	for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator(directory))
+	{
+		if (entry.is_regular_file() && is_securekit_temp_output_for(entry.path(), output))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void write_file(const std::filesystem::path &path, const securekit::bytes &bytes)
 {
 	std::ofstream out(path, std::ios::binary | std::ios::trunc);
@@ -526,6 +575,32 @@ TEST(File, AuthenticationFailuresUseGenericMessage)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, RemovesTemporaryOutputAfterOpenFailure)
+{
+	const auto plain_path = test_path("plain-open-failure-cleanup.bin");
+	const auto sealed_path = test_path("sealed-open-failure-cleanup.skf");
+	const auto opened_path = test_path("opened-open-failure-cleanup.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+
+	const securekit::key256 key = key_from_seed(0x44);
+	const securekit::key256 wrong_key = key_from_seed(0x45);
+	write_file(plain_path, bytes_from_text("cleanup on failure"));
+	securekit::seal_file(plain_path, sealed_path, key);
+
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, wrong_key); });
+
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_FALSE(has_securekit_temp_output_for(opened_path));
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+}
+
 TEST(File, DetectsMutation)
 {
 	const auto plain_path = test_path("plain-mutation.bin");
@@ -805,6 +880,32 @@ TEST(File, PasswordRejectsWrongPasswordAndAad)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRemovesTemporaryOutputAfterOpenFailure)
+{
+	const auto plain_path = test_path("password-plain-open-failure-cleanup.bin");
+	const auto sealed_path = test_path("password-sealed-open-failure-cleanup.skp");
+	const auto opened_path = test_path("password-opened-open-failure-cleanup.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+
+	const securekit::bytes password = bytes_from_text("right cleanup password");
+	const securekit::bytes wrong_password = bytes_from_text("wrong cleanup password");
+	write_file(plain_path, bytes_from_text("password cleanup on failure"));
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+
+	expect_generic_authentication_failure([&] { securekit::open_file_with_password(sealed_path, opened_path, wrong_password); });
+
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_FALSE(has_securekit_temp_output_for(opened_path));
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
 }
 
 TEST(File, PasswordRejectsExistingOutputAndEmptyPassword)

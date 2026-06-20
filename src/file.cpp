@@ -160,6 +160,11 @@ public:
 		}
 	}
 
+	void discard() noexcept
+	{
+		close_quietly();
+	}
+
 private:
 	void close_quietly() noexcept
 	{
@@ -799,6 +804,7 @@ void seal_file_payload(
 	}
 	catch (...)
 	{
+		out.discard();
 		remove_quietly(temp_path);
 		throw;
 	}
@@ -908,6 +914,7 @@ void open_file(const std::filesystem::path &input, const std::filesystem::path &
 	}
 	catch (...)
 	{
+		out.discard();
 		remove_quietly(temp_path);
 		throw;
 	}
@@ -980,6 +987,7 @@ void open_file_with_password(
 	}
 	catch (...)
 	{
+		out.discard();
 		remove_quietly(temp_path);
 		throw;
 	}
