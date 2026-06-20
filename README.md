@@ -554,9 +554,10 @@ AAD are authenticated with every chunk. `open_file` rejects malformed headers,
 truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
 tag failures. Path overload output files must not already exist; SecureKit
 writes a temporary file in the output directory and renames it only after
-successful completion. Stream overloads operate on caller-provided streams and
-do not perform output path checks or temporary-file renames. When opening from a
-stream, callers should treat plaintext output as accepted only after the
+successful completion. SecureKit also refuses to overwrite an existing
+temporary output path. Stream overloads operate on caller-provided streams and
+do not perform output path checks or temporary-file renames. When opening from
+a stream, callers should treat plaintext output as accepted only after the
 function returns successfully.
 
 ## SKP1 Password File Format

@@ -33,6 +33,13 @@ std::filesystem::path test_path(const std::string &name)
 	return std::filesystem::temp_directory_path() / ("securekit-" + name);
 }
 
+std::filesystem::path temp_path_for(const std::filesystem::path &output)
+{
+	std::filesystem::path temp = output;
+	temp += ".securekit.tmp";
+	return temp;
+}
+
 void write_file(const std::filesystem::path &path, const securekit::bytes &bytes)
 {
 	std::ofstream out(path, std::ios::binary | std::ios::trunc);
@@ -320,6 +327,43 @@ TEST(File, RejectsExistingOutput)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, RejectsExistingTemporaryOutput)
+{
+	const auto plain_path = test_path("plain-temp-collision.bin");
+	const auto sealed_path = test_path("sealed-temp-collision.skf");
+	const auto opened_path = test_path("opened-temp-collision.bin");
+	const auto sealed_temp_path = temp_path_for(sealed_path);
+	const auto opened_temp_path = temp_path_for(opened_path);
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	std::filesystem::remove(sealed_temp_path);
+	std::filesystem::remove(opened_temp_path);
+
+	const securekit::key256 key = key_from_seed(0x33);
+	const securekit::bytes existing_temp = bytes_from_text("existing temp");
+	write_file(plain_path, bytes_from_text("temp collision plaintext"));
+	write_file(sealed_temp_path, existing_temp);
+
+	expect_error([&] { securekit::seal_file(plain_path, sealed_path, key); }, securekit::error_code::invalid_input);
+	EXPECT_FALSE(std::filesystem::exists(sealed_path));
+	EXPECT_EQ(read_file(sealed_temp_path), existing_temp);
+
+	std::filesystem::remove(sealed_temp_path);
+	securekit::seal_file(plain_path, sealed_path, key);
+	write_file(opened_temp_path, existing_temp);
+
+	expect_error([&] { securekit::open_file(sealed_path, opened_path, key); }, securekit::error_code::invalid_input);
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_EQ(read_file(opened_temp_path), existing_temp);
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	std::filesystem::remove(sealed_temp_path);
+	std::filesystem::remove(opened_temp_path);
 }
 
 TEST(File, RejectsMalformedHeader)
@@ -720,6 +764,47 @@ TEST(File, PasswordRejectsExistingOutputAndEmptyPassword)
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsExistingTemporaryOutput)
+{
+	const auto plain_path = test_path("password-plain-temp-collision.bin");
+	const auto sealed_path = test_path("password-sealed-temp-collision.skp");
+	const auto opened_path = test_path("password-opened-temp-collision.bin");
+	const auto sealed_temp_path = temp_path_for(sealed_path);
+	const auto opened_temp_path = temp_path_for(opened_path);
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	std::filesystem::remove(sealed_temp_path);
+	std::filesystem::remove(opened_temp_path);
+
+	const securekit::bytes password = bytes_from_text("temp collision password");
+	const securekit::bytes existing_temp = bytes_from_text("existing temp");
+	write_file(plain_path, bytes_from_text("password temp collision plaintext"));
+	write_file(sealed_temp_path, existing_temp);
+
+	expect_error(
+	    [&] { securekit::seal_file_with_password(plain_path, sealed_path, password); },
+	    securekit::error_code::invalid_input);
+	EXPECT_FALSE(std::filesystem::exists(sealed_path));
+	EXPECT_EQ(read_file(sealed_temp_path), existing_temp);
+
+	std::filesystem::remove(sealed_temp_path);
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	write_file(opened_temp_path, existing_temp);
+
+	expect_error(
+	    [&] { securekit::open_file_with_password(sealed_path, opened_path, password); },
+	    securekit::error_code::invalid_input);
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_EQ(read_file(opened_temp_path), existing_temp);
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	std::filesystem::remove(sealed_temp_path);
+	std::filesystem::remove(opened_temp_path);
 }
 
 TEST(File, PasswordRejectsMalformedHeaderAndUnsupportedScryptParameters)

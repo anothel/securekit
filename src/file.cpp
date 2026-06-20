@@ -494,6 +494,26 @@ void ensure_output_does_not_exist(const std::filesystem::path &output)
 	}
 }
 
+void ensure_temporary_output_does_not_exist(const std::filesystem::path &temp_path)
+{
+	std::error_code ec;
+	const bool exists = std::filesystem::exists(temp_path, ec);
+	if (ec)
+	{
+		throw_backend_failure("Temporary file status check failed");
+	}
+	if (exists)
+	{
+		throw securekit::error(securekit::error_code::invalid_input, "Output temporary file already exists");
+	}
+}
+
+void ensure_output_paths_do_not_exist(const std::filesystem::path &output)
+{
+	ensure_output_does_not_exist(output);
+	ensure_temporary_output_does_not_exist(temp_path_for(output));
+}
+
 void remove_quietly(const std::filesystem::path &path)
 {
 	std::error_code ec;
@@ -660,7 +680,7 @@ namespace securekit
 
 void seal_file(const std::filesystem::path &input, const std::filesystem::path &output, const key256 &key, std::span<const std::byte> aad)
 {
-	ensure_output_does_not_exist(output);
+	ensure_output_paths_do_not_exist(output);
 	const FileHeader header = make_header();
 	const key256 file_key = derive_file_key(key, header);
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
@@ -675,7 +695,7 @@ void seal_file(std::istream &input, std::ostream &output, const key256 &key, std
 
 void open_file(const std::filesystem::path &input, const std::filesystem::path &output, const key256 &key, std::span<const std::byte> aad)
 {
-	ensure_output_does_not_exist(output);
+	ensure_output_paths_do_not_exist(output);
 	const std::filesystem::path temp_path = temp_path_for(output);
 	try
 	{
@@ -726,7 +746,7 @@ void seal_file_with_password(
     std::span<const std::byte> aad)
 {
 	require_non_empty_password(password);
-	ensure_output_does_not_exist(output);
+	ensure_output_paths_do_not_exist(output);
 	const PasswordFileHeader header = make_password_header();
 	const key256 file_key = derive_password_file_key(password, header);
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
@@ -751,7 +771,7 @@ void open_file_with_password(
     std::span<const std::byte> aad)
 {
 	require_non_empty_password(password);
-	ensure_output_does_not_exist(output);
+	ensure_output_paths_do_not_exist(output);
 	const std::filesystem::path temp_path = temp_path_for(output);
 	try
 	{
