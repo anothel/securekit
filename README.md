@@ -736,14 +736,4 @@ executables with the OpenSSL DLL directory on `PATH`.
 
 ## Roadmap
 
-Near-term:
-
-- Keep free-function API stable.
-- Add more test vectors where useful.
-- Keep package consumption simple.
-
-Later:
-
-- Object-oriented APIs if repeated call sites justify them.
-- Additional password formats only if parameter agility or dependency changes justify them.
-- Additional streaming APIs if repeated call sites need other incremental formats.
+See [ROADMAP.md](ROADMAP.md).
