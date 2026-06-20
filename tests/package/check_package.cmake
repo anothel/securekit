@@ -29,10 +29,16 @@ endif()
 set(_securekit_install_prefix "${SECUREKIT_PACKAGE_CHECK_ROOT}/install")
 set(_securekit_artifact_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/artifacts")
 set(_securekit_consumer_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/consumer-build")
+set(_securekit_source_extract_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-extract")
+set(_securekit_source_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-build")
+set(_securekit_source_install_prefix "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-install")
 
 file(REMOVE_RECURSE "${_securekit_install_prefix}")
 file(REMOVE_RECURSE "${_securekit_artifact_dir}")
 file(REMOVE_RECURSE "${_securekit_consumer_build_dir}")
+file(REMOVE_RECURSE "${_securekit_source_extract_dir}")
+file(REMOVE_RECURSE "${_securekit_source_build_dir}")
+file(REMOVE_RECURSE "${_securekit_source_install_prefix}")
 file(MAKE_DIRECTORY "${SECUREKIT_PACKAGE_CHECK_ROOT}")
 file(MAKE_DIRECTORY "${_securekit_artifact_dir}")
 
@@ -186,6 +192,13 @@ set(_securekit_consumer_configure_args
   "-DCMAKE_PREFIX_PATH=${_securekit_install_prefix}"
   "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
 
+set(_securekit_source_configure_args
+  -B "${_securekit_source_build_dir}"
+  -DBUILD_TESTING=OFF
+  -DSECUREKIT_BUILD_TESTS=OFF
+  "-DCMAKE_INSTALL_PREFIX=${_securekit_source_install_prefix}"
+  "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
+
 function(_securekit_join_cmdline output_variable)
   set(_securekit_command_line "")
   foreach(_securekit_argument IN LISTS ARGN)
@@ -217,6 +230,47 @@ function(_securekit_run_consumer_command result_variable script_stem)
   set(${result_variable} "${_securekit_result}" PARENT_SCOPE)
 endfunction()
 
+function(_securekit_append_host_configure_args output_variable)
+  set(_securekit_args ${${output_variable}})
+  if(DEFINED SECUREKIT_CMAKE_GENERATOR AND NOT SECUREKIT_CMAKE_GENERATOR STREQUAL "")
+    list(APPEND _securekit_args -G "${SECUREKIT_CMAKE_GENERATOR}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_GENERATOR_PLATFORM AND NOT SECUREKIT_CMAKE_GENERATOR_PLATFORM STREQUAL "")
+    list(APPEND _securekit_args -A "${SECUREKIT_CMAKE_GENERATOR_PLATFORM}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_GENERATOR_TOOLSET AND NOT SECUREKIT_CMAKE_GENERATOR_TOOLSET STREQUAL "")
+    list(APPEND _securekit_args -T "${SECUREKIT_CMAKE_GENERATOR_TOOLSET}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_MAKE_PROGRAM AND NOT SECUREKIT_CMAKE_MAKE_PROGRAM STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_MAKE_PROGRAM=${SECUREKIT_CMAKE_MAKE_PROGRAM}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_CXX_COMPILER AND NOT SECUREKIT_CMAKE_CXX_COMPILER STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_CXX_COMPILER=${SECUREKIT_CMAKE_CXX_COMPILER}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_AR AND NOT SECUREKIT_CMAKE_AR STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_AR=${SECUREKIT_CMAKE_AR}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_LINKER AND NOT SECUREKIT_CMAKE_LINKER STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_LINKER=${SECUREKIT_CMAKE_LINKER}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_MT AND NOT SECUREKIT_CMAKE_MT STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_MT=${SECUREKIT_CMAKE_MT}")
+  endif()
+  if(DEFINED SECUREKIT_CMAKE_RC_COMPILER AND NOT SECUREKIT_CMAKE_RC_COMPILER STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_RC_COMPILER=${SECUREKIT_CMAKE_RC_COMPILER}")
+  endif()
+  if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT CMAKE_TOOLCHAIN_FILE STREQUAL "")
+    list(APPEND _securekit_args "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
+  endif()
+  if(DEFINED VCPKG_TARGET_TRIPLET AND NOT VCPKG_TARGET_TRIPLET STREQUAL "")
+    list(APPEND _securekit_args "-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}")
+  endif()
+  if(DEFINED OPENSSL_ROOT_DIR AND NOT OPENSSL_ROOT_DIR STREQUAL "")
+    list(APPEND _securekit_args "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
+  endif()
+  set(${output_variable} ${_securekit_args} PARENT_SCOPE)
+endfunction()
+
 set(_securekit_use_msvc_env FALSE)
 if(WIN32
     AND DEFINED SECUREKIT_CMAKE_GENERATOR
@@ -228,51 +282,85 @@ if(WIN32
     _securekit_vs_root "${SECUREKIT_CMAKE_CXX_COMPILER}")
   set(_securekit_vsdevcmd "${_securekit_vs_root}/Common7/Tools/VsDevCmd.bat")
   if(EXISTS "${_securekit_vsdevcmd}")
-    message(STATUS "Using VsDevCmd for the MSVC Ninja package consumer")
+    message(STATUS "Using VsDevCmd for MSVC Ninja package checks")
     set(_securekit_use_msvc_env TRUE)
   else()
-    message(WARNING "VsDevCmd.bat was not found for the MSVC Ninja package consumer: ${_securekit_vsdevcmd}")
+    message(WARNING "VsDevCmd.bat was not found for MSVC Ninja package checks: ${_securekit_vsdevcmd}")
   endif()
 endif()
 
-set(_securekit_mirror_consumer_generator TRUE)
+list(GET _securekit_source_artifacts 0 _securekit_source_artifact)
+file(MAKE_DIRECTORY "${_securekit_source_extract_dir}")
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E tar xf "${_securekit_source_artifact}"
+  WORKING_DIRECTORY "${_securekit_source_extract_dir}"
+  RESULT_VARIABLE _securekit_source_extract_result
+  ERROR_VARIABLE _securekit_source_extract_error)
+if(NOT _securekit_source_extract_result EQUAL 0)
+  message(FATAL_ERROR "Source package extraction failed: ${_securekit_source_extract_error}")
+endif()
 
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_GENERATOR AND NOT SECUREKIT_CMAKE_GENERATOR STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args -G "${SECUREKIT_CMAKE_GENERATOR}")
+file(GLOB _securekit_source_cmakelists LIST_DIRECTORIES FALSE
+  "${_securekit_source_extract_dir}/CMakeLists.txt"
+  "${_securekit_source_extract_dir}/*/CMakeLists.txt")
+list(LENGTH _securekit_source_cmakelists _securekit_source_cmakelists_count)
+if(NOT _securekit_source_cmakelists_count EQUAL 1)
+  message(FATAL_ERROR "Expected one extracted source tree, found ${_securekit_source_cmakelists_count}")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_GENERATOR_PLATFORM AND NOT SECUREKIT_CMAKE_GENERATOR_PLATFORM STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args -A "${SECUREKIT_CMAKE_GENERATOR_PLATFORM}")
+list(GET _securekit_source_cmakelists 0 _securekit_source_cmakelist)
+get_filename_component(_securekit_extracted_source_dir "${_securekit_source_cmakelist}" DIRECTORY)
+list(APPEND _securekit_source_configure_args -S "${_securekit_extracted_source_dir}")
+_securekit_append_host_configure_args(_securekit_source_configure_args)
+
+_securekit_run_consumer_command(
+  _securekit_source_configure_result
+  source-configure
+  "${CMAKE_COMMAND}"
+  ${_securekit_source_configure_args})
+if(NOT _securekit_source_configure_result EQUAL 0)
+  message(FATAL_ERROR "Source package configure failed")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_GENERATOR_TOOLSET AND NOT SECUREKIT_CMAKE_GENERATOR_TOOLSET STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args -T "${SECUREKIT_CMAKE_GENERATOR_TOOLSET}")
+
+_securekit_run_consumer_command(
+  _securekit_source_build_result
+  source-build
+  "${CMAKE_COMMAND}"
+  --build "${_securekit_source_build_dir}"
+  --config "${SECUREKIT_BUILD_CONFIG}"
+  --target securekit_cli)
+if(NOT _securekit_source_build_result EQUAL 0)
+  message(FATAL_ERROR "Source package build failed")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_MAKE_PROGRAM AND NOT SECUREKIT_CMAKE_MAKE_PROGRAM STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_MAKE_PROGRAM=${SECUREKIT_CMAKE_MAKE_PROGRAM}")
+
+_securekit_run_consumer_command(
+  _securekit_source_install_result
+  source-install
+  "${CMAKE_COMMAND}"
+  --install "${_securekit_source_build_dir}"
+  --config "${SECUREKIT_BUILD_CONFIG}"
+  --prefix "${_securekit_source_install_prefix}")
+if(NOT _securekit_source_install_result EQUAL 0)
+  message(FATAL_ERROR "Source package install failed")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_CXX_COMPILER AND NOT SECUREKIT_CMAKE_CXX_COMPILER STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_CXX_COMPILER=${SECUREKIT_CMAKE_CXX_COMPILER}")
+
+set(_securekit_source_cli "${_securekit_source_install_prefix}/bin/securekit${_securekit_exe_suffix}")
+if(NOT EXISTS "${_securekit_source_cli}")
+  message(FATAL_ERROR "Source package install is missing CLI: ${_securekit_source_cli}")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_AR AND NOT SECUREKIT_CMAKE_AR STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_AR=${SECUREKIT_CMAKE_AR}")
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E env "PATH=${_securekit_path}" "${_securekit_source_cli}" --version
+  RESULT_VARIABLE _securekit_source_cli_result
+  OUTPUT_VARIABLE _securekit_source_cli_output
+  ERROR_VARIABLE _securekit_source_cli_error)
+if(NOT _securekit_source_cli_result EQUAL 0)
+  message(FATAL_ERROR "Source package CLI smoke failed: ${_securekit_source_cli_error}")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_LINKER AND NOT SECUREKIT_CMAKE_LINKER STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_LINKER=${SECUREKIT_CMAKE_LINKER}")
+string(REPLACE "\r\n" "\n" _securekit_source_cli_output "${_securekit_source_cli_output}")
+if(NOT _securekit_source_cli_output STREQUAL "securekit ${SECUREKIT_PROJECT_VERSION}\n")
+  message(FATAL_ERROR "Source package CLI version mismatch: ${_securekit_source_cli_output}")
 endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_MT AND NOT SECUREKIT_CMAKE_MT STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_MT=${SECUREKIT_CMAKE_MT}")
-endif()
-if(_securekit_mirror_consumer_generator AND DEFINED SECUREKIT_CMAKE_RC_COMPILER AND NOT SECUREKIT_CMAKE_RC_COMPILER STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_RC_COMPILER=${SECUREKIT_CMAKE_RC_COMPILER}")
-endif()
-if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT CMAKE_TOOLCHAIN_FILE STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
-endif()
-if(DEFINED VCPKG_TARGET_TRIPLET AND NOT VCPKG_TARGET_TRIPLET STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}")
-endif()
-if(DEFINED OPENSSL_ROOT_DIR AND NOT OPENSSL_ROOT_DIR STREQUAL "")
-  list(APPEND _securekit_consumer_configure_args "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
-endif()
+
+_securekit_append_host_configure_args(_securekit_consumer_configure_args)
 
 _securekit_run_consumer_command(
   _securekit_consumer_configure_result

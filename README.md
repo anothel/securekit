@@ -78,9 +78,10 @@ cmake --build build-vcpkg --config Release --target release-workflow-check
 ```
 
 `package-check` installs SecureKit, runs the installed CLI, verifies a consumer
-CMake project, builds CPack binary and source archives, and checks key files
-inside those archives. Generated archives are written under
-`<build>/package-check/artifacts`.
+CMake project, builds CPack binary and source archives, checks key files inside
+those archives, extracts one source archive, and verifies that the extracted
+source can configure, build, install, and run `securekit --version`. Generated
+archives are written under `<build>/package-check/artifacts`.
 
 If tests cannot find OpenSSL DLLs on Windows, pass:
 
