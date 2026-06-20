@@ -135,6 +135,11 @@ copy of each source archive, prefixes binary archives with the CI artifact name
 to avoid asset-name collisions, writes `SHA256SUMS.txt`, and creates or updates
 the GitHub Release with those files.
 
+The tag version must match the CMake project version. For example,
+`project(... VERSION 0.1.0)` should be released with tag `v0.1.0`. The release
+job fails before publishing assets if downloaded package artifact versions do
+not match the pushed tag.
+
 Local release preflight:
 
 ```sh
