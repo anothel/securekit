@@ -1,0 +1,26 @@
+if(NOT DEFINED SECUREKIT_WORKFLOW_FILE)
+  set(SECUREKIT_WORKFLOW_FILE "${CMAKE_CURRENT_LIST_DIR}/../../.github/workflows/securekit-ci.yml")
+endif()
+
+if(NOT EXISTS "${SECUREKIT_WORKFLOW_FILE}")
+  message(FATAL_ERROR "Workflow file not found: ${SECUREKIT_WORKFLOW_FILE}")
+endif()
+
+file(READ "${SECUREKIT_WORKFLOW_FILE}" _securekit_workflow)
+
+function(_securekit_require_workflow_text description needle)
+  string(FIND "${_securekit_workflow}" "${needle}" _securekit_found_at)
+  if(_securekit_found_at EQUAL -1)
+    message(FATAL_ERROR "Workflow missing ${description}: ${needle}")
+  endif()
+endfunction()
+
+_securekit_require_workflow_text("tag trigger" "tags:")
+_securekit_require_workflow_text("v tag pattern" "- 'v*'")
+_securekit_require_workflow_text("release job" "release:")
+_securekit_require_workflow_text("release dependency on build matrix" "needs: [build, install-only, linux-static, windows-shared]")
+_securekit_require_workflow_text("release tag guard" "startsWith(github.ref, 'refs/tags/v')")
+_securekit_require_workflow_text("release artifact download" "uses: actions/download-artifact@v4")
+_securekit_require_workflow_text("release checksum generation" "sha256sum")
+_securekit_require_workflow_text("release creation" "gh release create")
+_securekit_require_workflow_text("release asset upload" "gh release upload")

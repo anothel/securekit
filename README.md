@@ -74,6 +74,7 @@ cmake -S . -B build-vcpkg `
 
 cmake --build build-vcpkg --config Release --target check
 cmake --build build-vcpkg --config Release --target package-check
+cmake --build build-vcpkg --config Release --target release-workflow-check
 ```
 
 `package-check` installs SecureKit, runs the installed CLI, verifies a consumer
@@ -125,6 +126,25 @@ cmake -S . -B build-install-only -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
 ```sh
 cmake --install build --prefix /path/to/prefix --config Release
 ```
+
+## Release
+
+Release automation runs on version tags matching `v*`. A tag push runs the full
+CI matrix, downloads package artifacts from all package-check jobs, keeps one
+copy of each source archive, prefixes binary archives with the CI artifact name
+to avoid asset-name collisions, writes `SHA256SUMS.txt`, and creates or updates
+the GitHub Release with those files.
+
+Local release preflight:
+
+```sh
+cmake --build build --config Release --target check
+cmake --build build --config Release --target package-check
+cmake --build build --config Release --target release-workflow-check
+```
+
+The release job requires the default `GITHUB_TOKEN` with `contents: write`
+permission. It does not run for pull requests or non-`v*` branch pushes.
 
 ## CLI
 
@@ -660,6 +680,7 @@ workflow in GitHub. Local equivalent:
 cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release --target check
 cmake --build build --config Release --target package-check
+cmake --build build --config Release --target release-workflow-check
 ```
 
 Install-only package check:

@@ -89,6 +89,12 @@ add_custom_target(package-check
   DEPENDS securekit securekit_cli
   USES_TERMINAL)
 
+add_custom_target(release-workflow-check
+  COMMAND ${CMAKE_COMMAND}
+    -DSECUREKIT_WORKFLOW_FILE=${CMAKE_CURRENT_SOURCE_DIR}/.github/workflows/securekit-ci.yml
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_workflow.cmake
+  USES_TERMINAL)
+
 option(SECUREKIT_BUILD_TESTS "Build SecureKit tests" ${BUILD_TESTING})
 
 if(SECUREKIT_BUILD_TESTS)
