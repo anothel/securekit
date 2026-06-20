@@ -152,6 +152,9 @@ cmake --build build --config Release --target release-workflow-check
 The release job requires the default `GITHUB_TOKEN` with `contents: write`
 permission. It does not run for pull requests or non-`v*` branch pushes.
 
+For the full release procedure, see
+[docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+
 ## CLI
 
 When installed, SecureKit also provides a small `securekit` utility executable:
