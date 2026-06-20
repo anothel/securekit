@@ -12,8 +12,8 @@
 
 #include <gtest/gtest.h>
 
-#include "securekit/error.hpp"
 #include "fixture_utils.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {
@@ -329,7 +329,7 @@ TEST(File, RejectsExistingOutput)
 	std::filesystem::remove(opened_path);
 }
 
-TEST(File, RejectsExistingTemporaryOutput)
+TEST(File, UsesUniqueTemporaryOutput)
 {
 	const auto plain_path = test_path("plain-temp-collision.bin");
 	const auto sealed_path = test_path("sealed-temp-collision.skf");
@@ -344,19 +344,18 @@ TEST(File, RejectsExistingTemporaryOutput)
 
 	const securekit::key256 key = key_from_seed(0x33);
 	const securekit::bytes existing_temp = bytes_from_text("existing temp");
-	write_file(plain_path, bytes_from_text("temp collision plaintext"));
+	const securekit::bytes plaintext = bytes_from_text("temp collision plaintext");
+	write_file(plain_path, plaintext);
 	write_file(sealed_temp_path, existing_temp);
 
-	expect_error([&] { securekit::seal_file(plain_path, sealed_path, key); }, securekit::error_code::invalid_input);
-	EXPECT_FALSE(std::filesystem::exists(sealed_path));
+	securekit::seal_file(plain_path, sealed_path, key);
+	EXPECT_TRUE(std::filesystem::exists(sealed_path));
 	EXPECT_EQ(read_file(sealed_temp_path), existing_temp);
 
-	std::filesystem::remove(sealed_temp_path);
-	securekit::seal_file(plain_path, sealed_path, key);
 	write_file(opened_temp_path, existing_temp);
 
-	expect_error([&] { securekit::open_file(sealed_path, opened_path, key); }, securekit::error_code::invalid_input);
-	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	securekit::open_file(sealed_path, opened_path, key);
+	EXPECT_EQ(read_file(opened_path), plaintext);
 	EXPECT_EQ(read_file(opened_temp_path), existing_temp);
 
 	std::filesystem::remove(plain_path);
@@ -766,7 +765,7 @@ TEST(File, PasswordRejectsExistingOutputAndEmptyPassword)
 	std::filesystem::remove(opened_path);
 }
 
-TEST(File, PasswordRejectsExistingTemporaryOutput)
+TEST(File, PasswordUsesUniqueTemporaryOutput)
 {
 	const auto plain_path = test_path("password-plain-temp-collision.bin");
 	const auto sealed_path = test_path("password-sealed-temp-collision.skp");
@@ -781,23 +780,18 @@ TEST(File, PasswordRejectsExistingTemporaryOutput)
 
 	const securekit::bytes password = bytes_from_text("temp collision password");
 	const securekit::bytes existing_temp = bytes_from_text("existing temp");
-	write_file(plain_path, bytes_from_text("password temp collision plaintext"));
+	const securekit::bytes plaintext = bytes_from_text("password temp collision plaintext");
+	write_file(plain_path, plaintext);
 	write_file(sealed_temp_path, existing_temp);
 
-	expect_error(
-	    [&] { securekit::seal_file_with_password(plain_path, sealed_path, password); },
-	    securekit::error_code::invalid_input);
-	EXPECT_FALSE(std::filesystem::exists(sealed_path));
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	EXPECT_TRUE(std::filesystem::exists(sealed_path));
 	EXPECT_EQ(read_file(sealed_temp_path), existing_temp);
 
-	std::filesystem::remove(sealed_temp_path);
-	securekit::seal_file_with_password(plain_path, sealed_path, password);
 	write_file(opened_temp_path, existing_temp);
 
-	expect_error(
-	    [&] { securekit::open_file_with_password(sealed_path, opened_path, password); },
-	    securekit::error_code::invalid_input);
-	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	securekit::open_file_with_password(sealed_path, opened_path, password);
+	EXPECT_EQ(read_file(opened_path), plaintext);
 	EXPECT_EQ(read_file(opened_temp_path), existing_temp);
 
 	std::filesystem::remove(plain_path);

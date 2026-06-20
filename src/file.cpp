@@ -4,13 +4,33 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
 #include <memory>
 #include <span>
 #include <string>
+#include <utility>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <fcntl.h>
+#include <io.h>
+#include <share.h>
+#include <sys/stat.h>
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 #include "securekit/error.hpp"
 #include "securekit/hash.hpp"
@@ -72,6 +92,86 @@ struct EncryptedChunk
 {
 	securekit::bytes ciphertext;
 	std::array<std::byte, kTagSize> tag{};
+};
+
+[[noreturn]] void throw_backend_failure(const char *message);
+
+class OutputFile
+{
+public:
+	OutputFile() = default;
+
+	OutputFile(std::filesystem::path path, std::FILE *file) : path_(std::move(path)), file_(file)
+	{
+	}
+
+	OutputFile(const OutputFile &) = delete;
+	OutputFile &operator=(const OutputFile &) = delete;
+
+	OutputFile(OutputFile &&other) noexcept : path_(std::move(other.path_)), file_(std::exchange(other.file_, nullptr))
+	{
+	}
+
+	OutputFile &operator=(OutputFile &&other) noexcept
+	{
+		if (this != &other)
+		{
+			close_quietly();
+			path_ = std::move(other.path_);
+			file_ = std::exchange(other.file_, nullptr);
+		}
+		return *this;
+	}
+
+	~OutputFile()
+	{
+		close_quietly();
+	}
+
+	[[nodiscard]] const std::filesystem::path &path() const noexcept
+	{
+		return path_;
+	}
+
+	void write(std::span<const std::byte> data)
+	{
+		if (data.empty())
+		{
+			return;
+		}
+		const std::size_t written =
+		    std::fwrite(reinterpret_cast<const char *>(data.data()), 1, data.size(), file_);
+		if (written != data.size())
+		{
+			throw_backend_failure("File write failed");
+		}
+	}
+
+	void close()
+	{
+		if (file_ == nullptr)
+		{
+			return;
+		}
+		std::FILE *file = std::exchange(file_, nullptr);
+		if (std::fclose(file) != 0)
+		{
+			throw_backend_failure("File write failed");
+		}
+	}
+
+private:
+	void close_quietly() noexcept
+	{
+		if (file_ != nullptr)
+		{
+			(void)std::fclose(file_);
+			file_ = nullptr;
+		}
+	}
+
+	std::filesystem::path path_;
+	std::FILE *file_ = nullptr;
 };
 
 [[noreturn]] void throw_backend_failure(const char *message)
@@ -439,6 +539,11 @@ void write_all(std::ostream &out, std::span<const std::byte> data)
 	}
 }
 
+void write_all(OutputFile &out, std::span<const std::byte> data)
+{
+	out.write(data);
+}
+
 bool read_exact(std::istream &in, std::byte *data, std::size_t size)
 {
 	in.read(reinterpret_cast<char *>(data), static_cast<std::streamsize>(size));
@@ -463,20 +568,76 @@ std::ifstream open_input(const std::filesystem::path &path)
 	return input;
 }
 
-std::ofstream open_output(const std::filesystem::path &path)
+enum class ExclusiveOpenResult
 {
-	std::ofstream output(path, std::ios::binary | std::ios::trunc);
-	if (!output)
+	opened,
+	already_exists,
+	failed,
+};
+
+ExclusiveOpenResult try_open_output_exclusive(const std::filesystem::path &path, OutputFile &output)
+{
+#if defined(_WIN32)
+	int fd = -1;
+	const errno_t result =
+	    _wsopen_s(&fd, path.c_str(), _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	if (result == EEXIST)
 	{
-		throw_backend_failure("File open failed");
+		return ExclusiveOpenResult::already_exists;
 	}
-	return output;
+	if (result != 0)
+	{
+		return ExclusiveOpenResult::failed;
+	}
+
+	std::FILE *file = _fdopen(fd, "wb");
+	if (file == nullptr)
+	{
+		_close(fd);
+		return ExclusiveOpenResult::failed;
+	}
+	output = OutputFile(path, file);
+	return ExclusiveOpenResult::opened;
+#else
+	const int fd = ::open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0600);
+	if (fd == -1)
+	{
+		if (errno == EEXIST)
+		{
+			return ExclusiveOpenResult::already_exists;
+		}
+		return ExclusiveOpenResult::failed;
+	}
+
+	std::FILE *file = ::fdopen(fd, "wb");
+	if (file == nullptr)
+	{
+		(void)::close(fd);
+		return ExclusiveOpenResult::failed;
+	}
+	output = OutputFile(path, file);
+	return ExclusiveOpenResult::opened;
+#endif
 }
 
-std::filesystem::path temp_path_for(const std::filesystem::path &output)
+std::filesystem::path make_unique_temp_path(const std::filesystem::path &output)
 {
+	constexpr std::array<char, 16> hex_digits{
+	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	const securekit::bytes token = securekit::random_bytes(16);
+	std::string suffix;
+	suffix.reserve(45);
+	suffix += ".securekit.";
+	for (const std::byte value : token)
+	{
+		const auto byte_value = static_cast<unsigned char>(value);
+		suffix.push_back(hex_digits[(byte_value >> 4) & 0x0f]);
+		suffix.push_back(hex_digits[byte_value & 0x0f]);
+	}
+	suffix += ".tmp";
+
 	std::filesystem::path temp = output;
-	temp += ".securekit.tmp";
+	temp += suffix;
 	return temp;
 }
 
@@ -494,24 +655,23 @@ void ensure_output_does_not_exist(const std::filesystem::path &output)
 	}
 }
 
-void ensure_temporary_output_does_not_exist(const std::filesystem::path &temp_path)
+OutputFile open_unique_temp_output(const std::filesystem::path &output)
 {
-	std::error_code ec;
-	const bool exists = std::filesystem::exists(temp_path, ec);
-	if (ec)
+	constexpr int kMaxAttempts = 32;
+	for (int attempt = 0; attempt < kMaxAttempts; ++attempt)
 	{
-		throw_backend_failure("Temporary file status check failed");
+		OutputFile temp;
+		const ExclusiveOpenResult result = try_open_output_exclusive(make_unique_temp_path(output), temp);
+		if (result == ExclusiveOpenResult::opened)
+		{
+			return temp;
+		}
+		if (result == ExclusiveOpenResult::failed)
+		{
+			throw_backend_failure("File open failed");
+		}
 	}
-	if (exists)
-	{
-		throw securekit::error(securekit::error_code::invalid_input, "Output temporary file already exists");
-	}
-}
-
-void ensure_output_paths_do_not_exist(const std::filesystem::path &output)
-{
-	ensure_output_does_not_exist(output);
-	ensure_temporary_output_does_not_exist(temp_path_for(output));
+	throw_backend_failure("Temporary file creation failed");
 }
 
 void remove_quietly(const std::filesystem::path &path)
@@ -520,19 +680,53 @@ void remove_quietly(const std::filesystem::path &path)
 	(void)std::filesystem::remove(path, ec);
 }
 
-void rename_temp_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
+void commit_temp_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
 {
+#if defined(_WIN32)
+	if (MoveFileExW(temp_path.c_str(), output.c_str(), 0) != 0)
+	{
+		return;
+	}
+	const DWORD error = GetLastError();
+	if (error == ERROR_ALREADY_EXISTS || error == ERROR_FILE_EXISTS)
+	{
+		throw securekit::error(securekit::error_code::invalid_input, "Output file already exists");
+	}
+	throw_backend_failure("File rename failed");
+#elif defined(__unix__) || defined(__APPLE__)
+	if (::link(temp_path.c_str(), output.c_str()) == 0)
+	{
+		remove_quietly(temp_path);
+		return;
+	}
+	if (errno == EEXIST)
+	{
+		throw securekit::error(securekit::error_code::invalid_input, "Output file already exists");
+	}
+	throw_backend_failure("File rename failed");
+#else
 	std::error_code ec;
+	const bool exists = std::filesystem::exists(output, ec);
+	if (ec)
+	{
+		throw_backend_failure("File status check failed");
+	}
+	if (exists)
+	{
+		throw securekit::error(securekit::error_code::invalid_input, "Output file already exists");
+	}
 	std::filesystem::rename(temp_path, output, ec);
 	if (ec)
 	{
 		throw_backend_failure("File rename failed");
 	}
+#endif
 }
 
+template <typename Output>
 void seal_stream_payload(
     std::istream &in,
-    std::ostream &out,
+    Output &out,
     std::span<const std::byte> serialized_header,
     std::span<const std::byte> nonce_prefix,
     const securekit::key256 &file_key,
@@ -592,20 +786,16 @@ void seal_file_payload(
     const securekit::key256 &file_key,
     std::span<const std::byte> aad)
 {
-	const std::filesystem::path temp_path = temp_path_for(output);
+	OutputFile out = open_unique_temp_output(output);
+	const std::filesystem::path temp_path = out.path();
 	try
 	{
 		std::ifstream in = open_input(input);
-		std::ofstream out = open_output(temp_path);
 
 		seal_stream_payload(in, out, serialized_header, nonce_prefix, file_key, aad);
 
 		out.close();
-		if (!out)
-		{
-			throw_backend_failure("File write failed");
-		}
-		rename_temp_file(temp_path, output);
+		commit_temp_file(temp_path, output);
 	}
 	catch (...)
 	{
@@ -614,9 +804,10 @@ void seal_file_payload(
 	}
 }
 
+template <typename Output>
 void open_file_payload(
     std::istream &in,
-    std::ostream &out,
+    Output &out,
     std::span<const std::byte> serialized_header,
     std::span<const std::byte> nonce_prefix,
     const securekit::key256 &file_key,
@@ -680,7 +871,7 @@ namespace securekit
 
 void seal_file(const std::filesystem::path &input, const std::filesystem::path &output, const key256 &key, std::span<const std::byte> aad)
 {
-	ensure_output_paths_do_not_exist(output);
+	ensure_output_does_not_exist(output);
 	const FileHeader header = make_header();
 	const key256 file_key = derive_file_key(key, header);
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
@@ -695,12 +886,12 @@ void seal_file(std::istream &input, std::ostream &output, const key256 &key, std
 
 void open_file(const std::filesystem::path &input, const std::filesystem::path &output, const key256 &key, std::span<const std::byte> aad)
 {
-	ensure_output_paths_do_not_exist(output);
-	const std::filesystem::path temp_path = temp_path_for(output);
+	ensure_output_does_not_exist(output);
+	OutputFile out = open_unique_temp_output(output);
+	const std::filesystem::path temp_path = out.path();
 	try
 	{
 		std::ifstream in = open_input(input);
-		std::ofstream out = open_output(temp_path);
 
 		std::array<std::byte, kHeaderSize> header_bytes{};
 		if (!read_exact(in, header_bytes.data(), header_bytes.size()))
@@ -713,11 +904,7 @@ void open_file(const std::filesystem::path &input, const std::filesystem::path &
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
 		out.close();
-		if (!out)
-		{
-			throw_backend_failure("File write failed");
-		}
-		rename_temp_file(temp_path, output);
+		commit_temp_file(temp_path, output);
 	}
 	catch (...)
 	{
@@ -746,7 +933,7 @@ void seal_file_with_password(
     std::span<const std::byte> aad)
 {
 	require_non_empty_password(password);
-	ensure_output_paths_do_not_exist(output);
+	ensure_output_does_not_exist(output);
 	const PasswordFileHeader header = make_password_header();
 	const key256 file_key = derive_password_file_key(password, header);
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
@@ -771,12 +958,12 @@ void open_file_with_password(
     std::span<const std::byte> aad)
 {
 	require_non_empty_password(password);
-	ensure_output_paths_do_not_exist(output);
-	const std::filesystem::path temp_path = temp_path_for(output);
+	ensure_output_does_not_exist(output);
+	OutputFile out = open_unique_temp_output(output);
+	const std::filesystem::path temp_path = out.path();
 	try
 	{
 		std::ifstream in = open_input(input);
-		std::ofstream out = open_output(temp_path);
 
 		std::array<std::byte, kPasswordHeaderSize> header_bytes{};
 		if (!read_exact(in, header_bytes.data(), header_bytes.size()))
@@ -789,11 +976,7 @@ void open_file_with_password(
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
 		out.close();
-		if (!out)
-		{
-			throw_backend_failure("File write failed");
-		}
-		rename_temp_file(temp_path, output);
+		commit_temp_file(temp_path, output);
 	}
 	catch (...)
 	{
