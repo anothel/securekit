@@ -29,35 +29,7 @@ cmake --build build --config Release --target release-workflow-check
 
 Use the equivalent configured build directory on Windows or in CI.
 
-## Milestone 1: Public Surface Audit
-
-Goal: make the public API, README examples, headers, CLI help, and consumer
-smoke tests agree exactly.
-
-Scope:
-
-- Compare every declaration in `include/securekit/*.hpp` with the README Public
-  API section.
-- Compare every CLI command and option in `src/cli/main.cpp` help text with the
-  README CLI examples.
-- Ensure `tests/public_headers_test.cpp` includes all public headers.
-- Ensure `tests/consumer/main.cpp` exercises each public module at least once.
-
-Exit criteria:
-
-- Zero known README/header API drift.
-- Zero known README/CLI help drift.
-- All public headers compile from a consumer translation unit.
-- Package consumer still builds and runs from an installed package.
-
-Verification:
-
-```sh
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-```
-
-## Milestone 2: CLI Error Contract Audit
+## Milestone 1: CLI Error Contract Audit
 
 Goal: make command failures predictable enough for scripts.
 
@@ -83,7 +55,7 @@ Verification:
 cmake --build build --config Release --target check
 ```
 
-## Milestone 3: Compatibility Vector Policy
+## Milestone 2: Compatibility Vector Policy
 
 Goal: make wire-format compatibility changes deliberate and reviewable.
 
@@ -110,7 +82,7 @@ Verification:
 cmake --build build --config Release --target check
 ```
 
-## Milestone 4: Package Matrix Parity
+## Milestone 3: Package Matrix Parity
 
 Goal: keep package behavior consistent across local builds and GitHub Actions.
 
@@ -139,7 +111,7 @@ cmake --build build --config Release --target package-check
 cmake --build build --config Release --target release-workflow-check
 ```
 
-## Milestone 5: Security Boundary Review
+## Milestone 4: Security Boundary Review
 
 Goal: make documented security boundaries match implementation and tests.
 

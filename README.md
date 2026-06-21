@@ -356,6 +356,28 @@ verification completes, so callers must treat those bytes as untrusted until
 ## Public API
 
 ```cpp
+namespace securekit {
+
+using bytes = std::vector<std::byte>;
+using key256 = std::array<std::byte, 32>;
+using digest256 = std::array<std::byte, 32>;
+
+enum class error_code {
+	invalid_input,
+	invalid_encoding,
+	invalid_packet,
+	authentication_failed,
+	backend_failure,
+};
+
+class error : public std::runtime_error {
+public:
+	error(error_code code, std::string message);
+	error_code code() const noexcept;
+};
+
+} // namespace securekit
+
 std::string securekit::hex_encode(std::span<const std::byte> input);
 securekit::bytes securekit::hex_decode(std::string_view input);
 
@@ -397,8 +419,11 @@ namespace securekit {
 class packet_encryptor {
 public:
 	explicit packet_encryptor(const key256 &key, std::span<const std::byte> aad = {});
+	~packet_encryptor();
 	packet_encryptor(packet_encryptor &&) noexcept;
 	packet_encryptor &operator=(packet_encryptor &&) noexcept;
+	packet_encryptor(const packet_encryptor &) = delete;
+	packet_encryptor &operator=(const packet_encryptor &) = delete;
 	bytes begin();
 	bytes update(std::span<const std::byte> plaintext);
 	bytes finalize();
@@ -407,8 +432,11 @@ public:
 class packet_decryptor {
 public:
 	explicit packet_decryptor(const key256 &key, std::span<const std::byte> aad = {});
+	~packet_decryptor();
 	packet_decryptor(packet_decryptor &&) noexcept;
 	packet_decryptor &operator=(packet_decryptor &&) noexcept;
+	packet_decryptor(const packet_decryptor &) = delete;
+	packet_decryptor &operator=(const packet_decryptor &) = delete;
 	void begin(std::span<const std::byte> packet_prefix);
 	bytes update(std::span<const std::byte> ciphertext);
 	bytes finalize(std::span<const std::byte> tag);
@@ -745,4 +773,4 @@ executables with the OpenSSL DLL directory on `PATH`.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md).
+See [docs/ROADMAP.md](docs/ROADMAP.md).

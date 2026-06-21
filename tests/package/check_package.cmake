@@ -187,6 +187,9 @@ foreach(_securekit_source_artifact IN LISTS _securekit_source_artifacts)
   _securekit_require_archive_member(
     "${_securekit_source_artifact}"
     "/docs/RELEASE_CHECKLIST\\.md(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/ROADMAP\\.md(\r?\n|$)")
 endforeach()
 
 set(_securekit_consumer_configure_args

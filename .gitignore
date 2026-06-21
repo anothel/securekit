@@ -35,5 +35,4 @@
 build/
 build-*/
 
-docs/*
-!docs/RELEASE_CHECKLIST.md
+docs/superpowers/
