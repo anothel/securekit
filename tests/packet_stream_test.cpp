@@ -181,6 +181,26 @@ TEST(PacketStream, DecryptsKnownPacketVectorWithChunkedUpdates)
 	EXPECT_TRUE(tail.empty());
 }
 
+TEST(PacketStream, UpdateReturnsPlaintextBeforeAuthenticationFailure)
+{
+	const securekit::key256 key = key_from_seed(0x22);
+	const securekit::bytes aad = bytes_from_ascii("trusted aad");
+	const securekit::bytes wrong_aad = bytes_from_ascii("wrong aad");
+	const securekit::bytes plaintext = bytes_from_ascii("plaintext is unauthenticated until finalize");
+	const securekit::bytes packet = securekit::encrypt(plaintext, key, aad);
+	const std::span<const std::byte> packet_span(packet);
+	const std::span<const std::byte> prefix = packet_span.first(kPrefixSize);
+	const std::span<const std::byte> ciphertext = packet_span.subspan(kPrefixSize, plaintext.size());
+	const std::span<const std::byte> tag = packet_span.last(kTagSize);
+
+	securekit::packet_decryptor decryptor(key, wrong_aad);
+	decryptor.begin(prefix);
+	const securekit::bytes unauthenticated_plaintext = decryptor.update(ciphertext);
+
+	EXPECT_EQ(unauthenticated_plaintext, plaintext);
+	expect_authentication_failed([&] { (void)decryptor.finalize(tag); });
+}
+
 TEST(PacketStream, RoundTripsEmptyPlaintext)
 {
 	const securekit::key256 key = key_from_seed(0x30);

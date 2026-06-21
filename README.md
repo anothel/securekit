@@ -642,6 +642,11 @@ SecureKit is a thin C++ API over OpenSSL 3.x. It does not:
 SecureKit does not scrub, lock, or otherwise guarantee erasure of key material,
 derived keys, plaintext, or intermediate buffers from process memory.
 
+Path-based file APIs and CLI file commands refuse existing output paths and
+remove SecureKit-owned temporary output after failures. Stream overloads and
+standard-stream CLI usage operate on caller-provided streams, so callers remain
+responsible for discarding untrusted output when an operation fails.
+
 Applications remain responsible for key lifecycle, provider configuration,
 process isolation, persistence, backups, logging policy, and threat modeling.
 

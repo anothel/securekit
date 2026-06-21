@@ -601,6 +601,40 @@ TEST(File, RemovesTemporaryOutputAfterOpenFailure)
 	remove_securekit_temp_outputs_for(opened_path);
 }
 
+TEST(File, RemovesPartialTemporaryOutputAfterLateOpenFailure)
+{
+	const auto plain_path = test_path("plain-late-open-failure-cleanup.bin");
+	const auto sealed_path = test_path("sealed-late-open-failure-cleanup.skf");
+	const auto opened_path = test_path("opened-late-open-failure-cleanup.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+
+	const securekit::key256 key = key_from_seed(0x46);
+	securekit::bytes plaintext((1024u * 1024u) + 17u);
+	for (std::size_t i = 0; i < plaintext.size(); ++i)
+	{
+		plaintext[i] = static_cast<std::byte>((i * 37u) & 0xffu);
+	}
+	write_file(plain_path, plaintext);
+	securekit::seal_file(plain_path, sealed_path, key);
+
+	securekit::bytes sealed = read_file(sealed_path);
+	sealed.back() ^= std::byte{0x01};
+	write_file(sealed_path, sealed);
+
+	expect_generic_authentication_failure([&] { securekit::open_file(sealed_path, opened_path, key); });
+
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_FALSE(has_securekit_temp_output_for(opened_path));
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+}
+
 TEST(File, DetectsMutation)
 {
 	const auto plain_path = test_path("plain-mutation.bin");
@@ -898,6 +932,40 @@ TEST(File, PasswordRemovesTemporaryOutputAfterOpenFailure)
 	securekit::seal_file_with_password(plain_path, sealed_path, password);
 
 	expect_generic_authentication_failure([&] { securekit::open_file_with_password(sealed_path, opened_path, wrong_password); });
+
+	EXPECT_FALSE(std::filesystem::exists(opened_path));
+	EXPECT_FALSE(has_securekit_temp_output_for(opened_path));
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+}
+
+TEST(File, PasswordRemovesPartialTemporaryOutputAfterLateOpenFailure)
+{
+	const auto plain_path = test_path("password-plain-late-open-failure-cleanup.bin");
+	const auto sealed_path = test_path("password-sealed-late-open-failure-cleanup.skp");
+	const auto opened_path = test_path("password-opened-late-open-failure-cleanup.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+	remove_securekit_temp_outputs_for(opened_path);
+
+	const securekit::bytes password = bytes_from_text("late cleanup password");
+	securekit::bytes plaintext((1024u * 1024u) + 19u);
+	for (std::size_t i = 0; i < plaintext.size(); ++i)
+	{
+		plaintext[i] = static_cast<std::byte>((i * 41u) & 0xffu);
+	}
+	write_file(plain_path, plaintext);
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+
+	securekit::bytes sealed = read_file(sealed_path);
+	sealed.back() ^= std::byte{0x01};
+	write_file(sealed_path, sealed);
+
+	expect_generic_authentication_failure([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
 
 	EXPECT_FALSE(std::filesystem::exists(opened_path));
 	EXPECT_FALSE(has_securekit_temp_output_for(opened_path));
