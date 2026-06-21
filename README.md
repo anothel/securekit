@@ -723,4 +723,6 @@ executables with the OpenSSL DLL directory on `PATH`.
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md).
+See [docs/ROADMAP.md](docs/ROADMAP.md) for numbered forward-looking work.
+Completed CLI, compatibility, package, and security-boundary hardening items are
+kept in Git history instead of the active roadmap.
