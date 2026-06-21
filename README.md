@@ -685,7 +685,9 @@ SKP1 chunk tag verification failures are reported separately as
 
 Known v1 wire-format vectors live in `tests/fixtures` as lowercase hex files.
 The test suite reads these files for `SKT1`, `SKF1`, `SKP1`, and key wrapping
-coverage instead of keeping serialized packets inline in test source.
+coverage instead of keeping serialized packets inline in test source. Fixture
+naming, minimum family counts, and update policy are documented in
+`tests/fixtures/README.md`.
 
 ## Continuous Integration
 

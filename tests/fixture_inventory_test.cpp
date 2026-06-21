@@ -84,11 +84,48 @@ std::set<std::string> documented_hex_fixture_names()
 	return names;
 }
 
+std::size_t count_names_with_prefix(const std::set<std::string> &names, std::string_view prefix)
+{
+	return static_cast<std::size_t>(std::count_if(names.begin(), names.end(), [prefix](const std::string &name) {
+		return name.starts_with(prefix);
+	}));
+}
+
+void expect_fixture_exists(const std::set<std::string> &names, const char *name)
+{
+	EXPECT_TRUE(names.contains(name)) << "missing required baseline fixture: " << name;
+}
+
 } // namespace
 
 TEST(FixtureInventory, ReadmeDocumentsEveryHexFixture)
 {
 	EXPECT_EQ(documented_hex_fixture_names(), actual_hex_fixture_names());
+}
+
+TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)
+{
+	const std::set<std::string> names = actual_hex_fixture_names();
+
+	EXPECT_GE(count_names_with_prefix(names, "skt1-aes256-gcm-"), 3u)
+	    << "SKT1 AEAD packet fixtures should cover normal, empty, and binary/AAD packets";
+	EXPECT_GE(count_names_with_prefix(names, "skt1-key-wrap"), 2u)
+	    << "SKT1 key wrap fixtures should cover non-zero and zero wrapped keys";
+	EXPECT_GE(count_names_with_prefix(names, "skf1-"), 3u)
+	    << "SKF1 file fixtures should cover normal, empty, and binary/AAD files";
+	EXPECT_GE(count_names_with_prefix(names, "skp1-"), 2u)
+	    << "SKP1 password file fixtures should cover text and binary/AAD files";
+
+	expect_fixture_exists(names, "skt1-aes256-gcm-aad.hex");
+	expect_fixture_exists(names, "skt1-aes256-gcm-empty.hex");
+	expect_fixture_exists(names, "skt1-aes256-gcm-binary-aad.hex");
+	expect_fixture_exists(names, "skt1-key-wrap.hex");
+	expect_fixture_exists(names, "skt1-key-wrap-zero.hex");
+	expect_fixture_exists(names, "skf1-known-file.hex");
+	expect_fixture_exists(names, "skf1-empty-aad.hex");
+	expect_fixture_exists(names, "skf1-binary-aad.hex");
+	expect_fixture_exists(names, "skp1-known-password-file.hex");
+	expect_fixture_exists(names, "skp1-binary-aad.hex");
 }
 
 TEST(FixtureInventory, HexFixturesAreCanonical)
