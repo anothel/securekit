@@ -70,6 +70,16 @@ int main()
 	const auto hmac = securekit::hmac_sha256(ascii_bytes("key"), ascii_bytes("The quick brown fox jumps over the lazy dog"));
 	const auto hkdf = securekit::hkdf_sha256(ascii_bytes("ikm"), ascii_bytes("salt"), ascii_bytes("info"), 16);
 	const auto random = securekit::random_bytes(8);
+	bool error_api_ok = false;
+	try
+	{
+		(void)securekit::random_token(0);
+	}
+	catch (const securekit::error &ex)
+	{
+		error_api_ok = ex.code() == securekit::error_code::invalid_input &&
+		               !std::string_view(ex.what()).empty();
+	}
 
 	const auto packet = securekit::encrypt(plaintext, key, aad);
 	const auto roundtrip = securekit::decrypt(packet, key, aad);
@@ -140,7 +150,8 @@ int main()
 	                                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" &&
 	                            securekit::hex_encode(hmac) ==
 	                                "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8" &&
-	                            hkdf.size() == 16 && random.size() == 8 && securekit::constant_time_equal(digest, digest);
+	                            hkdf.size() == 16 && random.size() == 8 && error_api_ok &&
+	                            securekit::constant_time_equal(digest, digest);
 
 	return utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
 	               streaming_plaintext == plaintext && streaming_tail.empty() && unwrapped_key == key &&
