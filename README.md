@@ -1,7 +1,6 @@
 # SecureKit
 
-SecureKit is a small C++20 security utility library, formerly named
-Awesome-mix-vol.1.
+SecureKit is a small C++20 security utility library.
 
 SecureKit does not implement crypto algorithms. It wraps OpenSSL 3.x behind a small
 byte-oriented C++ API.
@@ -17,7 +16,6 @@ The current identity is:
 - OpenSSL-backed crypto, not custom crypto.
 - Free-function API first.
 - Distinct packet streaming objects where incremental AEAD is useful.
-- Additional object-oriented APIs may come later if real call sites need them.
 
 ## Features
 
@@ -130,16 +128,12 @@ cmake --install build --prefix /path/to/prefix --config Release
 
 ## Release
 
-Release automation runs on version tags matching `v*`. A tag push runs the full
-CI matrix, downloads package artifacts from all package-check jobs, keeps one
-copy of each source archive, prefixes binary archives with the CI artifact name
-to avoid asset-name collisions, writes `SHA256SUMS.txt`, and creates or updates
-the GitHub Release with those files.
+Release automation runs on version tags matching `v*`. A tag push runs the CI
+matrix, gathers package artifacts, writes `SHA256SUMS.txt`, and creates or
+updates the GitHub Release.
 
 The tag version must match the CMake project version. For example,
-`project(... VERSION 0.1.0)` should be released with tag `v0.1.0`. The release
-job fails before publishing assets if downloaded package artifact versions do
-not match the pushed tag.
+`project(... VERSION 0.1.0)` should be released with tag `v0.1.0`.
 
 Local release preflight:
 
@@ -148,9 +142,6 @@ cmake --build build --config Release --target check
 cmake --build build --config Release --target package-check
 cmake --build build --config Release --target release-workflow-check
 ```
-
-The release job requires the default `GITHUB_TOKEN` with `contents: write`
-permission. It does not run for pull requests or non-`v*` branch pushes.
 
 For the full release procedure, see
 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
@@ -698,7 +689,7 @@ coverage instead of keeping serialized packets inline in test source.
 
 ## Continuous Integration
 
-GitHub Actions builds and tests:
+GitHub Actions runs the main supported build and package surfaces:
 
 - Ubuntu GCC Release.
 - Ubuntu GCC Debug.
@@ -710,61 +701,13 @@ GitHub Actions builds and tests:
 - Windows shared-library package and consumer check.
 - CPack binary and source package artifact uploads.
 
-Run result is only available after pushing a commit or manually starting the
-workflow in GitHub. Local equivalent:
+Local preflight:
 
 ```sh
 cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release --target check
 cmake --build build --config Release --target package-check
 cmake --build build --config Release --target release-workflow-check
-```
-
-Install-only package check:
-
-```sh
-cmake -S . -B build-install-only -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DSECUREKIT_BUILD_TESTS=OFF
-cmake --build build-install-only --config Release --target package-check
-test -f ./build-install-only/package-check/install/bin/securekit
-test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitConfig.cmake
-test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake
-test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitTargets.cmake
-test -f ./build-install-only/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake
-```
-
-Linux static-library package check:
-
-```sh
-cmake -S . -B build-static -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DSECUREKIT_BUILD_TESTS=ON
-cmake --build build-static --config Release --target check
-cmake --build build-static --config Release --target package-check
-test -f ./build-static/package-check/install/bin/securekit
-test -f ./build-static/package-check/install/lib/libsecurekit.a
-test ! -f ./build-static/package-check/install/lib/libsecurekit.so
-test -f ./build-static/package-check/install/lib/cmake/securekit/securekitConfig.cmake
-test -f ./build-static/package-check/install/lib/cmake/securekit/securekitConfigVersion.cmake
-test -f ./build-static/package-check/install/lib/cmake/securekit/securekitTargets.cmake
-test -f ./build-static/package-check/install/lib/cmake/securekit/securekitTargets-release.cmake
-```
-
-Windows shared-library package check:
-
-```powershell
-cmake -S . -B build-vcpkg-shared `
-  -DBUILD_SHARED_LIBS=ON `
-  -DSECUREKIT_BUILD_TESTS=ON `
-  -DOPENSSL_ROOT_DIR="path\to\openssl-prefix" `
-  -DSECUREKIT_OPENSSL_RUNTIME_DIR="path\to\openssl-bin"
-
-cmake --build build-vcpkg-shared --config Release --target check
-cmake --build build-vcpkg-shared --config Release --target package-check
-Test-Path .\build-vcpkg-shared\package-check\install\bin\securekit.exe
-Test-Path .\build-vcpkg-shared\package-check\install\bin\securekit.dll
-Test-Path .\build-vcpkg-shared\package-check\install\lib\securekit.lib
-Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitConfig.cmake
-Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitConfigVersion.cmake
-Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitTargets.cmake
-Test-Path .\build-vcpkg-shared\package-check\install\lib\cmake\securekit\securekitTargets-release.cmake
 ```
 
 On Windows with dynamically linked OpenSSL, pass `SECUREKIT_OPENSSL_RUNTIME_DIR`
