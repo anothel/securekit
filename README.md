@@ -692,7 +692,8 @@ Known v1 wire-format vectors live in `tests/fixtures` as lowercase hex files.
 The test suite reads these files for `SKT1`, `SKF1`, `SKP1`, and key wrapping
 coverage instead of keeping serialized packets inline in test source. Fixture
 naming, minimum family counts, and update policy are documented in
-`tests/fixtures/README.md`.
+`tests/fixtures/README.md`. `FixtureInventory.*` tests enforce the documented
+inventory and minimum family counts.
 
 ## Continuous Integration
 
@@ -707,6 +708,11 @@ GitHub Actions runs the main supported build and package surfaces:
 - Linux static-library package and consumer check.
 - Windows shared-library package and consumer check.
 - CPack binary and source package artifact uploads.
+
+`release-workflow-check` locally guards the release workflow shape, artifact
+version checks, and current GitHub Action major versions. CodeQL runs in a
+separate `CodeQL` workflow on pushes, pull requests, and a weekly schedule with
+manual CMake configure/build steps.
 
 Local preflight:
 
@@ -724,5 +730,6 @@ executables with the OpenSSL DLL directory on `PATH`.
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for numbered forward-looking work.
-Completed CLI, compatibility, package, and security-boundary hardening items are
-kept in Git history instead of the active roadmap.
+Completed CLI, compatibility, package, security-boundary, public API/consumer,
+and documentation-consistency hardening items are kept in Git history instead of
+the active roadmap.

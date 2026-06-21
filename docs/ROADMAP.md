@@ -1,8 +1,9 @@
 # SecureKit Roadmap
 
 This file tracks forward-looking work only. Completed CLI contract,
-compatibility-vector, package-matrix, and security-boundary hardening work belongs
-in Git history, not in the active roadmap.
+compatibility-vector, package-matrix, security-boundary, public API/consumer
+freeze, and documentation-consistency hardening work belongs in Git history, not
+in the active roadmap.
 
 ## Direction
 
@@ -65,78 +66,24 @@ Exit criteria:
 - 0 package artifact version/tag mismatches.
 - 0 README or release checklist commands that point to missing targets.
 
-### 2. Public API and Consumer Freeze Audit
-
-Goal: make the v1 shipped surface explicit before adding new features.
-
-Tasks:
-
-2.1. Compare every public header under `include/securekit/` with the README
-`Public API` section.
-
-2.2. Confirm the installed-package consumer covers all six public API families:
-
-- Utility codecs and hashing.
-- Random and token generation.
-- One-shot `SKT1` packet encryption/decryption.
-- Streaming `SKT1` packet encryption/decryption.
-- Key wrapping.
-- `SKF1` and `SKP1` file APIs.
-
-2.3. If the audit finds drift, fix docs or consumer coverage. Do not add public
-API during this task.
-
-Exit criteria:
-
-- 0 exported public functions or classes missing from README.
-- 0 README public API entries missing from headers.
-- 6/6 public API families covered by the consumer check.
-- `check` passes.
-- `package-check` passes if the consumer or install surface changes.
-
-### 3. Documentation Consistency Audit
-
-Goal: keep README, release docs, fixture policy, and roadmap aligned with the
-current shipped behavior.
-
-Tasks:
-
-3.1. Compare README CLI examples against `securekit help` and command-specific
-usage for every supported command family.
-
-3.2. Compare README release instructions with `docs/RELEASE_CHECKLIST.md`,
-`.github/workflows/securekit-ci.yml`, and CMake targets.
-
-3.3. Compare compatibility fixture policy in `tests/fixtures/README.md` with the
-fixture inventory tests.
-
-3.4. Remove completed roadmap items instead of carrying them forward.
-
-Exit criteria:
-
-- 0 stale CLI examples.
-- 0 stale release commands.
-- 0 fixture policy/test mismatches.
-- 0 completed items left in the active roadmap.
-
-### 4. Deferred Feature Intake Rules
+### 2. Deferred Feature Intake Rules
 
 Goal: keep parked ideas from turning into speculative scope.
 
 Tasks:
 
-4.1. Non-throwing result-style APIs stay deferred until at least two real call
+2.1. Non-throwing result-style APIs stay deferred until at least two real call
 sites show exception handling is the wrong boundary.
 
-4.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
+2.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
 at least two real call sites duplicate lifecycle logic that free functions cannot
 express cleanly.
 
-4.3. Additional password formats or KDF agility stay deferred until there is a
+2.3. Additional password formats or KDF agility stay deferred until there is a
 written format spec, fixed downgrade behavior, fixture policy updates, and at
 least three known-answer vectors for the new format.
 
-4.4. Additional streaming formats beyond `SKT1` stay deferred until a written
+2.4. Additional streaming formats beyond `SKT1` stay deferred until a written
 threat model explains plaintext-before-auth handling and output ownership.
 
 Exit criteria:

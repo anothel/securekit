@@ -92,6 +92,7 @@ add_custom_target(package-check
 add_custom_target(release-workflow-check
   COMMAND ${CMAKE_COMMAND}
     -DSECUREKIT_WORKFLOW_FILE=${CMAKE_CURRENT_SOURCE_DIR}/.github/workflows/securekit-ci.yml
+    -DSECUREKIT_CODEQL_WORKFLOW_FILE=${CMAKE_CURRENT_SOURCE_DIR}/.github/workflows/codeql.yml
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_workflow.cmake
   USES_TERMINAL)
 
