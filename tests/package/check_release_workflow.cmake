@@ -49,6 +49,7 @@ _securekit_require_workflow_text("current upload artifact action" "uses: actions
 _securekit_require_workflow_text("release artifact download" "uses: actions/download-artifact@v8")
 _securekit_require_workflow_text("release tag version extraction" "tag_version=\"\${GITHUB_REF_NAME#v}\"")
 _securekit_require_workflow_text("release artifact version guard" "Release artifact version does not match tag")
+_securekit_require_workflow_text("release SemVer tag guard" "Release tag is not SemVer")
 _securekit_require_workflow_text("release binary artifact prefix" "dist/\${artifact_name}-\${base}")
 _securekit_require_workflow_text("release source artifact de-duplication" "copied_source")
 _securekit_require_workflow_text("release checksum generation" "sha256sum")

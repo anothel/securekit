@@ -259,6 +259,10 @@ jobs:
           mkdir -p dist
           shopt -s globstar nullglob
           tag_version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag is not SemVer: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
 
           declare -A copied_source
           for artifact in release-artifacts/**/*; do

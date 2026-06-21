@@ -73,6 +73,7 @@ cmake -S . -B build-vcpkg `
 cmake --build build-vcpkg --config Release --target check
 cmake --build build-vcpkg --config Release --target package-check
 cmake --build build-vcpkg --config Release --target release-workflow-check
+cmake --build build-vcpkg --config Release --target release-preflight
 ```
 
 `package-check` installs SecureKit, runs the installed CLI, verifies a consumer
@@ -80,6 +81,9 @@ CMake project, builds CPack binary and source archives, checks key files inside
 those archives, extracts one source archive, and verifies that the extracted
 source can configure, build, install, and run `securekit --version`. Generated
 archives are written under `<build>/package-check/artifacts`.
+`release-preflight` runs the local release targets and then checks SemVer,
+README/release-checklist version examples, documented local targets, and package
+artifact version prefixes.
 
 If tests cannot find OpenSSL DLLs on Windows, pass:
 
@@ -138,9 +142,7 @@ The tag version must match the CMake project version. For example,
 Local release preflight:
 
 ```sh
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-cmake --build build --config Release --target release-workflow-check
+cmake --build build --config Release --target release-preflight
 ```
 
 For the full release procedure, see
@@ -718,9 +720,7 @@ Local preflight:
 
 ```sh
 cmake -S . -B build -DSECUREKIT_BUILD_TESTS=ON
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-cmake --build build --config Release --target release-workflow-check
+cmake --build build --config Release --target release-preflight
 ```
 
 On Windows with dynamically linked OpenSSL, pass `SECUREKIT_OPENSSL_RUNTIME_DIR`

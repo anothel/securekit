@@ -24,9 +24,7 @@ surface.
 Minimum local verification for release-impacting work:
 
 ```sh
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-cmake --build build --config Release --target release-workflow-check
+cmake --build build --config Release --target release-preflight
 ```
 
 Use the equivalent configured build directory on Windows or in CI.
@@ -42,12 +40,10 @@ Tasks:
 1.1. Pick the next SemVer version and make `CMakeLists.txt` project version,
 release tag, package artifact names, and README examples agree.
 
-1.2. Run these three local targets from a clean build directory:
+1.2. Run the local release preflight from a clean build directory:
 
 ```sh
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-cmake --build build --config Release --target release-workflow-check
+cmake --build build --config Release --target release-preflight
 ```
 
 1.3. Confirm GitHub Actions has zero failing required jobs on the release
@@ -61,7 +57,8 @@ candidate commit.
 
 Exit criteria:
 
-- 3/3 local release preflight targets pass.
+- `release-preflight` passes, including `check`, `package-check`, and
+  `release-workflow-check`.
 - 0 failing required CI jobs.
 - 0 package artifact version/tag mismatches.
 - 0 README or release checklist commands that point to missing targets.

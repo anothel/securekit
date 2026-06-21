@@ -93,6 +93,7 @@ add_custom_target(release-workflow-check
   COMMAND ${CMAKE_COMMAND}
     -DSECUREKIT_WORKFLOW_FILE=${CMAKE_CURRENT_SOURCE_DIR}/.github/workflows/securekit-ci.yml
     -DSECUREKIT_CODEQL_WORKFLOW_FILE=${CMAKE_CURRENT_SOURCE_DIR}/.github/workflows/codeql.yml
+    -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_workflow.cmake
   USES_TERMINAL)
 
@@ -172,6 +173,34 @@ if(SECUREKIT_BUILD_TESTS)
       --build-config $<CONFIG>
       --output-on-failure
     DEPENDS securekit_cli securekit_tests
+    USES_TERMINAL)
+endif()
+
+if(TARGET check)
+  add_custom_target(release-preflight
+    COMMAND ${CMAKE_COMMAND}
+      --build ${CMAKE_CURRENT_BINARY_DIR}
+      --config $<CONFIG>
+      --target check
+    COMMAND ${CMAKE_COMMAND}
+      --build ${CMAKE_CURRENT_BINARY_DIR}
+      --config $<CONFIG>
+      --target package-check
+    COMMAND ${CMAKE_COMMAND}
+      --build ${CMAKE_CURRENT_BINARY_DIR}
+      --config $<CONFIG>
+      --target release-workflow-check
+    COMMAND ${CMAKE_COMMAND}
+      -DSECUREKIT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
+      -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
+      -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_preflight.cmake
+    USES_TERMINAL)
+else()
+  add_custom_target(release-preflight
+    COMMAND ${CMAKE_COMMAND} -E echo "release-preflight requires SECUREKIT_BUILD_TESTS=ON"
+    COMMAND ${CMAKE_COMMAND} -E false
     USES_TERMINAL)
 endif()
 

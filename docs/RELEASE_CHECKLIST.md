@@ -32,15 +32,17 @@ Use a clean or current release build directory configured for Release with tests
 enabled:
 
 ```sh
-cmake --build build --config Release --target check
-cmake --build build --config Release --target package-check
-cmake --build build --config Release --target release-workflow-check
+cmake --build build --config Release --target release-preflight
 ```
 
 `package-check` must install SecureKit, run the installed CLI, build a consumer
 project, create CPack binary and source archives, inspect archive contents,
 extract one source archive, build from that extracted source, install it, and
 run `securekit --version`.
+
+`release-preflight` runs `check`, `package-check`, and `release-workflow-check`,
+then checks SemVer shape, README and release-checklist version examples,
+documented local target names, and package artifact version prefixes.
 
 On Windows with dynamically linked OpenSSL, configure the build with
 `SECUREKIT_OPENSSL_RUNTIME_DIR` so tests and package checks can run installed
