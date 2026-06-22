@@ -12,6 +12,21 @@ include(GNUInstallDirs)
 
 find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
+option(SECUREKIT_WARNINGS_AS_ERRORS "Treat SecureKit build warnings as errors" OFF)
+
+set(_securekit_compile_options)
+if(MSVC)
+  list(APPEND _securekit_compile_options /W4 /permissive-)
+  if(SECUREKIT_WARNINGS_AS_ERRORS)
+    list(APPEND _securekit_compile_options /WX)
+  endif()
+else()
+  list(APPEND _securekit_compile_options -Wall -Wextra -Wpedantic)
+  if(SECUREKIT_WARNINGS_AS_ERRORS)
+    list(APPEND _securekit_compile_options -Werror)
+  endif()
+endif()
+
 add_library(securekit
   src/aead.cpp
   src/base64.cpp
@@ -41,11 +56,7 @@ if(BUILD_SHARED_LIBS)
   target_compile_definitions(securekit PUBLIC SECUREKIT_SHARED)
 endif()
 
-if(MSVC)
-  target_compile_options(securekit PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(securekit PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+target_compile_options(securekit PRIVATE ${_securekit_compile_options})
 
 add_executable(securekit_cli
   src/cli/main.cpp)
@@ -56,11 +67,7 @@ target_link_libraries(securekit_cli PRIVATE securekit::securekit)
 target_compile_features(securekit_cli PRIVATE cxx_std_20)
 target_compile_definitions(securekit_cli PRIVATE SECUREKIT_VERSION="${PROJECT_VERSION}")
 
-if(MSVC)
-  target_compile_options(securekit_cli PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(securekit_cli PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
 
 add_custom_target(package-check
   COMMAND ${CMAKE_COMMAND}
@@ -81,6 +88,7 @@ add_custom_target(package-check
     -DSECUREKIT_CMAKE_MT=${CMAKE_MT}
     -DSECUREKIT_CMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}
     -DSECUREKIT_CPACK_COMMAND=${CMAKE_CPACK_COMMAND}
+    -DSECUREKIT_WARNINGS_AS_ERRORS=${SECUREKIT_WARNINGS_AS_ERRORS}
     -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}
     -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
@@ -130,6 +138,7 @@ if(SECUREKIT_BUILD_TESTS)
 
   target_link_libraries(securekit_tests PRIVATE securekit::securekit GTest::gtest_main)
   target_compile_features(securekit_tests PRIVATE cxx_std_20)
+  target_compile_options(securekit_tests PRIVATE ${_securekit_compile_options})
   target_compile_definitions(securekit_tests PRIVATE
     SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 

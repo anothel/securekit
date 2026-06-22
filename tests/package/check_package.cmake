@@ -103,6 +103,15 @@ foreach(_securekit_package_file
   endif()
 endforeach()
 
+file(GLOB _securekit_export_files
+  "${_securekit_install_prefix}/lib/cmake/securekit/securekitTargets*.cmake")
+foreach(_securekit_export_file IN LISTS _securekit_export_files)
+  file(READ "${_securekit_export_file}" _securekit_export_text)
+  if(_securekit_export_text MATCHES "(-Werror|/WX)")
+    message(FATAL_ERROR "Warnings-as-errors leaked into exported target: ${_securekit_export_file}")
+  endif()
+endforeach()
+
 set(_securekit_path "$ENV{PATH}")
 if(WIN32)
   set(_securekit_runtime_paths "${_securekit_install_prefix}/bin")
@@ -202,6 +211,7 @@ set(_securekit_source_configure_args
   -B "${_securekit_source_build_dir}"
   -DBUILD_TESTING=OFF
   -DSECUREKIT_BUILD_TESTS=OFF
+  "-DSECUREKIT_WARNINGS_AS_ERRORS=${SECUREKIT_WARNINGS_AS_ERRORS}"
   "-DCMAKE_INSTALL_PREFIX=${_securekit_source_install_prefix}"
   "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
 
