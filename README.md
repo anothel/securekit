@@ -85,6 +85,26 @@ archives are written under `<build>/package-check/artifacts`.
 README/release-checklist version examples, documented local targets, and package
 artifact version prefixes.
 
+## CMake Options
+
+| Option | Default | Use |
+| --- | --- | --- |
+| `SECUREKIT_BUILD_TESTS` | `BUILD_TESTING` | Build unit, fixture, and CLI tests. |
+| `SECUREKIT_BUILD_CLI` | `ON` | Build the `securekit` CLI executable. |
+| `SECUREKIT_INSTALL_CLI` | `ON` | Install the CLI. Requires `SECUREKIT_BUILD_CLI=ON`. |
+| `SECUREKIT_WARNINGS_AS_ERRORS` | `OFF` | Treat SecureKit compiler warnings as errors. |
+
+Release package validation targets `package-check` and `release-preflight`
+require `SECUREKIT_BUILD_CLI=ON` and `SECUREKIT_INSTALL_CLI=ON` because they
+install and run the CLI. Library-only consumers can disable tests and the CLI:
+
+```sh
+cmake -S . -B build-lib-only \
+  -DSECUREKIT_BUILD_TESTS=OFF \
+  -DSECUREKIT_BUILD_CLI=OFF \
+  -DSECUREKIT_INSTALL_CLI=OFF
+```
+
 If tests cannot find OpenSSL DLLs on Windows, pass:
 
 ```powershell
@@ -196,6 +216,27 @@ securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file 
 securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin --aad-text record:v1
 ```
 
+Common file recipes:
+
+```sh
+# Seal and open a file with a generated key file.
+securekit keygen --out key.hex
+securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex
+securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex
+
+# Bind authenticated context with AAD. Use the same AAD when opening.
+securekit seal-file --in plain.bin --out plain.bin.skf --key-file key.hex --aad-text record:v1
+securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex --aad-text record:v1
+
+# Use raw password bytes from a file; no trimming, prompt, or env lookup occurs.
+securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin
+securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin
+
+# Pipe binary data through stdin/stdout.
+securekit seal-file --in - --out - --key-file key.hex < plain.bin > plain.bin.skf
+securekit open-file --in - --out - --key-file key.hex < plain.bin.skf > plain.bin
+```
+
 The packet CLI commands use the `SKT1` packet format, and the file commands use
 the `SKF1` or `SKP1` file formats. `seal-file` and `open-file` use `SKF1` with
 a caller-provided 32-byte key. `seal-file-password` and `open-file-password` use
@@ -249,6 +290,12 @@ newline. Usage, parse, file, or decoding failures return a non-zero exit code
 and write a short message to stderr. Text arguments are treated as raw bytes in
 the active process encoding; the CLI does not normalize or transcode Unicode.
 Decode commands use the same strict validation as the C++ APIs.
+
+For automation, treat stdout from file commands as binary, check the process
+exit code before trusting output, and read diagnostics from stderr. Output paths
+are never overwritten; choose a fresh destination or remove old files before
+running the command. Wrong keys, wrong passwords, changed AAD, and modified
+ciphertext all fail with the same generic authentication failure.
 
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
 usage text. `securekit --version` and `securekit version` print the package
@@ -419,6 +466,11 @@ securekit::bytes securekit::random_bytes(std::size_t size);
 securekit::key256 securekit::generate_key();
 std::string securekit::random_token(std::size_t byte_size);
 
+std::string_view securekit::version() noexcept;
+int securekit::version_major() noexcept;
+int securekit::version_minor() noexcept;
+int securekit::version_patch() noexcept;
+
 securekit::bytes securekit::encrypt(
 	std::span<const std::byte> plaintext,
 	const securekit::key256 &key,
@@ -538,6 +590,10 @@ rejects packets that do not contain exactly one 32-byte key.
 `securekit::random_token` returns an unpadded Base64URL string from
 cryptographically secure random bytes. It rejects `byte_size == 0` with
 `securekit::error_code::invalid_input`.
+
+`securekit::version()` and the numeric version helpers return the package
+version compiled from the CMake project version. The CLI `securekit --version`
+uses the same runtime value.
 
 The compatibility reference for serialized `SKT1`, `SKF1`, and `SKP1` data is
 [docs/FORMAT.md](docs/FORMAT.md). Security boundaries and operational limits are
@@ -736,12 +792,14 @@ GitHub Actions runs the main supported build and package surfaces:
 - Install-only package and consumer check with tests disabled.
 - Linux static-library package and consumer check.
 - Windows shared-library package and consumer check.
+- Linux Clang Debug sanitizer job with AddressSanitizer and UndefinedBehaviorSanitizer.
+- macOS AppleClang Release package-check job with Homebrew OpenSSL 3.
 - CPack binary and source package artifact uploads.
 
 `release-workflow-check` locally guards the release workflow shape, artifact
 version checks, and current GitHub Action major versions. CodeQL runs in a
-separate `CodeQL` workflow on pushes, pull requests, and a weekly schedule with
-manual CMake configure/build steps.
+separate `CodeQL` workflow on pushes and pull requests to `main`, plus a weekly
+schedule, with manual CMake configure/build steps.
 
 Local preflight:
 

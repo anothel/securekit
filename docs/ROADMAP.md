@@ -2,8 +2,9 @@
 
 This file tracks forward-looking work only. Completed CLI contract,
 compatibility-vector, package-matrix, release-preflight, security-boundary,
-public API/consumer freeze, and documentation-consistency hardening work belongs
-in Git history, not in the active roadmap.
+public API/consumer freeze, CI hardening, usage/package polish, and
+documentation-consistency hardening work belongs in Git history, not in the
+active roadmap.
 
 ## Direction
 
@@ -39,10 +40,6 @@ Accepted from the analysis:
 
 - security, changelog, format, and security-model docs
 - stronger streaming decryptor warning
-- sanitizer and macOS CI coverage
-- task-oriented CLI recipes
-- package/runtime version API
-- consumer-facing CMake option split
 
 Already covered by the current tree:
 
@@ -50,6 +47,9 @@ Already covered by the current tree:
 - compatibility fixtures for `SKT1`, key wrap, `SKF1`, and `SKP1`
 - package-check install, archive, source-build, and consumer coverage
 - CLI error contract and public header/package consumer checks
+- CI hardening through warnings-as-errors, sanitizer, and macOS package jobs
+- task-oriented CLI recipes, package/runtime version API, and consumer CMake
+  option split
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -81,66 +81,25 @@ Exit criteria:
 - 0 release checklist items that require a missing local command.
 - `git diff --check` passes after doc edits.
 
-### 2. CI Hardening
-
-Goal: catch platform and memory-undefined behavior issues before release.
-
-Tasks:
-
-2.1. Add `SECUREKIT_WARNINGS_AS_ERRORS`.
-
-2.2. Add a Linux sanitizer CI job with AddressSanitizer and
-UndefinedBehaviorSanitizer.
-
-2.3. Add a macOS package-check job with AppleClang and Homebrew OpenSSL 3.
-
-Exit criteria:
-
-- sanitizer CI runs `check`.
-- macOS CI runs `check` and `package-check`.
-- new CI jobs do not duplicate every existing matrix row.
-
-### 3. Usage And Package Polish
-
-Goal: make common consumer and CLI use easier without expanding crypto scope.
-
-Tasks:
-
-3.1. Add task-oriented CLI recipes for file sealing/opening, AAD use, password
-files, stdout/stderr behavior, exit codes, and automation examples.
-
-3.2. Add `securekit::version()` and numeric version helpers if they can be kept
-header/runtime consistent with the CMake project version.
-
-3.3. Split CMake options only where consumers get immediate value:
-`SECUREKIT_BUILD_CLI`, `SECUREKIT_INSTALL_CLI`, and
-`SECUREKIT_WARNINGS_AS_ERRORS`.
-
-Exit criteria:
-
-- CLI recipes do not duplicate or contradict README command contracts.
-- Version API matches `securekit --version` and CMake package version.
-- Library-only consumers can configure without building or installing the CLI.
-
-### 4. Release Candidate Cut
+### 2. Release Candidate Cut
 
 Goal: make the next tag cut a mechanical operation instead of a judgment call.
 
 Tasks:
 
-4.1. Pick the next SemVer version and make `CMakeLists.txt` project version,
+2.1. Pick the next SemVer version and make `CMakeLists.txt` project version,
 release tag, package artifact names, README examples, and changelog agree.
 
-4.2. Run the local release preflight from a clean build directory:
+2.2. Run the local release preflight from a clean build directory:
 
 ```sh
 cmake --build build --config Release --target release-preflight
 ```
 
-4.3. Confirm GitHub Actions has zero failing required jobs on the release
+2.3. Confirm GitHub Actions has zero failing required jobs on the release
 candidate commit.
 
-4.4. Inspect package-check artifacts and confirm:
+2.4. Inspect package-check artifacts and confirm:
 
 - At least one binary package artifact exists.
 - At least one source package artifact exists.
@@ -154,24 +113,24 @@ Exit criteria:
 - 0 package artifact version/tag mismatches.
 - 0 README or release checklist commands that point to missing targets.
 
-### 5. Deferred Feature Intake Rules
+### 3. Deferred Feature Intake Rules
 
 Goal: keep parked ideas from turning into speculative scope.
 
 Tasks:
 
-5.1. Non-throwing result-style APIs stay deferred until at least two real call
+3.1. Non-throwing result-style APIs stay deferred until at least two real call
 sites show exception handling is the wrong boundary.
 
-5.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
+3.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
 at least two real call sites duplicate lifecycle logic that free functions cannot
 express cleanly.
 
-5.3. Additional password formats or KDF agility stay deferred until there is a
+3.3. Additional password formats or KDF agility stay deferred until there is a
 written format spec, fixed downgrade behavior, fixture policy updates, and at
 least three known-answer vectors for the new format.
 
-5.4. Additional streaming formats beyond `SKT1` stay deferred until a written
+3.4. Additional streaming formats beyond `SKT1` stay deferred until a written
 threat model explains plaintext-before-auth handling and output ownership.
 
 Exit criteria:
@@ -191,10 +150,10 @@ These are intentionally unscheduled until the intake rules above are met:
 - Additional streaming formats beyond `SKT1`.
 - Explicit OpenSSL provider or FIPS configuration helpers.
 - CLI `inspect` and `verify` commands until operational use cases are written.
-- Fuzz targets until sanitizer CI exists.
+- Fuzz targets until sanitizer-backed failures or corpus requirements justify them.
 - Package-manager recipes until a release archive has been validated.
 - SBOM, provenance, and signing until release artifact shape is stable.
-- Examples directory until CLI recipes exist.
+- Examples directory until use cases outgrow README recipes.
 - `CONTRIBUTING.md` until release-critical docs and CI are settled.
 - Benchmarks until correctness, format, and CI hardening work is stable.
 

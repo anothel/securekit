@@ -18,6 +18,18 @@ if(NOT DEFINED SECUREKIT_PROJECT_VERSION OR SECUREKIT_PROJECT_VERSION STREQUAL "
   message(FATAL_ERROR "SECUREKIT_PROJECT_VERSION is required")
 endif()
 
+if(NOT DEFINED SECUREKIT_PROJECT_VERSION_MAJOR OR SECUREKIT_PROJECT_VERSION_MAJOR STREQUAL "")
+  message(FATAL_ERROR "SECUREKIT_PROJECT_VERSION_MAJOR is required")
+endif()
+
+if(NOT DEFINED SECUREKIT_PROJECT_VERSION_MINOR OR SECUREKIT_PROJECT_VERSION_MINOR STREQUAL "")
+  message(FATAL_ERROR "SECUREKIT_PROJECT_VERSION_MINOR is required")
+endif()
+
+if(NOT DEFINED SECUREKIT_PROJECT_VERSION_PATCH OR SECUREKIT_PROJECT_VERSION_PATCH STREQUAL "")
+  message(FATAL_ERROR "SECUREKIT_PROJECT_VERSION_PATCH is required")
+endif()
+
 if(NOT DEFINED SECUREKIT_BUILD_CONFIG OR SECUREKIT_BUILD_CONFIG STREQUAL "")
   if(DEFINED SECUREKIT_DEFAULT_BUILD_TYPE AND NOT SECUREKIT_DEFAULT_BUILD_TYPE STREQUAL "")
     set(SECUREKIT_BUILD_CONFIG "${SECUREKIT_DEFAULT_BUILD_TYPE}")
@@ -32,6 +44,9 @@ set(_securekit_consumer_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/consumer-buil
 set(_securekit_source_extract_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-extract")
 set(_securekit_source_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-build")
 set(_securekit_source_install_prefix "${SECUREKIT_PACKAGE_CHECK_ROOT}/source-install")
+set(_securekit_library_only_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/library-only-build")
+set(_securekit_library_only_install_prefix "${SECUREKIT_PACKAGE_CHECK_ROOT}/library-only-install")
+set(_securekit_library_only_consumer_build_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/library-only-consumer-build")
 
 file(REMOVE_RECURSE "${_securekit_install_prefix}")
 file(REMOVE_RECURSE "${_securekit_artifact_dir}")
@@ -39,6 +54,9 @@ file(REMOVE_RECURSE "${_securekit_consumer_build_dir}")
 file(REMOVE_RECURSE "${_securekit_source_extract_dir}")
 file(REMOVE_RECURSE "${_securekit_source_build_dir}")
 file(REMOVE_RECURSE "${_securekit_source_install_prefix}")
+file(REMOVE_RECURSE "${_securekit_library_only_build_dir}")
+file(REMOVE_RECURSE "${_securekit_library_only_install_prefix}")
+file(REMOVE_RECURSE "${_securekit_library_only_consumer_build_dir}")
 file(MAKE_DIRECTORY "${SECUREKIT_PACKAGE_CHECK_ROOT}")
 file(MAKE_DIRECTORY "${_securekit_artifact_dir}")
 
@@ -205,6 +223,10 @@ set(_securekit_consumer_configure_args
   -S "${SECUREKIT_SOURCE_DIR}/tests/consumer"
   -B "${_securekit_consumer_build_dir}"
   "-DCMAKE_PREFIX_PATH=${_securekit_install_prefix}"
+  "-DSECUREKIT_EXPECTED_VERSION=${SECUREKIT_PROJECT_VERSION}"
+  "-DSECUREKIT_EXPECTED_VERSION_MAJOR=${SECUREKIT_PROJECT_VERSION_MAJOR}"
+  "-DSECUREKIT_EXPECTED_VERSION_MINOR=${SECUREKIT_PROJECT_VERSION_MINOR}"
+  "-DSECUREKIT_EXPECTED_VERSION_PATCH=${SECUREKIT_PROJECT_VERSION_PATCH}"
   "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
 
 set(_securekit_source_configure_args
@@ -374,6 +396,107 @@ endif()
 string(REPLACE "\r\n" "\n" _securekit_source_cli_output "${_securekit_source_cli_output}")
 if(NOT _securekit_source_cli_output STREQUAL "securekit ${SECUREKIT_PROJECT_VERSION}\n")
   message(FATAL_ERROR "Source package CLI version mismatch: ${_securekit_source_cli_output}")
+endif()
+
+set(_securekit_library_only_configure_args
+  -S "${_securekit_extracted_source_dir}"
+  -B "${_securekit_library_only_build_dir}"
+  -DBUILD_TESTING=OFF
+  -DSECUREKIT_BUILD_TESTS=OFF
+  -DSECUREKIT_BUILD_CLI=OFF
+  -DSECUREKIT_INSTALL_CLI=OFF
+  "-DSECUREKIT_WARNINGS_AS_ERRORS=${SECUREKIT_WARNINGS_AS_ERRORS}"
+  "-DCMAKE_INSTALL_PREFIX=${_securekit_library_only_install_prefix}"
+  "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
+_securekit_append_host_configure_args(_securekit_library_only_configure_args)
+
+_securekit_run_consumer_command(
+  _securekit_library_only_configure_result
+  library-only-configure
+  "${CMAKE_COMMAND}"
+  ${_securekit_library_only_configure_args})
+if(NOT _securekit_library_only_configure_result EQUAL 0)
+  message(FATAL_ERROR "Library-only package configure failed")
+endif()
+
+_securekit_run_consumer_command(
+  _securekit_library_only_build_result
+  library-only-build
+  "${CMAKE_COMMAND}"
+  --build "${_securekit_library_only_build_dir}"
+  --config "${SECUREKIT_BUILD_CONFIG}"
+  --target securekit)
+if(NOT _securekit_library_only_build_result EQUAL 0)
+  message(FATAL_ERROR "Library-only package build failed")
+endif()
+
+_securekit_run_consumer_command(
+  _securekit_library_only_install_result
+  library-only-install
+  "${CMAKE_COMMAND}"
+  --install "${_securekit_library_only_build_dir}"
+  --config "${SECUREKIT_BUILD_CONFIG}"
+  --prefix "${_securekit_library_only_install_prefix}")
+if(NOT _securekit_library_only_install_result EQUAL 0)
+  message(FATAL_ERROR "Library-only package install failed")
+endif()
+
+set(_securekit_library_only_cli "${_securekit_library_only_install_prefix}/bin/securekit${_securekit_exe_suffix}")
+if(EXISTS "${_securekit_library_only_cli}")
+  message(FATAL_ERROR "Library-only package unexpectedly installed CLI: ${_securekit_library_only_cli}")
+endif()
+
+set(_securekit_library_only_consumer_configure_args
+  -S "${SECUREKIT_SOURCE_DIR}/tests/consumer"
+  -B "${_securekit_library_only_consumer_build_dir}"
+  "-DCMAKE_PREFIX_PATH=${_securekit_library_only_install_prefix}"
+  "-DSECUREKIT_EXPECTED_VERSION=${SECUREKIT_PROJECT_VERSION}"
+  "-DSECUREKIT_EXPECTED_VERSION_MAJOR=${SECUREKIT_PROJECT_VERSION_MAJOR}"
+  "-DSECUREKIT_EXPECTED_VERSION_MINOR=${SECUREKIT_PROJECT_VERSION_MINOR}"
+  "-DSECUREKIT_EXPECTED_VERSION_PATCH=${SECUREKIT_PROJECT_VERSION_PATCH}"
+  "-DCMAKE_BUILD_TYPE=${SECUREKIT_BUILD_CONFIG}")
+_securekit_append_host_configure_args(_securekit_library_only_consumer_configure_args)
+
+_securekit_run_consumer_command(
+  _securekit_library_only_consumer_configure_result
+  library-only-consumer-configure
+  "${CMAKE_COMMAND}"
+  ${_securekit_library_only_consumer_configure_args})
+if(NOT _securekit_library_only_consumer_configure_result EQUAL 0)
+  message(FATAL_ERROR "Library-only consumer configure failed")
+endif()
+
+_securekit_run_consumer_command(
+  _securekit_library_only_consumer_build_result
+  library-only-consumer-build
+  "${CMAKE_COMMAND}"
+  --build "${_securekit_library_only_consumer_build_dir}"
+  --config "${SECUREKIT_BUILD_CONFIG}")
+if(NOT _securekit_library_only_consumer_build_result EQUAL 0)
+  message(FATAL_ERROR "Library-only consumer build failed")
+endif()
+
+set(_securekit_library_only_consumer_candidates
+  "${_securekit_library_only_consumer_build_dir}/${SECUREKIT_BUILD_CONFIG}/securekit_consumer${_securekit_exe_suffix}"
+  "${_securekit_library_only_consumer_build_dir}/securekit_consumer${_securekit_exe_suffix}")
+
+set(_securekit_library_only_consumer_exe "")
+foreach(_securekit_library_only_consumer_candidate IN LISTS _securekit_library_only_consumer_candidates)
+  if(EXISTS "${_securekit_library_only_consumer_candidate}")
+    set(_securekit_library_only_consumer_exe "${_securekit_library_only_consumer_candidate}")
+    break()
+  endif()
+endforeach()
+if(_securekit_library_only_consumer_exe STREQUAL "")
+  message(FATAL_ERROR "Library-only consumer executable not found under ${_securekit_library_only_consumer_build_dir}")
+endif()
+
+set(_securekit_library_only_path "${_securekit_library_only_install_prefix}/bin${_securekit_path_separator}${_securekit_path}")
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E env "PATH=${_securekit_library_only_path}" "${_securekit_library_only_consumer_exe}"
+  RESULT_VARIABLE _securekit_library_only_consumer_run_result)
+if(NOT _securekit_library_only_consumer_run_result EQUAL 0)
+  message(FATAL_ERROR "Library-only consumer run failed")
 endif()
 
 _securekit_append_host_configure_args(_securekit_consumer_configure_args)

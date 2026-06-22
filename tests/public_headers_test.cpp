@@ -10,6 +10,7 @@
 #include "securekit/random.hpp"
 #include "securekit/securekit.hpp"
 #include "securekit/types.hpp"
+#include "securekit/version.hpp"
 
 #include <filesystem>
 #include <iosfwd>
@@ -66,6 +67,19 @@ TEST(PublicHeaders, UtilityApiSignaturesAreAvailable)
 	static_assert(std::is_same_v<decltype(&securekit::random_token), RandomTokenApi>);
 	static_assert(std::is_same_v<decltype(&securekit::encrypt), AeadApi>);
 	static_assert(std::is_same_v<decltype(&securekit::decrypt), AeadApi>);
+}
+
+TEST(PublicHeaders, VersionApiIsAvailable)
+{
+	static_assert(std::is_same_v<decltype(&securekit::version), std::string_view (*)() noexcept>);
+	static_assert(std::is_same_v<decltype(&securekit::version_major), int (*)() noexcept>);
+	static_assert(std::is_same_v<decltype(&securekit::version_minor), int (*)() noexcept>);
+	static_assert(std::is_same_v<decltype(&securekit::version_patch), int (*)() noexcept>);
+
+	EXPECT_EQ(securekit::version(), SECUREKIT_EXPECTED_VERSION);
+	EXPECT_EQ(securekit::version_major(), SECUREKIT_EXPECTED_VERSION_MAJOR);
+	EXPECT_EQ(securekit::version_minor(), SECUREKIT_EXPECTED_VERSION_MINOR);
+	EXPECT_EQ(securekit::version_patch(), SECUREKIT_EXPECTED_VERSION_PATCH);
 }
 
 TEST(PublicHeaders, ErrorApiIsAvailable)

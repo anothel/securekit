@@ -13,6 +13,12 @@ include(GNUInstallDirs)
 find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
 option(SECUREKIT_WARNINGS_AS_ERRORS "Treat SecureKit build warnings as errors" OFF)
+option(SECUREKIT_BUILD_CLI "Build SecureKit CLI" ON)
+option(SECUREKIT_INSTALL_CLI "Install SecureKit CLI" ON)
+
+if(SECUREKIT_INSTALL_CLI AND NOT SECUREKIT_BUILD_CLI)
+  message(FATAL_ERROR "SECUREKIT_INSTALL_CLI=ON requires SECUREKIT_BUILD_CLI=ON")
+endif()
 
 set(_securekit_compile_options)
 if(MSVC)
@@ -37,7 +43,8 @@ add_library(securekit
   src/hex.cpp
   src/key_wrap.cpp
   src/packet_stream.cpp
-  src/random.cpp)
+  src/random.cpp
+  src/version.cpp)
 
 add_library(securekit::securekit ALIAS securekit)
 
@@ -50,7 +57,12 @@ target_include_directories(securekit
 
 target_link_libraries(securekit PUBLIC OpenSSL::Crypto)
 
-target_compile_definitions(securekit PRIVATE SECUREKIT_BUILDING_LIBRARY)
+target_compile_definitions(securekit PRIVATE
+  SECUREKIT_BUILDING_LIBRARY
+  SECUREKIT_VERSION="${PROJECT_VERSION}"
+  SECUREKIT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+  SECUREKIT_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+  SECUREKIT_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(securekit PUBLIC SECUREKIT_SHARED)
@@ -58,44 +70,55 @@ endif()
 
 target_compile_options(securekit PRIVATE ${_securekit_compile_options})
 
-add_executable(securekit_cli
-  src/cli/main.cpp)
+if(SECUREKIT_BUILD_CLI)
+  add_executable(securekit_cli
+    src/cli/main.cpp)
 
-set_target_properties(securekit_cli PROPERTIES OUTPUT_NAME securekit)
+  set_target_properties(securekit_cli PROPERTIES OUTPUT_NAME securekit)
 
-target_link_libraries(securekit_cli PRIVATE securekit::securekit)
-target_compile_features(securekit_cli PRIVATE cxx_std_20)
-target_compile_definitions(securekit_cli PRIVATE SECUREKIT_VERSION="${PROJECT_VERSION}")
+  target_link_libraries(securekit_cli PRIVATE securekit::securekit)
+  target_compile_features(securekit_cli PRIVATE cxx_std_20)
 
-target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
+  target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
+endif()
 
-add_custom_target(package-check
-  COMMAND ${CMAKE_COMMAND}
-    -DSECUREKIT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-    -DSECUREKIT_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
-    -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
-    -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
-    -DSECUREKIT_PROJECT_VERSION=${PROJECT_VERSION}
-    -DSECUREKIT_BUILD_CONFIG=$<CONFIG>
-    -DSECUREKIT_DEFAULT_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DSECUREKIT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
-    -DSECUREKIT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
-    -DSECUREKIT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
-    -DSECUREKIT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-    -DSECUREKIT_CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-    -DSECUREKIT_CMAKE_AR=${CMAKE_AR}
-    -DSECUREKIT_CMAKE_LINKER=${CMAKE_LINKER}
-    -DSECUREKIT_CMAKE_MT=${CMAKE_MT}
-    -DSECUREKIT_CMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}
-    -DSECUREKIT_CPACK_COMMAND=${CMAKE_CPACK_COMMAND}
-    -DSECUREKIT_WARNINGS_AS_ERRORS=${SECUREKIT_WARNINGS_AS_ERRORS}
-    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-    -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}
-    -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
-    -DSECUREKIT_OPENSSL_RUNTIME_DIR=${SECUREKIT_OPENSSL_RUNTIME_DIR}
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_package.cmake
-  DEPENDS securekit securekit_cli
-  USES_TERMINAL)
+if(SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
+  add_custom_target(package-check
+    COMMAND ${CMAKE_COMMAND}
+      -DSECUREKIT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DSECUREKIT_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
+      -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
+      -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
+      -DSECUREKIT_PROJECT_VERSION=${PROJECT_VERSION}
+      -DSECUREKIT_PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+      -DSECUREKIT_PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+      -DSECUREKIT_PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+      -DSECUREKIT_BUILD_CONFIG=$<CONFIG>
+      -DSECUREKIT_DEFAULT_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+      -DSECUREKIT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
+      -DSECUREKIT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+      -DSECUREKIT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+      -DSECUREKIT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+      -DSECUREKIT_CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DSECUREKIT_CMAKE_AR=${CMAKE_AR}
+      -DSECUREKIT_CMAKE_LINKER=${CMAKE_LINKER}
+      -DSECUREKIT_CMAKE_MT=${CMAKE_MT}
+      -DSECUREKIT_CMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}
+      -DSECUREKIT_CPACK_COMMAND=${CMAKE_CPACK_COMMAND}
+      -DSECUREKIT_WARNINGS_AS_ERRORS=${SECUREKIT_WARNINGS_AS_ERRORS}
+      -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+      -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}
+      -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
+      -DSECUREKIT_OPENSSL_RUNTIME_DIR=${SECUREKIT_OPENSSL_RUNTIME_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_package.cmake
+    DEPENDS securekit securekit_cli
+    USES_TERMINAL)
+else()
+  add_custom_target(package-check
+    COMMAND ${CMAKE_COMMAND} -E echo "package-check requires SECUREKIT_BUILD_CLI=ON and SECUREKIT_INSTALL_CLI=ON because release validation requires installed CLI"
+    COMMAND ${CMAKE_COMMAND} -E false
+    USES_TERMINAL)
+endif()
 
 add_custom_target(release-workflow-check
   COMMAND ${CMAKE_COMMAND}
@@ -140,7 +163,11 @@ if(SECUREKIT_BUILD_TESTS)
   target_compile_features(securekit_tests PRIVATE cxx_std_20)
   target_compile_options(securekit_tests PRIVATE ${_securekit_compile_options})
   target_compile_definitions(securekit_tests PRIVATE
-    SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+    SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+    SECUREKIT_EXPECTED_VERSION="${PROJECT_VERSION}"
+    SECUREKIT_EXPECTED_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    SECUREKIT_EXPECTED_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    SECUREKIT_EXPECTED_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 
   set(_securekit_test_properties)
   if(WIN32)
@@ -165,15 +192,19 @@ if(SECUREKIT_BUILD_TESTS)
     DISCOVERY_MODE PRE_TEST
     PROPERTIES ${_securekit_test_properties})
 
-  add_test(
-    NAME Cli.UtilityCommands
-    COMMAND ${CMAKE_COMMAND}
-      -DSECUREKIT_CLI=$<TARGET_FILE:securekit_cli>
-      -DSECUREKIT_EXPECTED_VERSION=${PROJECT_VERSION}
-      -DSECUREKIT_TEST_FIXTURE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/check_cli.cmake)
-  if(_securekit_test_properties)
-    set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})
+  set(_securekit_check_dependencies securekit_tests)
+  if(TARGET securekit_cli)
+    add_test(
+      NAME Cli.UtilityCommands
+      COMMAND ${CMAKE_COMMAND}
+        -DSECUREKIT_CLI=$<TARGET_FILE:securekit_cli>
+        -DSECUREKIT_EXPECTED_VERSION=${PROJECT_VERSION}
+        -DSECUREKIT_TEST_FIXTURE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/check_cli.cmake)
+    if(_securekit_test_properties)
+      set_tests_properties(Cli.UtilityCommands PROPERTIES ${_securekit_test_properties})
+    endif()
+    list(APPEND _securekit_check_dependencies securekit_cli)
   endif()
 
   add_custom_target(check
@@ -181,11 +212,11 @@ if(SECUREKIT_BUILD_TESTS)
       --test-dir ${CMAKE_CURRENT_BINARY_DIR}
       --build-config $<CONFIG>
       --output-on-failure
-    DEPENDS securekit_cli securekit_tests
+    DEPENDS ${_securekit_check_dependencies}
     USES_TERMINAL)
 endif()
 
-if(TARGET check)
+if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
   add_custom_target(release-preflight
     COMMAND ${CMAKE_COMMAND}
       --build ${CMAKE_CURRENT_BINARY_DIR}
@@ -206,6 +237,11 @@ if(TARGET check)
       -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_preflight.cmake
     USES_TERMINAL)
+elseif(TARGET check)
+  add_custom_target(release-preflight
+    COMMAND ${CMAKE_COMMAND} -E echo "release-preflight requires SECUREKIT_BUILD_CLI=ON and SECUREKIT_INSTALL_CLI=ON because release validation requires installed CLI"
+    COMMAND ${CMAKE_COMMAND} -E false
+    USES_TERMINAL)
 else()
   add_custom_target(release-preflight
     COMMAND ${CMAKE_COMMAND} -E echo "release-preflight requires SECUREKIT_BUILD_TESTS=ON"
@@ -220,9 +256,11 @@ install(
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-install(
-  TARGETS securekit_cli
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if(SECUREKIT_INSTALL_CLI)
+  install(
+    TARGETS securekit_cli
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
 
 install(
   DIRECTORY include/securekit

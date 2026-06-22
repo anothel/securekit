@@ -19,10 +19,6 @@
 #include <io.h>
 #endif
 
-#ifndef SECUREKIT_VERSION
-#define SECUREKIT_VERSION "unknown"
-#endif
-
 namespace
 {
 
@@ -75,7 +71,7 @@ std::string_view version_usage()
 
 void print_version()
 {
-	std::cout << "securekit " << SECUREKIT_VERSION << '\n';
+	std::cout << "securekit " << securekit::version() << '\n';
 }
 
 std::string_view token_usage()

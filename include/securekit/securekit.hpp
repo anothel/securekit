@@ -12,5 +12,6 @@
 #include "securekit/packet_stream.hpp"
 #include "securekit/random.hpp"
 #include "securekit/types.hpp"
+#include "securekit/version.hpp"
 
 #endif // SECUREKIT_SECUREKIT_HPP_

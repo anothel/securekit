@@ -70,6 +70,10 @@ int main()
 	const auto hmac = securekit::hmac_sha256(ascii_bytes("key"), ascii_bytes("The quick brown fox jumps over the lazy dog"));
 	const auto hkdf = securekit::hkdf_sha256(ascii_bytes("ikm"), ascii_bytes("salt"), ascii_bytes("info"), 16);
 	const auto random = securekit::random_bytes(8);
+	const bool version_api_ok = securekit::version() == SECUREKIT_EXPECTED_VERSION &&
+	                            securekit::version_major() == SECUREKIT_EXPECTED_VERSION_MAJOR &&
+	                            securekit::version_minor() == SECUREKIT_EXPECTED_VERSION_MINOR &&
+	                            securekit::version_patch() == SECUREKIT_EXPECTED_VERSION_PATCH;
 	bool error_api_ok = false;
 	try
 	{
@@ -153,7 +157,7 @@ int main()
 	                            hkdf.size() == 16 && random.size() == 8 && error_api_ok &&
 	                            securekit::constant_time_equal(digest, digest);
 
-	return utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
+	return version_api_ok && utility_api_ok && roundtrip == plaintext && streaming_roundtrip == plaintext &&
 	               streaming_plaintext == plaintext && streaming_tail.empty() && unwrapped_key == key &&
 	               opened == plaintext && password_opened == plaintext && stream_opened == plaintext &&
 	               password_stream_opened == plaintext && !token.empty()

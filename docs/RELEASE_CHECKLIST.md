@@ -56,6 +56,8 @@ executables.
 - Commit the release changes.
 - Push to `main`.
 - Confirm `SecureKit CI` passes.
+- Confirm the Linux sanitizer job passes.
+- Confirm the macOS package-check job passes.
 - Confirm `CodeQL` passes.
 
 Do not create the version tag from an unverified commit.
