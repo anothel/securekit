@@ -45,7 +45,8 @@ run `securekit --version`.
 
 `release-preflight` runs `check`, `package-check`, and `release-workflow-check`,
 then checks SemVer shape, README and release-checklist version examples,
-documented local target names, and package artifact version prefixes.
+documented local target names, package artifact version prefixes, staged release
+assets, and `SHA256SUMS.txt`.
 
 On Windows with dynamically linked OpenSSL, configure the build with
 `SECUREKIT_OPENSSL_RUNTIME_DIR` so tests and package checks can run installed

@@ -99,11 +99,11 @@ cmake --build build --config Release --target release-preflight
 2.3. Confirm GitHub Actions has zero failing required jobs on the release
 candidate commit.
 
-2.4. Inspect package-check artifacts and confirm:
+2.4. Confirm `release-preflight` staged local release assets and checksums:
 
 - At least one binary package artifact exists.
 - At least one source package artifact exists.
-- Extracted source configures, builds, installs, and runs `securekit --version`.
+- `SHA256SUMS.txt` covers the staged archives.
 
 Exit criteria:
 

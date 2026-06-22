@@ -36,3 +36,5 @@ versions.
 - Warnings-as-errors, sanitizer, and macOS CI/package coverage for release
   confidence.
 - Release/package preflight validation for local release readiness checks.
+- Local release asset staging and SHA-256 checksum validation for package-check
+  artifacts.

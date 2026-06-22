@@ -81,9 +81,10 @@ CMake project, builds CPack binary and source archives, checks key files inside
 those archives, extracts one source archive, and verifies that the extracted
 source can configure, build, install, and run `securekit --version`. Generated
 archives are written under `<build>/package-check/artifacts`.
-`release-preflight` runs the local release targets and then checks SemVer,
-README/release-checklist version examples, documented local targets, and package
-artifact version prefixes.
+`release-preflight` runs the local release targets, stages release assets under
+`<build>/package-check/release-assets`, writes `SHA256SUMS.txt`, and then checks
+SemVer, README/release-checklist version examples, documented local targets,
+package artifact version prefixes, and staged release asset checksums.
 
 ## CMake Options
 

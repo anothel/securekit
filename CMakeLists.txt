@@ -227,6 +227,11 @@ if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
       --config $<CONFIG>
       --target package-check
     COMMAND ${CMAKE_COMMAND}
+      -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
+      -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
+      -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_assets.cmake
+    COMMAND ${CMAKE_COMMAND}
       --build ${CMAKE_CURRENT_BINARY_DIR}
       --config $<CONFIG>
       --target release-workflow-check
