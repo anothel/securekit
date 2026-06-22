@@ -27,11 +27,13 @@ endif()
 
 set(_securekit_cmakelists "${SECUREKIT_SOURCE_DIR}/CMakeLists.txt")
 set(_securekit_readme "${SECUREKIT_SOURCE_DIR}/README.md")
+set(_securekit_changelog "${SECUREKIT_SOURCE_DIR}/CHANGELOG.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 
 foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
     "${_securekit_readme}"
+    "${_securekit_changelog}"
     "${_securekit_release_checklist}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
@@ -40,6 +42,7 @@ endforeach()
 
 file(READ "${_securekit_cmakelists}" _securekit_cmakelists_text)
 file(READ "${_securekit_readme}" _securekit_readme_text)
+file(READ "${_securekit_changelog}" _securekit_changelog_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 
 function(_securekit_require_text description haystack needle)
@@ -54,6 +57,15 @@ function(_securekit_require_regex description haystack pattern)
   if(_securekit_match STREQUAL "")
     message(FATAL_ERROR "Release preflight missing ${description}: ${pattern}")
   endif()
+endfunction()
+
+function(_securekit_require_terms description haystack)
+  foreach(_securekit_term IN LISTS ARGN)
+    _securekit_require_text(
+      "${description}"
+      "${haystack}"
+      "${_securekit_term}")
+  endforeach()
 endfunction()
 
 _securekit_require_regex(
@@ -76,6 +88,120 @@ _securekit_require_text(
   "release checklist push command"
   "${_securekit_release_checklist_text}"
   "git push origin ${_securekit_expected_tag}")
+
+string(REGEX REPLACE "\\." "\\\\." _securekit_project_version_regex "${SECUREKIT_PROJECT_VERSION}")
+_securekit_require_regex(
+  "CHANGELOG Unreleased section"
+  "${_securekit_changelog_text}"
+  "(^|[\n\r]+)##[ \t]+Unreleased([ \t\r\n]|$)")
+_securekit_require_regex(
+  "CHANGELOG current version section"
+  "${_securekit_changelog_text}"
+  "(^|[\n\r]+)##[ \t]+(\\[${_securekit_project_version_regex}\\]|${_securekit_project_version_regex})([ \t\r\n]|$)")
+
+set(_securekit_changelog_scan_text "\n${_securekit_changelog_text}")
+set(_securekit_changelog_current_section "")
+foreach(_securekit_current_heading IN ITEMS
+    "## ${SECUREKIT_PROJECT_VERSION}"
+    "## [${SECUREKIT_PROJECT_VERSION}]")
+  string(FIND
+    "${_securekit_changelog_scan_text}"
+    "\n${_securekit_current_heading}"
+    _securekit_changelog_current_heading_at)
+  if(NOT _securekit_changelog_current_heading_at EQUAL -1)
+    math(EXPR _securekit_changelog_current_section_start "${_securekit_changelog_current_heading_at} + 1")
+    string(SUBSTRING
+      "${_securekit_changelog_scan_text}"
+      ${_securekit_changelog_current_section_start}
+      -1
+      _securekit_changelog_after_current_heading)
+    string(FIND
+      "${_securekit_changelog_after_current_heading}"
+      "\n## "
+      _securekit_changelog_next_heading_at)
+    if(_securekit_changelog_next_heading_at EQUAL -1)
+      set(_securekit_changelog_current_section "${_securekit_changelog_after_current_heading}")
+    else()
+      string(SUBSTRING
+        "${_securekit_changelog_after_current_heading}"
+        0
+        ${_securekit_changelog_next_heading_at}
+        _securekit_changelog_current_section)
+    endif()
+    break()
+  endif()
+endforeach()
+
+if(_securekit_changelog_current_section STREQUAL "")
+  message(FATAL_ERROR "Release preflight could not extract CHANGELOG current version section")
+endif()
+
+string(TOLOWER "${_securekit_changelog_current_section}" _securekit_changelog_current_section_lower)
+_securekit_require_terms(
+  "CHANGELOG security policy docs"
+  "${_securekit_changelog_current_section_lower}"
+  "security policy")
+_securekit_require_terms(
+  "CHANGELOG format specification docs"
+  "${_securekit_changelog_current_section_lower}"
+  "format specification")
+_securekit_require_terms(
+  "CHANGELOG security model docs"
+  "${_securekit_changelog_current_section_lower}"
+  "security model")
+_securekit_require_terms(
+  "CHANGELOG streaming decryptor warning"
+  "${_securekit_changelog_current_section_lower}"
+  "streaming decryptor")
+_securekit_require_terms(
+  "CHANGELOG unverified plaintext warning"
+  "${_securekit_changelog_current_section_lower}"
+  "unverified"
+  "plaintext")
+_securekit_require_terms(
+  "CHANGELOG public runtime version API"
+  "${_securekit_changelog_current_section_lower}"
+  "runtime"
+  "version"
+  "api")
+_securekit_require_terms(
+  "CHANGELOG CLI build/install CMake options"
+  "${_securekit_changelog_current_section_lower}"
+  "cli"
+  "build"
+  "install"
+  "cmake"
+  "options")
+_securekit_require_terms(
+  "CHANGELOG library-only package validation"
+  "${_securekit_changelog_current_section_lower}"
+  "library-only package validation")
+_securekit_require_terms(
+  "CHANGELOG consumer coverage"
+  "${_securekit_changelog_current_section_lower}"
+  "consumer coverage")
+_securekit_require_terms(
+  "CHANGELOG warnings-as-errors coverage"
+  "${_securekit_changelog_current_section_lower}"
+  "warnings-as-errors")
+_securekit_require_terms(
+  "CHANGELOG sanitizer coverage"
+  "${_securekit_changelog_current_section_lower}"
+  "sanitizer")
+_securekit_require_terms(
+  "CHANGELOG macOS CI/package coverage"
+  "${_securekit_changelog_current_section_lower}"
+  "macos"
+  "ci"
+  "package"
+  "coverage")
+_securekit_require_terms(
+  "CHANGELOG release/package preflight validation"
+  "${_securekit_changelog_current_section_lower}"
+  "release"
+  "package"
+  "preflight"
+  "validation")
 
 foreach(_securekit_target_name IN ITEMS check package-check release-workflow-check)
   _securekit_require_text(
