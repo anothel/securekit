@@ -148,6 +148,9 @@ cmake --build build --config Release --target release-preflight
 For the full release procedure, see
 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 
+Security issues should not be reported through public GitHub issues. See
+[SECURITY.md](SECURITY.md) for the reporting policy.
+
 ## CLI
 
 When installed, SecureKit also provides a small `securekit` utility executable:
@@ -216,7 +219,9 @@ Packet and file commands can also take optional AAD with either `--aad-text` or
 `--aad-hex`; the same AAD bytes must be provided to `decrypt`, `open-file`, or
 `open-file-password`, and AAD is authenticated but not stored in the packet or
 file. `--aad-text` uses the argument bytes directly. `--aad-hex` strictly
-decodes hex to bytes.
+decodes hex to bytes. If AAD is lost or changed, decryption/opening fails with
+the same generic authentication failure used for wrong keys, wrong passwords, or
+modified ciphertext.
 Packet and file command options may be supplied in any order, but each command
 must provide exactly one input source and one key source or password source.
 File commands also require exactly one output destination. For `seal-file`,
@@ -345,6 +350,23 @@ roundtrip.insert(roundtrip.end(), trailing.begin(), trailing.end());
 prefix. `packet_decryptor::update()` returns decrypted bytes before tag
 verification completes, so callers must treat those bytes as untrusted until
 `finalize()` succeeds.
+
+Wrong:
+
+```cpp
+securekit::bytes plaintext = decryptor.update(ciphertext_chunk);
+write_to_user_or_disk(plaintext); // plaintext is not authenticated yet
+decryptor.finalize(tag);
+```
+
+Right:
+
+```cpp
+securekit::bytes pending = decryptor.update(ciphertext_chunk);
+securekit::bytes tail = decryptor.finalize(tag);
+pending.insert(pending.end(), tail.begin(), tail.end());
+write_to_user_or_disk(pending); // authentication has succeeded
+```
 
 ## Public API
 
@@ -517,6 +539,10 @@ rejects packets that do not contain exactly one 32-byte key.
 cryptographically secure random bytes. It rejects `byte_size == 0` with
 `securekit::error_code::invalid_input`.
 
+The compatibility reference for serialized `SKT1`, `SKF1`, and `SKP1` data is
+[docs/FORMAT.md](docs/FORMAT.md). Security boundaries and operational limits are
+documented in [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md).
+
 ## AES-256-GCM Packet Format
 
 SecureKit AES-GCM encryption returns one serialized packet:
@@ -548,8 +574,9 @@ the whole packet. Invalid sequencing raises
 sizes raise `securekit::error_code::invalid_packet`.
 
 `packet_decryptor::update()` yields plaintext before authentication is complete.
-Callers must not release, persist, or trust decrypted bytes until
-`finalize(tag)` returns successfully.
+Those bytes are UNVERIFIED PLAINTEXT. Callers must not release, persist, parse,
+execute, display, or trust decrypted bytes until `finalize(tag)` returns
+successfully.
 
 ## SKF1 File Format
 
@@ -730,6 +757,7 @@ executables with the OpenSSL DLL directory on `PATH`.
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for numbered forward-looking work.
+See [CHANGELOG.md](CHANGELOG.md) before cutting a release tag.
 Completed CLI, compatibility, package, security-boundary, public API/consumer,
 and documentation-consistency hardening items are kept in Git history instead of
 the active roadmap.

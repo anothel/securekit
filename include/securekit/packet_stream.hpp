@@ -45,6 +45,8 @@ public:
 	packet_decryptor &operator=(const packet_decryptor &) = delete;
 
 	SECUREKIT_API void begin(std::span<const std::byte> packet_prefix);
+	// Returns UNVERIFIED PLAINTEXT. Do not release, persist, or trust bytes from
+	// update() until finalize() returns successfully.
 	SECUREKIT_API bytes update(std::span<const std::byte> ciphertext);
 	SECUREKIT_API bytes finalize(std::span<const std::byte> tag);
 

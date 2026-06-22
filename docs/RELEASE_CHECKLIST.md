@@ -7,6 +7,9 @@ for tags matching `v*`.
 
 - Decide the next semantic version, for example `0.1.0`.
 - Update `project(... VERSION x.y.z)` in `CMakeLists.txt`.
+- Update `CHANGELOG.md`.
+- Confirm `SECURITY.md`, `docs/FORMAT.md`, and `docs/SECURITY_MODEL.md` still
+  match the shipped behavior.
 - Use the matching tag name `vx.y.z`.
 - Do not push the tag until the version change is already on `main`.
 
