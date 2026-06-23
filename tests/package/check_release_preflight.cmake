@@ -29,6 +29,8 @@ set(_securekit_cmakelists "${SECUREKIT_SOURCE_DIR}/CMakeLists.txt")
 set(_securekit_readme "${SECUREKIT_SOURCE_DIR}/README.md")
 set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
 set(_securekit_changelog "${SECUREKIT_SOURCE_DIR}/CHANGELOG.md")
+set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
+set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 
 foreach(_securekit_required_file IN ITEMS
@@ -36,6 +38,8 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_readme}"
     "${_securekit_security}"
     "${_securekit_changelog}"
+    "${_securekit_format}"
+    "${_securekit_security_model}"
     "${_securekit_release_checklist}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
@@ -46,6 +50,8 @@ file(READ "${_securekit_cmakelists}" _securekit_cmakelists_text)
 file(READ "${_securekit_readme}" _securekit_readme_text)
 file(READ "${_securekit_security}" _securekit_security_text)
 file(READ "${_securekit_changelog}" _securekit_changelog_text)
+file(READ "${_securekit_format}" _securekit_format_text)
+file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 
 function(_securekit_require_text description haystack needle)
@@ -262,6 +268,50 @@ _securekit_require_terms(
   "`SKP1`"
   "data needs"
   "regenerated")
+
+_securekit_require_terms(
+  "FORMAT v1 serialized format docs"
+  "${_securekit_format_text}"
+  "# SecureKit Format Specification"
+  "`SKT1`"
+  "`SKF1`"
+  "`SKP1`"
+  "Caller-provided AAD"
+  "nonce = header.nonce_prefix || chunk_index_be32"
+  "Scrypt N"
+  "## Compatibility Rules"
+  "## Security Notes"
+  "unverified"
+  "Stream open APIs")
+
+_securekit_require_terms(
+  "SECURITY_MODEL goals and non-goals"
+  "${_securekit_security_model_text}"
+  "# SecureKit Security Model"
+  "## Threat Model"
+  "## Non-Goals"
+  "## AEAD Authentication Rules"
+  "## File Output Safety"
+  "## Password-Based Encryption"
+  "## Error Message Policy"
+  "## Known Limitations"
+  "custom cryptographic primitives"
+  "TLS or networking"
+  "secure key storage"
+  "guaranteed memory erasure"
+  "caller-selected nonces"
+  "wrong AAD"
+  "`packet_decryptor`"
+  "unverified plaintext"
+  "temporary file"
+  "`N = 32768`"
+  "`maxmem = 64 MiB`"
+  "invalid_input"
+  "invalid_encoding"
+  "invalid_packet"
+  "authentication_failed"
+  "backend_failure"
+  "No release-artifact signing or provenance beyond checksums yet")
 
 set(_securekit_artifact_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/artifacts")
 if(NOT IS_DIRECTORY "${_securekit_artifact_dir}")
