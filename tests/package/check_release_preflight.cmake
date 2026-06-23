@@ -27,12 +27,14 @@ endif()
 
 set(_securekit_cmakelists "${SECUREKIT_SOURCE_DIR}/CMakeLists.txt")
 set(_securekit_readme "${SECUREKIT_SOURCE_DIR}/README.md")
+set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
 set(_securekit_changelog "${SECUREKIT_SOURCE_DIR}/CHANGELOG.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 
 foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
     "${_securekit_readme}"
+    "${_securekit_security}"
     "${_securekit_changelog}"
     "${_securekit_release_checklist}")
   if(NOT EXISTS "${_securekit_required_file}")
@@ -42,6 +44,7 @@ endforeach()
 
 file(READ "${_securekit_cmakelists}" _securekit_cmakelists_text)
 file(READ "${_securekit_readme}" _securekit_readme_text)
+file(READ "${_securekit_security}" _securekit_security_text)
 file(READ "${_securekit_changelog}" _securekit_changelog_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 
@@ -222,6 +225,43 @@ _securekit_require_text(
   "release checklist local target release-preflight"
   "${_securekit_release_checklist_text}"
   "--target release-preflight")
+
+_securekit_require_terms(
+  "SECURITY private advisory path"
+  "${_securekit_security_text}"
+  "https://github.com/anothel/securekit/security/advisories/new"
+  "https://github.com/anothel"
+  "Do not publish details")
+_securekit_require_terms(
+  "SECURITY vulnerability report template"
+  "${_securekit_security_text}"
+  "SecureKit"
+  "version"
+  "tag"
+  "commit"
+  "OS"
+  "compiler"
+  "CMake"
+  "OpenSSL"
+  "provider configuration"
+  "reproducer"
+  "expected behavior"
+  "actual behavior"
+  "affected API"
+  "CLI command"
+  "serialized format"
+  "exploitability")
+_securekit_require_terms(
+  "SECURITY release note requirements"
+  "${_securekit_security_text}"
+  "affected surface"
+  "fixed version"
+  "upgrade instructions"
+  "`SKT1`"
+  "`SKF1`"
+  "`SKP1`"
+  "data needs"
+  "regenerated")
 
 set(_securekit_artifact_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/artifacts")
 if(NOT IS_DIRECTORY "${_securekit_artifact_dir}")

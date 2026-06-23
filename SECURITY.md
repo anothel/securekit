@@ -4,17 +4,24 @@
 
 Do not report security vulnerabilities through public GitHub issues.
 
-Use GitHub Security Advisories when available, or contact the maintainer
-privately before publishing details. Include enough information to reproduce and
-classify the issue:
+Preferred path: open a private report through GitHub Security Advisories:
+<https://github.com/anothel/securekit/security/advisories/new>.
 
-- affected SecureKit version or commit
-- operating system, compiler, and CMake version
-- OpenSSL version and provider configuration if relevant
-- minimal reproduction steps
+If that path is unavailable, use a private contact method listed on the
+maintainer GitHub profile: <https://github.com/anothel>. Do not publish details
+until a fixed release or advisory is ready.
+
+Include enough information to reproduce and classify the issue:
+
+- SecureKit version, tag, or commit
+- OS, compiler, CMake, and OpenSSL versions
+- OpenSSL provider configuration if relevant
+- minimal reproducer
 - expected behavior
 - actual behavior
+- affected API, CLI command, or serialized format
 - whether plaintext, keys, passwords, or authenticated data may be exposed
+- exploitability assumptions
 
 ## Supported Versions
 
@@ -51,5 +58,5 @@ Out of scope:
 ## Security Release Notes
 
 Security-impacting releases should mention the affected surface, fixed version,
-upgrade guidance, and whether existing `SKT1`, `SKF1`, or `SKP1` data needs to
-be regenerated.
+upgrade instructions, and whether existing `SKT1`, `SKF1`, or `SKP1` data needs
+to be regenerated.

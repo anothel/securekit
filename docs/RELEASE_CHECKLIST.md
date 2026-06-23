@@ -10,6 +10,7 @@ for tags matching `v*`.
 - Update `CHANGELOG.md`.
 - Confirm `SECURITY.md`, `docs/FORMAT.md`, and `docs/SECURITY_MODEL.md` still
   match the shipped behavior.
+- Confirm the private vulnerability reporting path in `SECURITY.md` still works.
 - Use the matching tag name `vx.y.z`.
 - Do not push the tag until the version change is already on `main`.
 
@@ -60,6 +61,7 @@ executables.
 - Confirm the Linux sanitizer job passes.
 - Confirm the macOS package-check job passes.
 - Confirm `CodeQL` passes.
+- Confirm `SECURITY.md` still names a private vulnerability reporting path.
 
 Do not create the version tag from an unverified commit.
 

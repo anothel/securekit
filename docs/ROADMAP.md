@@ -62,8 +62,9 @@ Goal: keep security, format, and release docs aligned with shipped behavior.
 
 Tasks:
 
-1.1. Keep `SECURITY.md` current with the vulnerability reporting path,
-supported-version policy, disclosure scope, and in-scope security surfaces.
+1.1. Keep `SECURITY.md` current with the private vulnerability reporting path,
+report template, supported-version policy, disclosure scope, and in-scope
+security surfaces.
 
 1.2. Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` byte
 layouts, IDs, AAD rules, record limits, and compatibility rules.
