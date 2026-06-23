@@ -16,11 +16,34 @@ endif()
 
 file(READ "${SECUREKIT_WORKFLOW_FILE}" _securekit_workflow)
 file(READ "${SECUREKIT_CODEQL_WORKFLOW_FILE}" _securekit_codeql_workflow)
+string(REPLACE "\r\n" "\n" _securekit_workflow "${_securekit_workflow}")
+string(REPLACE "\r" "\n" _securekit_workflow "${_securekit_workflow}")
+string(REPLACE "\r\n" "\n" _securekit_codeql_workflow "${_securekit_codeql_workflow}")
+string(REPLACE "\r" "\n" _securekit_codeql_workflow "${_securekit_codeql_workflow}")
 
 function(_securekit_require_workflow_text description needle)
   string(FIND "${_securekit_workflow}" "${needle}" _securekit_found_at)
   if(_securekit_found_at EQUAL -1)
     message(FATAL_ERROR "Workflow missing ${description}: ${needle}")
+  endif()
+endfunction()
+
+function(_securekit_require_workflow_order_after description anchor first second)
+  string(FIND "${_securekit_workflow}" "${anchor}" _securekit_anchor_at)
+  if(_securekit_anchor_at EQUAL -1)
+    message(FATAL_ERROR "Workflow missing ${description} anchor: ${anchor}")
+  endif()
+  string(SUBSTRING "${_securekit_workflow}" ${_securekit_anchor_at} -1 _securekit_order_text)
+  string(FIND "${_securekit_order_text}" "${first}" _securekit_first_at)
+  string(FIND "${_securekit_order_text}" "${second}" _securekit_second_at)
+  if(_securekit_first_at EQUAL -1)
+    message(FATAL_ERROR "Workflow missing ${description} first item: ${first}")
+  endif()
+  if(_securekit_second_at EQUAL -1)
+    message(FATAL_ERROR "Workflow missing ${description} second item: ${second}")
+  endif()
+  if(NOT _securekit_first_at LESS _securekit_second_at)
+    message(FATAL_ERROR "Workflow order mismatch for ${description}")
   endif()
 endfunction()
 
@@ -65,6 +88,20 @@ _securekit_require_workflow_text("release binary artifact prefix" "dist/\${artif
 _securekit_require_workflow_text("release source artifact de-duplication" "copied_source")
 _securekit_require_workflow_text("release checksum generation" "sha256sum")
 _securekit_require_workflow_text("release checksum file" "SHA256SUMS.txt")
+_securekit_require_workflow_order_after(
+  "release checkout before artifact download"
+  "  release:
+    name: GitHub Release"
+  "        uses: actions/checkout@v7"
+  "      - name: Download package artifacts")
+_securekit_require_workflow_text("release notes version escape" "escaped_version=\"\${tag_version//./\\\\.}\"")
+_securekit_require_workflow_text("release notes changelog extraction" "awk -v version=\"\$escaped_version\"")
+_securekit_require_workflow_text("release notes version heading matcher" "^## \\\\[?\" version \"\\\\]?([[:space:]]|$)")
+_securekit_require_workflow_text("release notes changelog output" "' CHANGELOG.md > RELEASE_NOTES.md")
+_securekit_require_workflow_text("release notes non-whitespace guard" "grep -q '[^[:space:]]' RELEASE_NOTES.md")
+_securekit_require_workflow_text("release notes missing section guard" "No CHANGELOG section found")
+_securekit_require_workflow_text("release edit notes file" "gh release edit \"$tag\" --title \"$title\" --notes-file RELEASE_NOTES.md")
+_securekit_require_workflow_text("release create notes file" "gh release create \"$tag\" --verify-tag --title \"$title\" --notes-file RELEASE_NOTES.md")
 _securekit_require_workflow_text("release creation" "gh release create")
 _securekit_require_workflow_text("release asset upload" "gh release upload")
 

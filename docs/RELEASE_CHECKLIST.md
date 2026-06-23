@@ -86,6 +86,7 @@ After the tag workflow finishes, check the GitHub Release for:
 - Binary archives from all package-check jobs, each prefixed by the CI artifact
   name to avoid asset-name collisions.
 - Release title `SecureKit vX.Y.Z`.
+- Release notes copied from the matching `CHANGELOG.md` version section.
 
 Download `SHA256SUMS.txt` and verify a sample of uploaded assets if practical.
 
