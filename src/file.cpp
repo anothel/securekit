@@ -36,6 +36,8 @@
 #include "securekit/hash.hpp"
 #include "securekit/random.hpp"
 
+#include "wipe.hpp"
+
 namespace
 {
 
@@ -358,8 +360,9 @@ PasswordFileHeader parse_password_header(std::span<const std::byte, kPasswordHea
 securekit::key256 derive_file_key(const securekit::key256 &master_key, const FileHeader &header)
 {
 	const securekit::bytes info = bytes_from_literal("securekit file sealing v1");
-	const securekit::bytes okm =
+	securekit::bytes okm =
 	    securekit::hkdf_sha256(std::span<const std::byte>(master_key), header.salt, info, securekit::key256{}.size());
+	const securekit::internal::wipe_on_exit wipe_okm(std::span<std::byte>(okm));
 	securekit::key256 file_key{};
 	std::copy_n(okm.begin(), file_key.size(), file_key.begin());
 	return file_key;
@@ -389,6 +392,7 @@ securekit::key256 derive_password_file_key(std::span<const std::byte> password, 
 	        openssl_data(file_key.data()),
 	        file_key.size()) != 1)
 	{
+		securekit::internal::secure_wipe(file_key);
 		throw_backend_failure("OpenSSL scrypt operation failed");
 	}
 	return file_key;
@@ -548,7 +552,7 @@ securekit::bytes decrypt_chunk(std::span<const std::byte> ciphertext, std::span<
 	int final_size = 0;
 	if (EVP_DecryptFinal_ex(context.get(), openssl_data(final_output), &final_size) != 1)
 	{
-		std::fill(plaintext.begin(), plaintext.end(), std::byte{0});
+		securekit::internal::secure_wipe(plaintext);
 		throw_authentication_failed();
 	}
 	if (plaintext_size + final_size != ciphertext_size)
@@ -918,7 +922,8 @@ void open_file_payload(
 
 		const auto nonce = make_nonce(nonce_prefix, record.index);
 		const securekit::bytes chunk_aad = make_chunk_aad(serialized_header, record, aad);
-		const securekit::bytes plaintext = decrypt_chunk(ciphertext, tag, file_key, nonce, chunk_aad);
+		securekit::bytes plaintext = decrypt_chunk(ciphertext, tag, file_key, nonce, chunk_aad);
+		const securekit::internal::wipe_on_exit wipe_plaintext(std::span<std::byte>(plaintext));
 		write_all(out, plaintext);
 
 		saw_final = record.final_flag == kFinal;
@@ -939,14 +944,16 @@ void seal_file(const std::filesystem::path &input, const std::filesystem::path &
 {
 	ensure_output_does_not_exist(output);
 	const FileHeader header = make_header();
-	const key256 file_key = derive_file_key(key, header);
+	key256 file_key = derive_file_key(key, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
 void seal_file(std::istream &input, std::ostream &output, const key256 &key, std::span<const std::byte> aad)
 {
 	const FileHeader header = make_header();
-	const key256 file_key = derive_file_key(key, header);
+	key256 file_key = derive_file_key(key, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 	seal_stream_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
@@ -965,7 +972,8 @@ void open_file(const std::filesystem::path &input, const std::filesystem::path &
 			throw_invalid_packet();
 		}
 		const FileHeader header = parse_header(header_bytes);
-		const key256 file_key = derive_file_key(key, header);
+		key256 file_key = derive_file_key(key, header);
+		const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
@@ -989,7 +997,8 @@ void open_file(std::istream &input, std::ostream &output, const key256 &key, std
 		throw_invalid_packet();
 	}
 	const FileHeader header = parse_header(header_bytes);
-	const key256 file_key = derive_file_key(key, header);
+	key256 file_key = derive_file_key(key, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 
 	open_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
@@ -1003,7 +1012,8 @@ void seal_file_with_password(
 	require_non_empty_password(password);
 	ensure_output_does_not_exist(output);
 	const PasswordFileHeader header = make_password_header();
-	const key256 file_key = derive_password_file_key(password, header);
+	key256 file_key = derive_password_file_key(password, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 	seal_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
@@ -1015,7 +1025,8 @@ void seal_file_with_password(
 {
 	require_non_empty_password(password);
 	const PasswordFileHeader header = make_password_header();
-	const key256 file_key = derive_password_file_key(password, header);
+	key256 file_key = derive_password_file_key(password, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 	seal_stream_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }
 
@@ -1039,7 +1050,8 @@ void open_file_with_password(
 			throw_invalid_packet();
 		}
 		const PasswordFileHeader header = parse_password_header(header_bytes);
-		const key256 file_key = derive_password_file_key(password, header);
+		key256 file_key = derive_password_file_key(password, header);
+		const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
@@ -1068,7 +1080,8 @@ void open_file_with_password(
 		throw_invalid_packet();
 	}
 	const PasswordFileHeader header = parse_password_header(header_bytes);
-	const key256 file_key = derive_password_file_key(password, header);
+	key256 file_key = derive_password_file_key(password, header);
+	const internal::wipe_on_exit wipe_file_key(std::span<std::byte>(file_key));
 
 	open_file_payload(input, output, header.serialized, header.nonce_prefix, file_key, aad);
 }

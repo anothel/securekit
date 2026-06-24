@@ -8,7 +8,9 @@ versions.
 
 ## Unreleased
 
-- No unreleased changes.
+### Changed
+
+- Added best-effort internal wiping for derived file keys and temporary decrypted key/plaintext buffers.
 
 ## 0.1.0
 

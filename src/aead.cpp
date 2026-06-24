@@ -8,6 +8,7 @@
 #include "securekit/packet_stream.hpp"
 
 #include "aead_internal.hpp"
+#include "wipe.hpp"
 
 namespace securekit
 {
@@ -42,9 +43,10 @@ bytes decrypt(std::span<const std::byte> packet, const key256 &key, std::span<co
 	}
 	catch (const error &)
 	{
-		std::fill(plaintext.begin(), plaintext.end(), std::byte{0});
+		internal::secure_wipe(plaintext);
 		throw;
 	}
+	const internal::wipe_on_exit wipe_trailing(std::span<std::byte>(trailing));
 	plaintext.insert(plaintext.end(), trailing.begin(), trailing.end());
 	return plaintext;
 }

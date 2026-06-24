@@ -154,6 +154,7 @@ if(SECUREKIT_BUILD_TESTS)
     tests/fixture_inventory_test.cpp
     tests/hash_test.cpp
     tests/hex_test.cpp
+    tests/internal_wipe_test.cpp
     tests/key_wrap_test.cpp
     tests/packet_stream_test.cpp
     tests/public_headers_test.cpp
