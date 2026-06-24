@@ -563,6 +563,20 @@ bool read_exact(std::istream &in, std::byte *data, std::size_t size)
 	return false;
 }
 
+void reject_trailing_data(std::istream &in)
+{
+	std::array<char, 1> trailing{};
+	in.read(trailing.data(), static_cast<std::streamsize>(trailing.size()));
+	if (in.gcount() != 0)
+	{
+		throw_invalid_packet();
+	}
+	if (in.bad() || (!in.eof() && in.fail()))
+	{
+		throw_backend_failure("File read failed");
+	}
+}
+
 std::ifstream open_input(const std::filesystem::path &path)
 {
 	std::ifstream input(path, std::ios::binary);
@@ -848,6 +862,10 @@ void open_file_payload(
 		{
 			throw_invalid_packet();
 		}
+		if (record.final_flag == kFinal)
+		{
+			reject_trailing_data(in);
+		}
 
 		const auto nonce = make_nonce(nonce_prefix, record.index);
 		const securekit::bytes chunk_aad = make_chunk_aad(serialized_header, record, aad);
@@ -860,13 +878,6 @@ void open_file_payload(
 			throw_invalid_packet();
 		}
 		++expected_index;
-	}
-
-	std::array<char, 1> trailing{};
-	in.read(trailing.data(), static_cast<std::streamsize>(trailing.size()));
-	if (in.gcount() != 0)
-	{
-		throw_invalid_packet();
 	}
 }
 

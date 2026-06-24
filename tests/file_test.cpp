@@ -271,6 +271,24 @@ TEST(File, RoundTripsStreams)
 	EXPECT_EQ(bytes_from_text(opened_stream.str()), plaintext);
 }
 
+TEST(File, StreamRejectsTrailingDataBeforeWritingFinalPlaintext)
+{
+	const securekit::bytes plaintext = bytes_from_text("stream trailing plaintext");
+	const securekit::key256 key = key_from_seed(0x24);
+
+	std::istringstream plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream sealed_stream(std::ios::binary);
+	securekit::seal_file(plain_stream, sealed_stream, key);
+
+	std::string sealed = sealed_stream.str();
+	sealed.push_back('\0');
+
+	std::istringstream sealed_input(sealed, std::ios::binary);
+	std::ostringstream opened_stream(std::ios::binary);
+	expect_invalid_packet([&] { securekit::open_file(sealed_input, opened_stream, key); });
+	EXPECT_TRUE(opened_stream.str().empty());
+}
+
 TEST(File, StreamFailuresUseBackendError)
 {
 	const securekit::bytes plaintext = bytes_from_text("stream failure plaintext");
@@ -663,7 +681,7 @@ TEST(File, DetectsMutation)
 	securekit::bytes mutated_size = original;
 	mutated_size[record_size_offset + 3] ^= std::byte{0x01};
 	write_file(sealed_path, mutated_size);
-	expect_authentication_failed([&] { securekit::open_file(sealed_path, opened_path, key); });
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
 
 	securekit::bytes mutated_flag = original;
 	mutated_flag[record_flag_offset] = std::byte{0x00};
@@ -723,6 +741,56 @@ TEST(File, DetectsTruncationAppendAndReorder)
 	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size),
 	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size));
 	write_file(sealed_path, reordered);
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, RejectsMalformedRecordShape)
+{
+	const auto plain_path = test_path("plain-record-shape.bin");
+	const auto sealed_path = test_path("sealed-record-shape.skf");
+	const auto opened_path = test_path("opened-record-shape.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::key256 key = key_from_seed(0x61);
+	const securekit::bytes plaintext = patterned_bytes((1024u * 1024u) + 17u, 43u);
+	write_file(plain_path, plaintext);
+	securekit::seal_file(plain_path, sealed_path, key);
+	const securekit::bytes original = read_file(sealed_path);
+
+	const std::size_t header_size = 50;
+	const std::size_t first_record_size_offset = header_size + 4;
+	const std::size_t first_record_flag_offset = header_size + 8;
+
+	securekit::bytes oversized_record = original;
+	oversized_record[first_record_size_offset] = std::byte{0x00};
+	oversized_record[first_record_size_offset + 1] = std::byte{0x10};
+	oversized_record[first_record_size_offset + 2] = std::byte{0x00};
+	oversized_record[first_record_size_offset + 3] = std::byte{0x01};
+	write_file(sealed_path, oversized_record);
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
+
+	securekit::bytes short_non_final_record = original;
+	short_non_final_record[first_record_size_offset] = std::byte{0x00};
+	short_non_final_record[first_record_size_offset + 1] = std::byte{0x0f};
+	short_non_final_record[first_record_size_offset + 2] = std::byte{0xff};
+	short_non_final_record[first_record_size_offset + 3] = std::byte{0xff};
+	write_file(sealed_path, short_non_final_record);
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
+
+	securekit::bytes early_final_record = original;
+	early_final_record[first_record_flag_offset] = std::byte{0x01};
+	write_file(sealed_path, early_final_record);
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
+
+	securekit::bytes invalid_final_flag = original;
+	invalid_final_flag[first_record_flag_offset] = std::byte{0x02};
+	write_file(sealed_path, invalid_final_flag);
 	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
 
 	std::filesystem::remove(plain_path);
@@ -847,6 +915,24 @@ TEST(File, PasswordRoundTripsStreams)
 	securekit::open_file_with_password(sealed_input, opened_stream, password, aad);
 
 	EXPECT_EQ(bytes_from_text(opened_stream.str()), plaintext);
+}
+
+TEST(File, PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext)
+{
+	const securekit::bytes plaintext = bytes_from_text("password stream trailing plaintext");
+	const securekit::bytes password = bytes_from_text("stream trailing password");
+
+	std::istringstream plain_stream(string_from_bytes(plaintext), std::ios::binary);
+	std::ostringstream sealed_stream(std::ios::binary);
+	securekit::seal_file_with_password(plain_stream, sealed_stream, password);
+
+	std::string sealed = sealed_stream.str();
+	sealed.push_back('\0');
+
+	std::istringstream sealed_input(sealed, std::ios::binary);
+	std::ostringstream opened_stream(std::ios::binary);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_input, opened_stream, password); });
+	EXPECT_TRUE(opened_stream.str().empty());
 }
 
 TEST(File, PasswordRoundTripsEmptyFile)
@@ -1107,6 +1193,56 @@ TEST(File, PasswordDetectsTruncationAppendAndReorder)
 	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size),
 	    reordered.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size));
 	write_file(sealed_path, reordered);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsMalformedRecordShape)
+{
+	const auto plain_path = test_path("password-plain-record-shape.bin");
+	const auto sealed_path = test_path("password-sealed-record-shape.skp");
+	const auto opened_path = test_path("password-opened-record-shape.bin");
+	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("record shape password");
+	const securekit::bytes plaintext = patterned_bytes((1024u * 1024u) + 17u, 47u);
+	write_file(plain_path, plaintext);
+	securekit::seal_file_with_password(plain_path, sealed_path, password);
+	const securekit::bytes original = read_file(sealed_path);
+
+	const std::size_t header_size = 64;
+	const std::size_t first_record_size_offset = header_size + 4;
+	const std::size_t first_record_flag_offset = header_size + 8;
+
+	securekit::bytes oversized_record = original;
+	oversized_record[first_record_size_offset] = std::byte{0x00};
+	oversized_record[first_record_size_offset + 1] = std::byte{0x10};
+	oversized_record[first_record_size_offset + 2] = std::byte{0x00};
+	oversized_record[first_record_size_offset + 3] = std::byte{0x01};
+	write_file(sealed_path, oversized_record);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	securekit::bytes short_non_final_record = original;
+	short_non_final_record[first_record_size_offset] = std::byte{0x00};
+	short_non_final_record[first_record_size_offset + 1] = std::byte{0x0f};
+	short_non_final_record[first_record_size_offset + 2] = std::byte{0xff};
+	short_non_final_record[first_record_size_offset + 3] = std::byte{0xff};
+	write_file(sealed_path, short_non_final_record);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	securekit::bytes early_final_record = original;
+	early_final_record[first_record_flag_offset] = std::byte{0x01};
+	write_file(sealed_path, early_final_record);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+	securekit::bytes invalid_final_flag = original;
+	invalid_final_flag[first_record_flag_offset] = std::byte{0x02};
+	write_file(sealed_path, invalid_final_flag);
 	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
 
 	std::filesystem::remove(plain_path);

@@ -737,8 +737,8 @@ Applications remain responsible for key lifecycle, provider configuration,
 process isolation, persistence, backups, logging policy, and threat modeling.
 
 `securekit::constant_time_equal` avoids content-dependent early exits for the
-bytes it compares. It returns false for different lengths, but input lengths are
-not hidden.
+bytes it compares. It checks lengths before comparing bytes, so callers must not
+treat input length as secret.
 
 ## Password KDF Scope
 

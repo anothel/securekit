@@ -32,14 +32,21 @@ Use the equivalent configured build directory on Windows or in CI.
 
 ## Analysis Intake Summary
 
-The 2026-06-22 improvement analysis has been reduced to roadmap-impacting work.
-Items already enforced by tests or release targets are not repeated as active
-work.
+External analyses are reduced to roadmap-impacting work only. Items already
+enforced by tests, docs, or release targets are not repeated as active work.
 
-Accepted from the analysis:
+Accepted from the 2026-06-22 analysis:
 
 - security, changelog, format, and security-model docs
 - stronger streaming decryptor warning
+
+Accepted from the 2026-06-24 code-based reanalysis:
+
+- fuzz scaffolding for strict decoders, packet parsers, and file parsers
+- file commit durability as a separate question from no-overwrite atomicity
+- best-effort internal zeroization for derived keys and temporary plaintext
+- stronger `constant_time_equal` equal-length precondition documentation
+- KDF agility as a design-and-fixture task before any new `SKP1` behavior
 
 Already covered by the current tree:
 
@@ -50,6 +57,11 @@ Already covered by the current tree:
 - CI hardening through warnings-as-errors, sanitizer, and macOS package jobs
 - task-oriented CLI recipes, package/runtime version API, and consumer CMake
   option split
+- strict hex/base64/base64url rejection rules
+- chunked file sealing, temp-output cleanup, no-overwrite path commits, and
+  `SKP1` fixed-parameter scrypt docs
+- SKF1/SKP1 1 MiB boundaries, malformed record shape, trailing data,
+  unsupported scrypt params, and packet prefix/tag truncation tests
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -114,24 +126,79 @@ Exit criteria:
 - 0 package artifact version/tag mismatches.
 - 0 README or release checklist commands that point to missing targets.
 
-### 3. Deferred Feature Intake Rules
+### 3. Code-Based Hardening Backlog
+
+Goal: convert the 2026-06-24 code-based reanalysis into small, verified
+hardening slices after the release candidate work.
+
+Tasks:
+
+3.1. Add a fuzz scaffold without changing shipped APIs:
+
+- `SECUREKIT_BUILD_FUZZ=ON` config path.
+- At least five targets covering hex, base64, base64url, `SKT1` packet parsing,
+  and `SKF1`/`SKP1` file header or open paths.
+- Seed corpus reuses `tests/fixtures` plus malformed minimal samples.
+- Short smoke command documented; long fuzz remains manual or scheduled.
+
+3.2. Reduce streaming decrypt misuse risk without redesigning the API first:
+
+- Keep the low-level `packet_decryptor` API.
+- Add a misuse-focused test or README example showing that bytes returned from
+  `update()` are discarded unless `finalize()` succeeds.
+- Add a higher-level verified wrapper only if real call sites need streaming
+  output ownership beyond existing one-shot `decrypt()`.
+
+3.3. Decide and implement file commit durability policy:
+
+- Document the difference between no-overwrite atomicity and power-loss
+  durability.
+- If enabled, flush temp file data before commit and flush parent directory or
+  platform equivalent where practical.
+- Preserve existing refusal to overwrite output paths.
+
+3.4. Add best-effort internal zeroization only where SecureKit owns the buffer:
+
+- Start with derived file keys, unwrap temporary plaintext, and temporary
+  decrypt plaintext.
+- Use a small internal wipe helper; do not introduce public allocator types
+  without measured need.
+- Keep the public non-goal: no guaranteed portable key erasure.
+
+3.5. Design KDF agility before implementation:
+
+- Written downgrade policy.
+- Supported profile IDs or new format version decision.
+- Memory/time upper bounds.
+- At least three old/new compatibility vectors before code accepts new params.
+
+Exit criteria:
+
+- New hardening code has the smallest runnable check that would fail if it
+  regresses.
+- `release-preflight` still passes after release-impacting changes.
+- No new public API unless the task names the call-site pressure it solves.
+- Docs do not claim stronger durability or memory erasure than the code
+  provides.
+
+### 4. Deferred Feature Intake Rules
 
 Goal: keep parked ideas from turning into speculative scope.
 
 Tasks:
 
-3.1. Non-throwing result-style APIs stay deferred until at least two real call
+4.1. Non-throwing result-style APIs stay deferred until at least two real call
 sites show exception handling is the wrong boundary.
 
-3.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
+4.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
 at least two real call sites duplicate lifecycle logic that free functions cannot
 express cleanly.
 
-3.3. Additional password formats or KDF agility stay deferred until there is a
-written format spec, fixed downgrade behavior, fixture policy updates, and at
-least three known-answer vectors for the new format.
+4.3. Additional password formats or KDF agility implementation stays deferred
+until there is a written format spec, fixed downgrade behavior, fixture policy
+updates, and at least three known-answer vectors for the new format.
 
-3.4. Additional streaming formats beyond `SKT1` stay deferred until a written
+4.4. Additional streaming formats beyond `SKT1` stay deferred until a written
 threat model explains plaintext-before-auth handling and output ownership.
 
 Exit criteria:
@@ -147,16 +214,18 @@ These are intentionally unscheduled until the intake rules above are met:
 
 - Object-oriented APIs beyond the existing packet streaming objects.
 - Non-throwing result-style APIs.
-- Additional password formats or KDF agility.
+- Additional password formats or KDF agility implementation before the design
+  and fixture gate above is met.
 - Additional streaming formats beyond `SKT1`.
 - Explicit OpenSSL provider or FIPS configuration helpers.
 - CLI `inspect` and `verify` commands until operational use cases are written.
-- Fuzz targets until sanitizer-backed failures or corpus requirements justify them.
 - Package-manager recipes until a release archive has been validated.
 - SBOM, provenance, and signing until release artifact shape is stable.
 - Examples directory until use cases outgrow README recipes.
 - `CONTRIBUTING.md` until release-critical docs and CI are settled.
 - Benchmarks until correctness, format, and CI hardening work is stable.
+- CLI `main.cpp` split until command behavior churn creates repeated edit
+  conflicts.
 
 ## Not Planned
 
