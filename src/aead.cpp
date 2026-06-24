@@ -46,7 +46,7 @@ bytes decrypt(std::span<const std::byte> packet, const key256 &key, std::span<co
 		internal::secure_wipe(plaintext);
 		throw;
 	}
-	const internal::wipe_on_exit wipe_trailing(std::span<std::byte>(trailing));
+	const internal::wipe_on_exit wipe_trailing{std::span<std::byte>(trailing)};
 	plaintext.insert(plaintext.end(), trailing.begin(), trailing.end());
 	return plaintext;
 }

@@ -15,6 +15,7 @@ find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 option(SECUREKIT_WARNINGS_AS_ERRORS "Treat SecureKit build warnings as errors" OFF)
 option(SECUREKIT_BUILD_CLI "Build SecureKit CLI" ON)
 option(SECUREKIT_INSTALL_CLI "Install SecureKit CLI" ON)
+option(SECUREKIT_BUILD_FUZZ "Build SecureKit libFuzzer targets" OFF)
 
 if(SECUREKIT_INSTALL_CLI AND NOT SECUREKIT_BUILD_CLI)
   message(FATAL_ERROR "SECUREKIT_INSTALL_CLI=ON requires SECUREKIT_BUILD_CLI=ON")
@@ -80,6 +81,44 @@ if(SECUREKIT_BUILD_CLI)
   target_compile_features(securekit_cli PRIVATE cxx_std_20)
 
   target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
+endif()
+
+if(SECUREKIT_BUILD_FUZZ)
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "SECUREKIT_BUILD_FUZZ=ON requires Clang with libFuzzer support")
+  endif()
+
+  function(securekit_add_fuzz target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE securekit::securekit)
+    target_compile_features(${target} PRIVATE cxx_std_20)
+    target_compile_options(${target} PRIVATE -fsanitize=fuzzer,address ${_securekit_compile_options})
+    target_link_options(${target} PRIVATE -fsanitize=fuzzer,address)
+  endfunction()
+
+  securekit_add_fuzz(securekit_fuzz_hex tests/fuzz/hex_fuzz.cpp)
+  securekit_add_fuzz(securekit_fuzz_base64 tests/fuzz/base64_fuzz.cpp)
+  securekit_add_fuzz(securekit_fuzz_base64url tests/fuzz/base64url_fuzz.cpp)
+  securekit_add_fuzz(securekit_fuzz_skt1 tests/fuzz/skt1_fuzz.cpp)
+  securekit_add_fuzz(securekit_fuzz_file tests/fuzz/file_fuzz.cpp)
+
+  set(_securekit_fuzz_corpus
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fuzz/corpus)
+
+  add_custom_target(fuzz-smoke
+    COMMAND $<TARGET_FILE:securekit_fuzz_hex> -runs=1 ${_securekit_fuzz_corpus}
+    COMMAND $<TARGET_FILE:securekit_fuzz_base64> -runs=1 ${_securekit_fuzz_corpus}
+    COMMAND $<TARGET_FILE:securekit_fuzz_base64url> -runs=1 ${_securekit_fuzz_corpus}
+    COMMAND $<TARGET_FILE:securekit_fuzz_skt1> -runs=1 ${_securekit_fuzz_corpus}
+    COMMAND $<TARGET_FILE:securekit_fuzz_file> -runs=1 ${_securekit_fuzz_corpus}
+    DEPENDS
+      securekit_fuzz_hex
+      securekit_fuzz_base64
+      securekit_fuzz_base64url
+      securekit_fuzz_skt1
+      securekit_fuzz_file
+    USES_TERMINAL)
 endif()
 
 if(SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)

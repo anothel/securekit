@@ -64,6 +64,10 @@ Already covered by the current tree:
   unsupported scrypt params, and packet prefix/tag truncation tests
 - file temp-output flush and platform commit syncing with documented power-loss
   limits
+- optional Clang/libFuzzer scaffold for strict decoders, `SKT1`, and file open
+  paths
+- best-effort internal wiping for derived file keys and temporary decrypted
+  key/plaintext buffers
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -135,15 +139,7 @@ hardening slices after the release candidate work.
 
 Tasks:
 
-3.1. Add a fuzz scaffold without changing shipped APIs:
-
-- `SECUREKIT_BUILD_FUZZ=ON` config path.
-- At least five targets covering hex, base64, base64url, `SKT1` packet parsing,
-  and `SKF1`/`SKP1` file header or open paths.
-- Seed corpus reuses `tests/fixtures` plus malformed minimal samples.
-- Short smoke command documented; long fuzz remains manual or scheduled.
-
-3.2. Reduce streaming decrypt misuse risk without redesigning the API first:
+3.1. Reduce streaming decrypt misuse risk without redesigning the API first:
 
 - Keep the low-level `packet_decryptor` API.
 - Add a misuse-focused test or README example showing that bytes returned from
@@ -151,15 +147,7 @@ Tasks:
 - Add a higher-level verified wrapper only if real call sites need streaming
   output ownership beyond existing one-shot `decrypt()`.
 
-3.3. Add best-effort internal zeroization only where SecureKit owns the buffer:
-
-- Start with derived file keys, unwrap temporary plaintext, and temporary
-  decrypt plaintext.
-- Use a small internal wipe helper; do not introduce public allocator types
-  without measured need.
-- Keep the public non-goal: no guaranteed portable key erasure.
-
-3.4. Design KDF agility before implementation:
+3.2. Design KDF agility before implementation:
 
 - Written downgrade policy.
 - Supported profile IDs or new format version decision.

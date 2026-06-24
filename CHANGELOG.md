@@ -11,6 +11,7 @@ versions.
 ### Changed
 
 - Added best-effort internal wiping for derived file keys and temporary decrypted key/plaintext buffers.
+- Added optional Clang/libFuzzer scaffolding for strict decoders, `SKT1`, and file open paths.
 
 ## 0.1.0
 
