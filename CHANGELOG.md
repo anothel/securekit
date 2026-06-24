@@ -15,6 +15,7 @@ versions.
 - Documented KDF agility downgrade, bounds, and fixture gates before future password-file profile changes.
 - Strengthened release preflight to recalculate staged release asset checksums.
 - Strengthened release preflight to validate generated release notes content.
+- Hardened package-check cleanup roots against accidental broad deletion.
 
 ## 0.1.0
 
