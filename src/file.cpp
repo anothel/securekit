@@ -160,6 +160,30 @@ public:
 		}
 	}
 
+	void flush()
+	{
+		if (file_ == nullptr)
+		{
+			return;
+		}
+		if (std::fflush(file_) != 0)
+		{
+			throw_backend_failure("File write failed");
+		}
+#if defined(_WIN32)
+		const intptr_t os_handle = _get_osfhandle(_fileno(file_));
+		if (os_handle == -1 || FlushFileBuffers(reinterpret_cast<HANDLE>(os_handle)) == 0)
+		{
+			throw_backend_failure("File write failed");
+		}
+#elif defined(__unix__) || defined(__APPLE__)
+		if (::fsync(::fileno(file_)) != 0)
+		{
+			throw_backend_failure("File write failed");
+		}
+#endif
+	}
+
 	void discard() noexcept
 	{
 		close_quietly();
@@ -699,10 +723,33 @@ void remove_quietly(const std::filesystem::path &path)
 	(void)std::filesystem::remove(path, ec);
 }
 
+void flush_parent_directory(const std::filesystem::path &path)
+{
+#if defined(__unix__) || defined(__APPLE__)
+	const std::filesystem::path parent = path.parent_path().empty() ? std::filesystem::path(".") : path.parent_path();
+	const int fd = ::open(parent.c_str(), O_RDONLY);
+	if (fd == -1)
+	{
+		throw_backend_failure("Directory open failed");
+	}
+	if (::fsync(fd) != 0)
+	{
+		(void)::close(fd);
+		throw_backend_failure("Directory sync failed");
+	}
+	if (::close(fd) != 0)
+	{
+		throw_backend_failure("Directory sync failed");
+	}
+#else
+	(void)path;
+#endif
+}
+
 void commit_temp_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
 {
 #if defined(_WIN32)
-	if (MoveFileExW(temp_path.c_str(), output.c_str(), 0) != 0)
+	if (MoveFileExW(temp_path.c_str(), output.c_str(), MOVEFILE_WRITE_THROUGH) != 0)
 	{
 		return;
 	}
@@ -716,6 +763,7 @@ void commit_temp_file(const std::filesystem::path &temp_path, const std::filesys
 	if (::link(temp_path.c_str(), output.c_str()) == 0)
 	{
 		remove_quietly(temp_path);
+		flush_parent_directory(output);
 		return;
 	}
 	if (errno == EEXIST)
@@ -813,6 +861,7 @@ void seal_file_payload(
 
 		seal_stream_payload(in, out, serialized_header, nonce_prefix, file_key, aad);
 
+		out.flush();
 		out.close();
 		commit_temp_file(temp_path, output);
 	}
@@ -920,6 +969,7 @@ void open_file(const std::filesystem::path &input, const std::filesystem::path &
 
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
+		out.flush();
 		out.close();
 		commit_temp_file(temp_path, output);
 	}
@@ -993,6 +1043,7 @@ void open_file_with_password(
 
 		open_file_payload(in, out, header.serialized, header.nonce_prefix, file_key, aad);
 
+		out.flush();
 		out.close();
 		commit_temp_file(temp_path, output);
 	}

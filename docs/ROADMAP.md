@@ -62,6 +62,8 @@ Already covered by the current tree:
   `SKP1` fixed-parameter scrypt docs
 - SKF1/SKP1 1 MiB boundaries, malformed record shape, trailing data,
   unsupported scrypt params, and packet prefix/tag truncation tests
+- file temp-output flush and platform commit syncing with documented power-loss
+  limits
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -149,15 +151,7 @@ Tasks:
 - Add a higher-level verified wrapper only if real call sites need streaming
   output ownership beyond existing one-shot `decrypt()`.
 
-3.3. Decide and implement file commit durability policy:
-
-- Document the difference between no-overwrite atomicity and power-loss
-  durability.
-- If enabled, flush temp file data before commit and flush parent directory or
-  platform equivalent where practical.
-- Preserve existing refusal to overwrite output paths.
-
-3.4. Add best-effort internal zeroization only where SecureKit owns the buffer:
+3.3. Add best-effort internal zeroization only where SecureKit owns the buffer:
 
 - Start with derived file keys, unwrap temporary plaintext, and temporary
   decrypt plaintext.
@@ -165,7 +159,7 @@ Tasks:
   without measured need.
 - Keep the public non-goal: no guaranteed portable key erasure.
 
-3.5. Design KDF agility before implementation:
+3.4. Design KDF agility before implementation:
 
 - Written downgrade policy.
 - Supported profile IDs or new format version decision.

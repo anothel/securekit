@@ -78,6 +78,12 @@ Path-based `open_file` and `open_file_with_password` refuse to overwrite an
 existing output path. They write a temporary file in the output directory and
 rename it to the requested output only after the whole file authenticates.
 Authentication failure should not leave the requested output path behind.
+Path-based file APIs flush SecureKit-owned temporary output before committing it
+and use platform commit syncing where practical. This improves crash resilience,
+but SecureKit does not guarantee survival across power loss, filesystem bugs, or
+storage-device failure. If a post-commit directory sync fails on a platform that
+supports it, SecureKit reports `backend_failure` and the output path may already
+exist.
 
 Stream-based open APIs write to caller-provided streams. They cannot delete,
 truncate, or roll back bytes already accepted by that stream. Callers using
