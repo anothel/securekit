@@ -1,5 +1,6 @@
 #include "securekit/securekit.hpp"
 
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdio>
@@ -637,38 +638,21 @@ void ensure_output_file_does_not_exist(const std::filesystem::path &path)
 	}
 }
 
+template <typename Writer>
+void write_new_output_file(const std::filesystem::path &path, Writer writer);
+
 void write_binary_file(const std::filesystem::path &path, std::span<const std::byte> bytes)
 {
-	ensure_output_file_does_not_exist(path);
-
-	std::ofstream out(path, std::ios::binary);
-	if (!out)
-	{
-		throw std::runtime_error("failed to open output file");
-	}
-
-	out.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-	if (!out)
-	{
-		throw std::runtime_error("failed to write output file");
-	}
+	write_new_output_file(path, [&](std::ostream &out) {
+		out.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+	});
 }
 
 void write_key_file(const std::filesystem::path &path, const securekit::key256 &key)
 {
-	ensure_output_file_does_not_exist(path);
-
-	std::ofstream out(path, std::ios::binary);
-	if (!out)
-	{
-		throw std::runtime_error("failed to open output file");
-	}
-
-	out << securekit::hex_encode(key) << '\n';
-	if (!out)
-	{
-		throw std::runtime_error("failed to write output file");
-	}
+	write_new_output_file(path, [&](std::ostream &out) {
+		out << securekit::hex_encode(key) << '\n';
+	});
 }
 
 void write_generated_key(const std::filesystem::path &path)
@@ -716,20 +700,23 @@ std::ifstream open_cli_input_file(const std::filesystem::path &path)
 	return input;
 }
 
-std::ofstream open_cli_output_file(const std::filesystem::path &path)
-{
-	std::ofstream output(path, std::ios::binary | std::ios::trunc);
-	if (!output)
-	{
-		throw std::runtime_error("failed to open output file");
-	}
-	return output;
-}
-
 std::filesystem::path temporary_output_path_for(const std::filesystem::path &output)
 {
+	constexpr std::array<char, 16> hex_digits{
+	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	const securekit::bytes token = securekit::random_bytes(16);
+	std::string suffix;
+	suffix.reserve(45);
+	suffix += ".securekit.";
+	for (const std::byte value : token)
+	{
+		const auto byte_value = static_cast<unsigned char>(value);
+		suffix.push_back(hex_digits[(byte_value >> 4) & 0x0f]);
+		suffix.push_back(hex_digits[byte_value & 0x0f]);
+	}
+	suffix += ".tmp";
 	std::filesystem::path temp_path = output;
-	temp_path += ".securekit.tmp";
+	temp_path += suffix;
 	return temp_path;
 }
 
@@ -739,13 +726,77 @@ void remove_file_quietly(const std::filesystem::path &path)
 	(void)std::filesystem::remove(path, ec);
 }
 
-void rename_output_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
+void open_cli_output_file(const std::filesystem::path &output, std::filesystem::path &temp_path, std::ofstream &stream)
+{
+	constexpr int kMaxAttempts = 32;
+	for (int attempt = 0; attempt < kMaxAttempts; ++attempt)
+	{
+		temp_path = temporary_output_path_for(output);
+		std::error_code ec;
+		if (std::filesystem::exists(temp_path, ec) || ec)
+		{
+			continue;
+		}
+
+		stream.open(temp_path, std::ios::binary | std::ios::trunc);
+		if (stream)
+		{
+			return;
+		}
+	}
+	throw std::runtime_error("failed to open output file");
+}
+
+void commit_output_file(const std::filesystem::path &temp_path, const std::filesystem::path &output)
 {
 	std::error_code ec;
-	std::filesystem::rename(temp_path, output, ec);
-	if (ec)
+	std::filesystem::create_hard_link(temp_path, output, ec);
+	if (!ec)
 	{
-		throw std::runtime_error("failed to write output file");
+		remove_file_quietly(temp_path);
+		return;
+	}
+	std::error_code exists_ec;
+	if (std::filesystem::exists(output, exists_ec))
+	{
+		throw std::runtime_error("Output file already exists");
+	}
+	throw std::runtime_error("failed to write output file");
+}
+
+template <typename Writer>
+void write_new_output_file(const std::filesystem::path &path, Writer writer)
+{
+	ensure_output_file_does_not_exist(path);
+
+	std::ofstream out;
+	std::filesystem::path temp_path;
+	try
+	{
+		open_cli_output_file(path, temp_path, out);
+		writer(out);
+		if (!out)
+		{
+			throw std::runtime_error("failed to write output file");
+		}
+		out.close();
+		if (!out)
+		{
+			throw std::runtime_error("failed to write output file");
+		}
+		commit_output_file(temp_path, path);
+	}
+	catch (...)
+	{
+		if (out.is_open())
+		{
+			out.close();
+		}
+		if (!temp_path.empty())
+		{
+			remove_file_quietly(temp_path);
+		}
+		throw;
 	}
 }
 
@@ -779,8 +830,7 @@ void run_streaming_file_command(const Options &options, Operation operation)
 		if (!options.output_is_stdout)
 		{
 			ensure_output_file_does_not_exist(options.output);
-			temp_path = temporary_output_path_for(options.output);
-			output_file = open_cli_output_file(temp_path);
+			open_cli_output_file(options.output, temp_path, output_file);
 			uses_temp_output = true;
 			output = &output_file;
 		}
@@ -802,7 +852,7 @@ void run_streaming_file_command(const Options &options, Operation operation)
 		{
 			throw std::runtime_error("failed to write output file");
 		}
-		rename_output_file(temp_path, options.output);
+		commit_output_file(temp_path, options.output);
 		uses_temp_output = false;
 	}
 	catch (...)

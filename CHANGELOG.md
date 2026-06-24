@@ -16,6 +16,7 @@ versions.
 - Strengthened release preflight to recalculate staged release asset checksums.
 - Strengthened release preflight to validate generated release notes content.
 - Hardened package-check cleanup roots against accidental broad deletion.
+- Hardened CLI file outputs against legacy temporary-file collisions and late output creation.
 
 ## 0.1.0
 

@@ -64,6 +64,25 @@ function(run_cli_pipe input_file output_file)
   endif()
 endfunction()
 
+function(run_cli_stdin_no_stdout input_file)
+  execute_process(
+    COMMAND "${SECUREKIT_CLI}" ${ARGN}
+    INPUT_FILE "${input_file}"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE stdout
+    ERROR_VARIABLE stderr)
+
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Expected stdin command to pass, got ${result}. stderr=${stderr}")
+  endif()
+  if(NOT stdout STREQUAL "")
+    message(FATAL_ERROR "Stdin command should not write stdout. stdout=[${stdout}]")
+  endif()
+  if(NOT stderr STREQUAL "")
+    message(FATAL_ERROR "Stdin command should not write stderr. stderr=[${stderr}]")
+  endif()
+endfunction()
+
 function(run_cli_failure expected_stderr)
   execute_process(
     COMMAND "${SECUREKIT_CLI}" ${ARGN}
@@ -258,6 +277,8 @@ set(temp_collision_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-temp-collis
 set(temp_collision_opened_temp "${temp_collision_opened}.securekit.tmp")
 set(pipe_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-pipe.skf")
 set(pipe_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-pipe-opened.txt")
+set(stdin_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-stdin-file.skf")
+set(stdin_file_sealed_legacy_temp "${stdin_file_sealed}.securekit.tmp")
 set(reordered_key_file_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-file.skf")
 set(reordered_key_file_opened "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-file-opened.txt")
 set(reordered_key_hex_sealed "${CMAKE_CURRENT_BINARY_DIR}/securekit-cli-reordered-key-hex.skf")
@@ -325,6 +346,8 @@ file(REMOVE "${temp_collision_opened}")
 file(REMOVE "${temp_collision_opened_temp}")
 file(REMOVE "${pipe_sealed}")
 file(REMOVE "${pipe_opened}")
+file(REMOVE "${stdin_file_sealed}")
+file(REMOVE "${stdin_file_sealed_legacy_temp}")
 file(REMOVE "${reordered_key_file_sealed}")
 file(REMOVE "${reordered_key_file_opened}")
 file(REMOVE "${reordered_key_hex_sealed}")
@@ -569,6 +592,17 @@ file(READ "${pipe_opened}" pipe_opened_text)
 if(NOT pipe_opened_text STREQUAL "file command plaintext\n")
   message(FATAL_ERROR "open-file --in - --out - did not recover plaintext. got=[${pipe_opened_text}]")
 endif()
+
+file(WRITE "${stdin_file_sealed_legacy_temp}" "existing temp")
+run_cli_stdin_no_stdout("${plain_file}" seal-file --in - --out "${stdin_file_sealed}" --key-file "${generated_key_file}")
+if(NOT EXISTS "${stdin_file_sealed}")
+  message(FATAL_ERROR "seal-file --in - did not create file output")
+endif()
+file(READ "${stdin_file_sealed_legacy_temp}" stdin_file_temp_text)
+if(NOT stdin_file_temp_text STREQUAL "existing temp")
+  message(FATAL_ERROR "seal-file --in - changed existing legacy temporary output")
+endif()
+file(REMOVE "${stdin_file_sealed_legacy_temp}")
 
 run_cli_failure("hex input must contain an even number of characters\n" seal-file --in "${plain_file}" --out "${CMAKE_CURRENT_BINARY_DIR}/invalid-aad-hex.skf" --key-hex "${file_key}" --aad-hex abc)
 
