@@ -154,8 +154,8 @@ Wrong passwords and tag failures use the same generic file authentication error.
   change replaces them.
 - Any intentional byte-format change must update this document, fixtures, and
   tests in the same change.
-- New KDFs or ciphers require a new written downgrade policy before
-  implementation.
+- New KDFs or ciphers require the downgrade, bounds, and fixture gates in
+  `docs/KDF_AGILITY.md` before implementation.
 - Existing `SKT1`, `SKF1`, and `SKP1` behavior must not silently change under
   the same magic/version pair.
 

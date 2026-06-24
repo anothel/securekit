@@ -110,7 +110,8 @@ Current `SKP1` uses fixed OpenSSL scrypt parameters:
 
 Unsupported stored scrypt parameters are rejected instead of silently accepted.
 Future KDF agility requires a format spec, downgrade policy, and compatibility
-vectors before implementation.
+vectors before implementation. `docs/KDF_AGILITY.md` is the gate for future
+password-file KDF profiles.
 
 ## Error Message Policy
 

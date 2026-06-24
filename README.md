@@ -756,7 +756,8 @@ Future password formats should be versioned as new file formats or explicit
 format revisions instead of silently changing `SKP1` behavior. Argon2id,
 PBKDF2, prompt handling, environment-variable password loading, password text
 arguments, and tunable scrypt parameters are intentionally outside this API
-slice.
+slice. Future password-file KDF profiles must pass the downgrade, bounds, and
+fixture gates in `docs/KDF_AGILITY.md` before implementation.
 
 ## OpenSSL Providers and Backend Errors
 

@@ -68,6 +68,10 @@ Already covered by the current tree:
   paths
 - best-effort internal wiping for derived file keys and temporary decrypted
   key/plaintext buffers
+- streaming decrypt misuse warning in README, format docs, security model, and
+  packet-stream tests
+- KDF agility downgrade, bounds, and fixture gates documented before new `SKP1`
+  behavior
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -139,20 +143,8 @@ hardening slices after the release candidate work.
 
 Tasks:
 
-3.1. Reduce streaming decrypt misuse risk without redesigning the API first:
-
-- Keep the low-level `packet_decryptor` API.
-- Add a misuse-focused test or README example showing that bytes returned from
-  `update()` are discarded unless `finalize()` succeeds.
-- Add a higher-level verified wrapper only if real call sites need streaming
-  output ownership beyond existing one-shot `decrypt()`.
-
-3.2. Design KDF agility before implementation:
-
-- Written downgrade policy.
-- Supported profile IDs or new format version decision.
-- Memory/time upper bounds.
-- At least three old/new compatibility vectors before code accepts new params.
+No active code-hardening tasks remain from the accepted 2026-06-24 intake.
+Future accepted items should land here as small verified slices.
 
 Exit criteria:
 

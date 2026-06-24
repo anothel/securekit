@@ -31,6 +31,7 @@ set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
 set(_securekit_changelog "${SECUREKIT_SOURCE_DIR}/CHANGELOG.md")
 set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
+set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 
 foreach(_securekit_required_file IN ITEMS
@@ -40,6 +41,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_changelog}"
     "${_securekit_format}"
     "${_securekit_security_model}"
+    "${_securekit_kdf_agility}"
     "${_securekit_release_checklist}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
@@ -52,6 +54,7 @@ file(READ "${_securekit_security}" _securekit_security_text)
 file(READ "${_securekit_changelog}" _securekit_changelog_text)
 file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
+file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 
 function(_securekit_require_text description haystack needle)
@@ -312,6 +315,20 @@ _securekit_require_terms(
   "authentication_failed"
   "backend_failure"
   "No release-artifact signing or provenance beyond checksums yet")
+
+_securekit_require_terms(
+  "KDF agility downgrade and fixture gates"
+  "${_securekit_kdf_agility_text}"
+  "# SecureKit KDF Agility Policy"
+  "Downgrade Policy"
+  "fail closed"
+  "memory and time upper bounds"
+  "Fixture Gate"
+  "at least three"
+  "compatibility vectors"
+  "one old `SKP1` `KDF ID 0x01` vector"
+  "one new-profile vector with non-empty plaintext and AAD"
+  "one new-profile vector with binary plaintext or binary AAD")
 
 set(_securekit_artifact_dir "${SECUREKIT_PACKAGE_CHECK_ROOT}/artifacts")
 if(NOT IS_DIRECTORY "${_securekit_artifact_dir}")
