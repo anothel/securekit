@@ -148,6 +148,25 @@ if(_securekit_changelog_current_section STREQUAL "")
   message(FATAL_ERROR "Release preflight could not extract CHANGELOG current version section")
 endif()
 
+string(FIND "${_securekit_changelog_current_section}" "\n" _securekit_release_notes_body_at)
+if(_securekit_release_notes_body_at EQUAL -1)
+  message(FATAL_ERROR "Release preflight could not extract release notes body")
+endif()
+math(EXPR _securekit_release_notes_body_start "${_securekit_release_notes_body_at} + 1")
+string(SUBSTRING
+  "${_securekit_changelog_current_section}"
+  ${_securekit_release_notes_body_start}
+  -1
+  _securekit_release_notes_body)
+string(REGEX MATCH "[^ \t\r\n]" _securekit_release_notes_has_text "${_securekit_release_notes_body}")
+if(_securekit_release_notes_has_text STREQUAL "")
+  message(FATAL_ERROR "Release notes body for ${SECUREKIT_PROJECT_VERSION} is empty")
+endif()
+string(REGEX MATCH "(^|[\n\r]+)##[ \t]+" _securekit_release_notes_nested_version_heading "${_securekit_release_notes_body}")
+if(NOT _securekit_release_notes_nested_version_heading STREQUAL "")
+  message(FATAL_ERROR "Release notes body for ${SECUREKIT_PROJECT_VERSION} includes another version heading")
+endif()
+
 string(TOLOWER "${_securekit_changelog_current_section}" _securekit_changelog_current_section_lower)
 _securekit_require_terms(
   "CHANGELOG security policy docs"

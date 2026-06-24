@@ -14,6 +14,7 @@ versions.
 - Added optional Clang/libFuzzer scaffolding for strict decoders, `SKT1`, and file open paths.
 - Documented KDF agility downgrade, bounds, and fixture gates before future password-file profile changes.
 - Strengthened release preflight to recalculate staged release asset checksums.
+- Strengthened release preflight to validate generated release notes content.
 
 ## 0.1.0
 
