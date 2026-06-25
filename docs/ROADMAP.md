@@ -48,6 +48,16 @@ Accepted from the 2026-06-24 code-based reanalysis:
 - stronger `constant_time_equal` equal-length precondition documentation
 - KDF agility as a design-and-fixture task before any new `SKP1` behavior
 
+Accepted from the 2026-06-25 improvement analysis:
+
+- release candidate work remains higher priority than new feature work
+- documentation consistency checks must keep KDF gates, file-output durability,
+  memory-wipe limits, and streaming plaintext-before-auth warnings aligned
+- supply-chain items such as signing, provenance, SBOM, and package-manager
+  recipes stay deferred until release artifact shape is stable
+- contributor docs, examples, benchmarks, CLI `inspect`/`verify`, CLI splitting,
+  and FIPS/provider helpers stay deferred until their intake gates are met
+
 Already covered by the current tree:
 
 - release preflight and release workflow shape checks
@@ -72,6 +82,9 @@ Already covered by the current tree:
   packet-stream tests
 - KDF agility downgrade, bounds, and fixture gates documented before new `SKP1`
   behavior
+- `docs/KDF_AGILITY.md` exists as the future password-file KDF gate
+- fuzz smoke targets and longer manual or scheduled fuzzing guidance are
+  documented in `docs/FUZZING.md`
 
 Deferred or rejected items are kept only in the Parking Lot or Not Planned
 sections below, with the gating reason next to each item.
@@ -143,7 +156,8 @@ hardening slices after the release candidate work.
 
 Tasks:
 
-No active code-hardening tasks remain from the accepted 2026-06-24 intake.
+No active code-hardening tasks remain from the accepted 2026-06-24 or
+2026-06-25 intake.
 Future accepted items should land here as small verified slices.
 
 Exit criteria:
@@ -198,6 +212,10 @@ These are intentionally unscheduled until the intake rules above are met:
 - Examples directory until use cases outgrow README recipes.
 - `CONTRIBUTING.md` until release-critical docs and CI are settled.
 - Benchmarks until correctness, format, and CI hardening work is stable.
+- Scheduled long-running fuzz until the existing smoke targets and corpus policy
+  prove useful enough to justify CI time.
+- Negative compatibility fixture expansion until a specific FORMAT reject rule
+  lacks regression coverage.
 - CLI `main.cpp` split until command behavior churn creates repeated edit
   conflicts.
 
