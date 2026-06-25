@@ -1,223 +1,123 @@
 # SecureKit Roadmap
 
-This file tracks forward-looking work only. Completed CLI contract,
-compatibility-vector, package-matrix, release-preflight, security-boundary,
-public API/consumer freeze, CI hardening, usage/package polish, and
-documentation-consistency hardening work belongs in Git history, not in the
-active roadmap.
+This file tracks only future work. Completed work belongs in Git history.
 
-## Direction
+## Rules
 
-1. Keep the v1 free-function API stable unless real call sites prove a change is
-   needed.
-2. Keep OpenSSL as the crypto backend.
-3. Keep CMake install/export and the CLI as first-class package surfaces.
-4. Add compatibility vectors and hardening tests when behavior changes or risk is
-   found.
-5. Avoid framework-scale abstractions without call-site pressure.
+1. Security, data loss, and format compatibility come before convenience.
+2. Keep the v1 free-function API stable unless real call sites prove otherwise.
+3. Keep OpenSSL as the crypto backend.
+4. Keep CMake install/export and the CLI as first-class package surfaces.
+5. Do not add public API, formats, package channels, or CI cost without a written
+   problem, regression check, and rollback plan.
 
-## Release Readiness Bar
-
-Every active roadmap item must leave the project in a releasable state. A task is
-not done until its related local checks pass and public docs match the shipped
-surface.
-
-Minimum local verification for release-impacting work:
+Release-impacting work must pass:
 
 ```sh
 cmake --build build --config Release --target release-preflight
 ```
 
-Use the equivalent configured build directory on Windows or in CI.
+Use the matching configured build dir on Windows or in CI.
 
-## Analysis Intake Summary
+## Next Work
 
-External analyses are reduced to roadmap-impacting work only. Items already
-enforced by tests, docs, or release targets are not repeated as active work.
+### 1. Cut A Release Candidate
 
-Accepted from the 2026-06-22 analysis:
-
-- security, changelog, format, and security-model docs
-- stronger streaming decryptor warning
-
-Accepted from the 2026-06-24 code-based reanalysis:
-
-- fuzz scaffolding for strict decoders, packet parsers, and file parsers
-- file commit durability as a separate question from no-overwrite atomicity
-- best-effort internal zeroization for derived keys and temporary plaintext
-- stronger `constant_time_equal` equal-length precondition documentation
-- KDF agility as a design-and-fixture task before any new `SKP1` behavior
-
-Accepted from the 2026-06-25 improvement analysis:
-
-- release candidate work remains higher priority than new feature work
-- documentation consistency checks must keep KDF gates, file-output durability,
-  memory-wipe limits, and streaming plaintext-before-auth warnings aligned
-- supply-chain items such as signing, provenance, SBOM, and package-manager
-  recipes stay deferred until release artifact shape is stable
-- contributor docs, examples, benchmarks, CLI `inspect`/`verify`, CLI splitting,
-  and FIPS/provider helpers stay deferred until their intake gates are met
-
-Already covered by the current tree:
-
-- release preflight and release workflow shape checks
-- compatibility fixtures for `SKT1`, key wrap, `SKF1`, and `SKP1`
-- package-check install, archive, source-build, and consumer coverage
-- CLI error contract and public header/package consumer checks
-- CI hardening through warnings-as-errors, sanitizer, and macOS package jobs
-- task-oriented CLI recipes, package/runtime version API, and consumer CMake
-  option split
-- strict hex/base64/base64url rejection rules
-- chunked file sealing, temp-output cleanup, no-overwrite path commits, and
-  `SKP1` fixed-parameter scrypt docs
-- SKF1/SKP1 1 MiB boundaries, malformed record shape, trailing data,
-  unsupported scrypt params, and packet prefix/tag truncation tests
-- file temp-output flush and platform commit syncing with documented power-loss
-  limits
-- optional Clang/libFuzzer scaffold for strict decoders, `SKT1`, and file open
-  paths
-- best-effort internal wiping for derived file keys and temporary decrypted
-  key/plaintext buffers
-- streaming decrypt misuse warning in README, format docs, security model, and
-  packet-stream tests
-- KDF agility downgrade, bounds, and fixture gates documented before new `SKP1`
-  behavior
-- `docs/KDF_AGILITY.md` exists as the future password-file KDF gate
-- fuzz smoke targets and longer manual or scheduled fuzzing guidance are
-  documented in `docs/FUZZING.md`
-
-Deferred or rejected items are kept only in the Parking Lot or Not Planned
-sections below, with the gating reason next to each item.
-
-## Active Work Order
-
-### 1. Documentation Baseline For v1
-
-Goal: keep security, format, and release docs aligned with shipped behavior.
+Goal: make the next tag a mechanical release, not a judgment call.
 
 Tasks:
 
-1.1. Keep `SECURITY.md` current with the private vulnerability reporting path,
-report template, supported-version policy, disclosure scope, and in-scope
-security surfaces.
+1. Pick the next SemVer version.
+2. Make `CMakeLists.txt`, README examples, package artifact names, release notes,
+   and tag name agree.
+3. Run `release-preflight`.
+4. Confirm required GitHub Actions jobs are green.
+5. Confirm staged release assets include binary archives, source archives, and
+   `SHA256SUMS.txt`.
 
-1.2. Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` byte
-layouts, IDs, AAD rules, record limits, and compatibility rules.
+Done when:
 
-1.3. Keep `docs/SECURITY_MODEL.md` current with threat model, non-goals,
-plaintext-before-auth rules, file output safety, password KDF policy, memory
-limits, and error-message policy.
+- `release-preflight` passes.
+- Required CI failures: 0.
+- Package artifact version mismatches: 0.
+- Documented release commands point to existing targets.
 
-1.4. Keep `CHANGELOG.md` updated before release tags.
+### 2. Keep Security Docs Matching Code
 
-Exit criteria:
-
-- 0 public docs that contradict `include/`, `src/`, tests, or fixtures.
-- 0 undocumented serialized format fields.
-- 0 release checklist items that require a missing local command.
-- `git diff --check` passes after doc edits.
-
-### 2. Release Candidate Cut
-
-Goal: make the next tag cut a mechanical operation instead of a judgment call.
+Goal: prevent docs from promising more than code provides.
 
 Tasks:
 
-2.1. Pick the next SemVer version and make `CMakeLists.txt` project version,
-release tag, package artifact names, README examples, and changelog agree.
+1. Keep `SECURITY.md` current with private reporting path, supported versions,
+   disclosure scope, and in-scope security surfaces.
+2. Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` byte layouts,
+   IDs, AAD rules, record limits, and reject rules.
+3. Keep `docs/SECURITY_MODEL.md` current with threat model, non-goals,
+   plaintext-before-auth rules, file output safety, password KDF policy,
+   memory-wipe limits, and error-message policy.
+4. Keep `docs/KDF_AGILITY.md` as the gate for any future password-file KDF
+   profile.
 
-2.2. Run the local release preflight from a clean build directory:
+Done when:
 
-```sh
-cmake --build build --config Release --target release-preflight
-```
+- Public docs contradict `include/`, `src/`, tests, or fixtures: 0.
+- Serialized format fields missing from `docs/FORMAT.md`: 0.
+- Docs claim guaranteed file durability or guaranteed memory erasure: 0.
 
-2.3. Confirm GitHub Actions has zero failing required jobs on the release
-candidate commit.
+### 3. Add Supply-Chain Trust After Release Shape Stabilizes
 
-2.4. Confirm `release-preflight` staged local release assets and checksums:
-
-- At least one binary package artifact exists.
-- At least one source package artifact exists.
-- `SHA256SUMS.txt` covers the staged archives.
-
-Exit criteria:
-
-- `release-preflight` passes, including `check`, `package-check`, and
-  `release-workflow-check`.
-- 0 failing required CI jobs.
-- 0 package artifact version/tag mismatches.
-- 0 README or release checklist commands that point to missing targets.
-
-### 3. Code-Based Hardening Backlog
-
-Goal: convert the 2026-06-24 code-based reanalysis into small, verified
-hardening slices after the release candidate work.
+Goal: let users verify release artifact origin, not only checksums.
 
 Tasks:
 
-No active code-hardening tasks remain from the accepted 2026-06-24 or
-2026-06-25 intake.
-Future accepted items should land here as small verified slices.
+1. Sign or attest `SHA256SUMS.txt`.
+2. Add provenance attestation if GitHub Actions release flow stays stable.
+3. Add SBOM generation after archive contents stop changing.
+4. Document user verification steps in the release checklist.
 
-Exit criteria:
+Done when:
 
-- New hardening code has the smallest runnable check that would fail if it
-  regresses.
-- `release-preflight` still passes after release-impacting changes.
-- No new public API unless the task names the call-site pressure it solves.
-- Docs do not claim stronger durability or memory erasure than the code
-  provides.
+- Release fails if signing/provenance generation fails.
+- Users can verify artifact integrity and origin from documented commands.
+- SBOM covers shipped source and binary package contents.
 
-### 4. Deferred Feature Intake Rules
+### 4. Improve User Entry Points Only When Needed
 
-Goal: keep parked ideas from turning into speculative scope.
+Goal: make common use safer without expanding scope blindly.
 
-Tasks:
+Candidates:
 
-4.1. Non-throwing result-style APIs stay deferred until at least two real call
-sites show exception handling is the wrong boundary.
+- `CONTRIBUTING.md` when outside contributors need one-command local checks.
+- Examples directory when README recipes become too crowded.
+- CLI `inspect`/`verify` when operators provide real use cases.
+- Package-manager recipes after a release archive is validated.
 
-4.2. Object-oriented APIs beyond the packet streaming objects stay deferred until
-at least two real call sites duplicate lifecycle logic that free functions cannot
-express cleanly.
+Done when each candidate has:
 
-4.3. Additional password formats or KDF agility implementation stays deferred
-until there is a written format spec, fixed downgrade behavior, fixture policy
-updates, and at least three known-answer vectors for the new format.
+- concrete user or maintainer need;
+- smallest runnable check;
+- no contradiction with the security model.
 
-4.4. Additional streaming formats beyond `SKT1` stay deferred until a written
-threat model explains plaintext-before-auth handling and output ownership.
+## Gated Ideas
 
-Exit criteria:
+These stay parked until the gate is met:
 
-- Each accepted deferred feature has a written problem statement.
-- Each accepted deferred feature has concrete call-site evidence.
-- Each accepted cryptographic format change has compatibility vectors before
-  implementation code.
-
-## Parking Lot
-
-These are intentionally unscheduled until the intake rules above are met:
-
-- Object-oriented APIs beyond the existing packet streaming objects.
-- Non-throwing result-style APIs.
-- Additional password formats or KDF agility implementation before the design
-  and fixture gate above is met.
-- Additional streaming formats beyond `SKT1`.
-- Explicit OpenSSL provider or FIPS configuration helpers.
-- CLI `inspect` and `verify` commands until operational use cases are written.
-- Package-manager recipes until a release archive has been validated.
-- SBOM, provenance, and signing until release artifact shape is stable.
-- Examples directory until use cases outgrow README recipes.
-- `CONTRIBUTING.md` until release-critical docs and CI are settled.
-- Benchmarks until correctness, format, and CI hardening work is stable.
-- Scheduled long-running fuzz until the existing smoke targets and corpus policy
-  prove useful enough to justify CI time.
-- Negative compatibility fixture expansion until a specific FORMAT reject rule
-  lacks regression coverage.
-- CLI `main.cpp` split until command behavior churn creates repeated edit
-  conflicts.
+- Result-style APIs: two real call sites must show exceptions are the wrong
+  boundary.
+- Object-oriented APIs beyond packet streaming: two real call sites must
+  duplicate lifecycle logic that free functions cannot express cleanly.
+- New password-file KDF profile: format spec, downgrade behavior, bounds,
+  fixture policy, and at least three known-answer vectors first.
+- Additional streaming format: written threat model for plaintext-before-auth
+  and output ownership first.
+- OpenSSL provider or FIPS helpers: documented support policy and dedicated
+  tests first.
+- Scheduled long-running fuzz: corpus policy and useful smoke-target signal
+  first.
+- Negative compatibility fixture expansion: specific uncovered FORMAT reject
+  rule first.
+- CLI split: repeated edit conflicts in `src/cli/main.cpp` first.
+- Benchmarks: correctness, format, and release gates stay stable first.
 
 ## Not Planned
 
