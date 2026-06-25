@@ -17,6 +17,7 @@ versions.
 - Strengthened release preflight to validate generated release notes content.
 - Hardened package-check cleanup roots against accidental broad deletion.
 - Hardened CLI file outputs against legacy temporary-file collisions and late output creation.
+- Hardened package-check to require source archives include security and format docs.
 
 ## 0.1.0
 

@@ -227,6 +227,18 @@ foreach(_securekit_source_artifact IN LISTS _securekit_source_artifacts)
   _securekit_require_archive_member(
     "${_securekit_source_artifact}"
     "/docs/ROADMAP\\.md(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/FORMAT\\.md(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/SECURITY_MODEL\\.md(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/KDF_AGILITY\\.md(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/FUZZING\\.md(\r?\n|$)")
 endforeach()
 
 set(_securekit_consumer_configure_args
