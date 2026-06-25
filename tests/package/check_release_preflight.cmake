@@ -32,6 +32,7 @@ set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
+set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 
 foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
@@ -40,7 +41,8 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_format}"
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
-    "${_securekit_release_checklist}")
+    "${_securekit_release_checklist}"
+    "${_securekit_roadmap}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
   endif()
@@ -53,6 +55,7 @@ file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
+file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 
 function(_securekit_require_text description haystack needle)
   string(FIND "${haystack}" "${needle}" _securekit_found_at)
@@ -97,6 +100,18 @@ _securekit_require_text(
   "release checklist push command"
   "${_securekit_release_checklist_text}"
   "git push origin ${_securekit_expected_tag}")
+_securekit_require_text(
+  "roadmap release version"
+  "${_securekit_roadmap_text}"
+  "project(... VERSION ${SECUREKIT_PROJECT_VERSION})")
+_securekit_require_text(
+  "roadmap release tag"
+  "${_securekit_roadmap_text}"
+  "${_securekit_expected_tag}")
+_securekit_require_text(
+  "roadmap local target release-preflight"
+  "${_securekit_roadmap_text}"
+  "--target release-preflight")
 
 foreach(_securekit_target_name IN ITEMS check package-check release-workflow-check)
   _securekit_require_text(
