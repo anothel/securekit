@@ -348,6 +348,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "/\\.github/"
   "/\\.vscode/"
   "/build[^/]*/"
+  "/securekit-cli-[^/]*$"
   "/package-check/"
   "/_CPack_Packages/"
   "CMakeCache\\.txt$"
