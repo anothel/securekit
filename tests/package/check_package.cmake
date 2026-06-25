@@ -104,6 +104,20 @@ function(_securekit_require_archive_member archive_path member_regex)
   endif()
 endfunction()
 
+function(_securekit_forbid_archive_member archive_path member_regex)
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E tar tf "${archive_path}"
+    RESULT_VARIABLE _securekit_tar_result
+    OUTPUT_VARIABLE _securekit_tar_output
+    ERROR_VARIABLE _securekit_tar_error)
+  if(NOT _securekit_tar_result EQUAL 0)
+    message(FATAL_ERROR "Failed to list archive ${archive_path}: ${_securekit_tar_error}")
+  endif()
+  if(_securekit_tar_output MATCHES "${member_regex}")
+    message(FATAL_ERROR "Archive ${archive_path} includes forbidden member matching ${member_regex}")
+  endif()
+endfunction()
+
 set(_securekit_cli "${_securekit_install_prefix}/bin/securekit${_securekit_exe_suffix}")
 string(TOLOWER "${SECUREKIT_BUILD_CONFIG}" _securekit_build_config_lower)
 set(_securekit_target_files
@@ -239,6 +253,18 @@ foreach(_securekit_source_artifact IN LISTS _securekit_source_artifacts)
   _securekit_require_archive_member(
     "${_securekit_source_artifact}"
     "/docs/FUZZING\\.md(\r?\n|$)")
+  _securekit_forbid_archive_member(
+    "${_securekit_source_artifact}"
+    "/\\.agents/")
+  _securekit_forbid_archive_member(
+    "${_securekit_source_artifact}"
+    "/\\.codex/")
+  _securekit_forbid_archive_member(
+    "${_securekit_source_artifact}"
+    "/docs/superpowers/")
+  _securekit_forbid_archive_member(
+    "${_securekit_source_artifact}"
+    "/securekit-cli-[^/]*(\r?\n|$)")
 endforeach()
 
 set(_securekit_consumer_configure_args

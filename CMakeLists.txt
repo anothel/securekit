@@ -344,10 +344,13 @@ set(CPACK_GENERATOR "ZIP;TGZ")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-source")
 set(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
 set(CPACK_SOURCE_IGNORE_FILES
+  "/\\.agents/"
+  "/\\.codex/"
   "/\\.git/"
   "/\\.github/"
   "/\\.vscode/"
   "/build[^/]*/"
+  "/docs/superpowers/"
   "/securekit-cli-[^/]*$"
   "/package-check/"
   "/_CPack_Packages/"
