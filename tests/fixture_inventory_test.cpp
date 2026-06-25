@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -9,6 +10,8 @@
 #include <string_view>
 
 #include <gtest/gtest.h>
+
+#include "fixture_utils.hpp"
 
 namespace
 {
@@ -96,6 +99,14 @@ void expect_fixture_exists(const std::set<std::string> &names, const char *name)
 	EXPECT_TRUE(names.contains(name)) << "missing required baseline fixture: " << name;
 }
 
+std::uint32_t read_be32(const securekit::bytes &bytes, std::size_t offset)
+{
+	return (static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset])) << 24u) |
+	       (static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset + 1u])) << 16u) |
+	       (static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset + 2u])) << 8u) |
+	       static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset + 3u]));
+}
+
 } // namespace
 
 TEST(FixtureInventory, ReadmeDocumentsEveryHexFixture)
@@ -142,5 +153,80 @@ TEST(FixtureInventory, HexFixturesAreCanonical)
 			EXPECT_TRUE(is_ascii_whitespace(ch) || is_lowercase_hex_digit(ch))
 			    << name << " contains non-canonical hex character";
 		}
+	}
+}
+
+TEST(FixtureInventory, Skt1FixturesUseDocumentedHeader)
+{
+	const std::set<std::string> names = actual_hex_fixture_names();
+
+	for (const std::string &name : names)
+	{
+		if (!name.starts_with("skt1-"))
+		{
+			continue;
+		}
+
+		SCOPED_TRACE(name);
+		const securekit::bytes fixture = securekit::test::read_hex_fixture(name);
+		ASSERT_GE(fixture.size(), 33u);
+		EXPECT_EQ(fixture[0], std::byte{'S'});
+		EXPECT_EQ(fixture[1], std::byte{'K'});
+		EXPECT_EQ(fixture[2], std::byte{'T'});
+		EXPECT_EQ(fixture[3], std::byte{'1'});
+		EXPECT_EQ(fixture[4], std::byte{0x01});
+	}
+}
+
+TEST(FixtureInventory, Skf1FixturesUseDocumentedHeader)
+{
+	const std::set<std::string> names = actual_hex_fixture_names();
+
+	for (const std::string &name : names)
+	{
+		if (!name.starts_with("skf1-"))
+		{
+			continue;
+		}
+
+		SCOPED_TRACE(name);
+		const securekit::bytes fixture = securekit::test::read_hex_fixture(name);
+		ASSERT_GE(fixture.size(), 50u + 9u + 16u);
+		EXPECT_EQ(fixture[0], std::byte{'S'});
+		EXPECT_EQ(fixture[1], std::byte{'K'});
+		EXPECT_EQ(fixture[2], std::byte{'F'});
+		EXPECT_EQ(fixture[3], std::byte{'1'});
+		EXPECT_EQ(fixture[4], std::byte{0x01});
+		EXPECT_EQ(fixture[5], std::byte{0x01});
+		EXPECT_EQ(read_be32(fixture, 6u), 1048576u);
+	}
+}
+
+TEST(FixtureInventory, Skp1FixturesUseDocumentedHeader)
+{
+	const std::set<std::string> names = actual_hex_fixture_names();
+
+	for (const std::string &name : names)
+	{
+		if (!name.starts_with("skp1-"))
+		{
+			continue;
+		}
+
+		SCOPED_TRACE(name);
+		const securekit::bytes fixture = securekit::test::read_hex_fixture(name);
+		ASSERT_GE(fixture.size(), 64u + 9u + 16u);
+		EXPECT_EQ(fixture[0], std::byte{'S'});
+		EXPECT_EQ(fixture[1], std::byte{'K'});
+		EXPECT_EQ(fixture[2], std::byte{'P'});
+		EXPECT_EQ(fixture[3], std::byte{'1'});
+		EXPECT_EQ(fixture[4], std::byte{0x01});
+		EXPECT_EQ(fixture[5], std::byte{0x01});
+		EXPECT_EQ(fixture[6], std::byte{0x01});
+		EXPECT_EQ(fixture[7], std::byte{0x00});
+		EXPECT_EQ(read_be32(fixture, 8u), 1048576u);
+		EXPECT_EQ(read_be32(fixture, 52u), 32768u);
+		EXPECT_EQ(read_be32(fixture, 56u), 8u);
+		EXPECT_EQ(read_be32(fixture, 60u), 1u);
 	}
 }
