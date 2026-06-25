@@ -821,8 +821,5 @@ executables with the OpenSSL DLL directory on `PATH`.
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for numbered forward-looking work.
-See [CHANGELOG.md](CHANGELOG.md) before cutting a release tag.
-Completed CLI, compatibility, package, security-boundary, public API/consumer,
-and documentation-consistency hardening items are kept in Git history instead of
-the active roadmap.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for forward-looking work.
+Completed work is kept in Git history instead of the active roadmap.

@@ -7,7 +7,6 @@ for tags matching `v*`.
 
 - Decide the next semantic version, for example `0.1.0`.
 - Update `project(... VERSION x.y.z)` in `CMakeLists.txt`.
-- Update `CHANGELOG.md`.
 - Confirm `SECURITY.md`, `docs/FORMAT.md`, and `docs/SECURITY_MODEL.md` still
   match the shipped behavior.
 - Confirm the private vulnerability reporting path in `SECURITY.md` still works.
@@ -86,7 +85,8 @@ After the tag workflow finishes, check the GitHub Release for:
 - Binary archives from all package-check jobs, each prefixed by the CI artifact
   name to avoid asset-name collisions.
 - Release title `SecureKit vX.Y.Z`.
-- Release notes copied from the matching `CHANGELOG.md` version section.
+- GitHub-generated release notes are present and match the tagged changes well
+  enough for users.
 
 Download `SHA256SUMS.txt` and verify a sample of uploaded assets if practical.
 

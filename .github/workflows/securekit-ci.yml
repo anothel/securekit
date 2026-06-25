@@ -329,9 +329,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
       - name: Download package artifacts
         uses: actions/download-artifact@v8
         with:
@@ -381,23 +378,6 @@ jobs:
           find dist -maxdepth 1 -type f -print | sort
           (cd dist && sha256sum * > SHA256SUMS.txt)
 
-      - name: Prepare release notes
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag_version="${GITHUB_REF_NAME#v}"
-          escaped_version="${tag_version//./\\.}"
-          awk -v version="$escaped_version" '
-            $0 ~ "^## \\[?" version "\\]?([[:space:]]|$)" { in_section = 1; next }
-            in_section && /^## / { exit }
-            in_section { print }
-          ' CHANGELOG.md > RELEASE_NOTES.md
-
-          if ! grep -q '[^[:space:]]' RELEASE_NOTES.md; then
-            echo "No CHANGELOG section found for ${tag_version}" >&2
-            exit 1
-          fi
-
       - name: Create or update GitHub Release
         shell: bash
         env:
@@ -408,9 +388,9 @@ jobs:
           title="SecureKit ${tag}"
 
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$title" --notes-file RELEASE_NOTES.md
+            gh release edit "$tag" --title "$title"
           else
-            gh release create "$tag" --verify-tag --title "$title" --notes-file RELEASE_NOTES.md
+            gh release create "$tag" --verify-tag --title "$title" --generate-notes
           fi
 
       - name: Upload release assets
