@@ -1,122 +1,101 @@
 # SecureKit Roadmap
 
-This file tracks only future work. Completed work belongs in Git history.
+Future work only. Completed work belongs in Git history and release notes, not a
+standing changelog.
 
 ## Rules
 
-1. Security, data loss, and format compatibility come before convenience.
+1. Security, data loss, and format compatibility come first.
 2. Keep the v1 free-function API stable unless real call sites prove otherwise.
 3. Keep OpenSSL as the crypto backend.
-4. Keep CMake install/export and the CLI as first-class package surfaces.
-5. Do not add public API, formats, package channels, or CI cost without a written
-   problem, regression check, and rollback plan.
+4. Keep CMake install/export, the CLI, and GitHub Actions package checks as
+   first-class release surfaces.
+5. Do not add public API, wire formats, package channels, CI cost, or release
+   ceremony without a written problem, regression check, and rollback plan.
 
-Release-impacting work must pass:
+Release-impacting work must pass the matching configured build directory:
 
 ```sh
 cmake --build build --config Release --target release-preflight
 ```
 
-Use the matching configured build dir on Windows or in CI.
+## Now
 
-## Next Work
+### 1. Cut The First Release Candidate
 
-### 1. Cut A Release Candidate
+Goal: make tagging `v0.1.0` mechanical.
 
-Goal: make the next tag a mechanical release, not a judgment call.
+- Confirm `project(... VERSION 0.1.0)` and README release examples still agree.
+- Run `release-preflight`.
+- Confirm `SecureKit CI` required jobs are green, including Linux sanitizers,
+  macOS package-check, Windows package-check, and release asset staging.
+- Confirm `CodeQL` is green.
+- Confirm release assets include binary archives, source archives, and
+  `SHA256SUMS.txt`.
 
-Tasks:
-
-1. Pick the next SemVer version.
-2. Make `CMakeLists.txt`, README examples, package artifact names, release notes,
-   and tag name agree.
-3. Run `release-preflight`.
-4. Confirm required GitHub Actions jobs are green.
-5. Confirm staged release assets include binary archives, source archives, and
-   `SHA256SUMS.txt`.
-
-Done when:
-
-- `release-preflight` passes.
-- Required CI failures: 0.
-- Package artifact version mismatches: 0.
-- Documented release commands point to existing targets.
+Done when required CI failures, package version mismatches, missing release
+assets, and broken documented release commands are all zero.
 
 ### 2. Keep Security Docs Matching Code
 
-Goal: prevent docs from promising more than code provides.
+Goal: prevent public docs from promising more than code and tests provide.
 
-Tasks:
+- Keep `SECURITY.md` current with private reporting path, supported versions,
+  disclosure scope, and in-scope surfaces.
+- Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` layouts, IDs,
+  AAD rules, record limits, and reject rules.
+- Keep `docs/SECURITY_MODEL.md` current with threat model, non-goals,
+  plaintext-before-auth behavior, file output safety, KDF policy, memory-wipe
+  limits, and error-message policy.
+- Keep `docs/KDF_AGILITY.md` as the gate for any future password-file KDF
+  profile.
 
-1. Keep `SECURITY.md` current with private reporting path, supported versions,
-   disclosure scope, and in-scope security surfaces.
-2. Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` byte layouts,
-   IDs, AAD rules, record limits, and reject rules.
-3. Keep `docs/SECURITY_MODEL.md` current with threat model, non-goals,
-   plaintext-before-auth rules, file output safety, password KDF policy,
-   memory-wipe limits, and error-message policy.
-4. Keep `docs/KDF_AGILITY.md` as the gate for any future password-file KDF
-   profile.
+Done when docs contradict `include/`, `src/`, tests, or fixtures zero times.
 
-Done when:
-
-- Public docs contradict `include/`, `src/`, tests, or fixtures: 0.
-- Serialized format fields missing from `docs/FORMAT.md`: 0.
-- Docs claim guaranteed file durability or guaranteed memory erasure: 0.
+## Next
 
 ### 3. Add Supply-Chain Trust After Release Shape Stabilizes
 
 Goal: let users verify release artifact origin, not only checksums.
 
-Tasks:
+- Sign or attest `SHA256SUMS.txt`.
+- Add provenance attestation if the GitHub Actions release flow stays stable.
+- Add SBOM generation after archive contents stop changing.
+- Document user verification steps in `docs/RELEASE_CHECKLIST.md`.
 
-1. Sign or attest `SHA256SUMS.txt`.
-2. Add provenance attestation if GitHub Actions release flow stays stable.
-3. Add SBOM generation after archive contents stop changing.
-4. Document user verification steps in the release checklist.
-
-Done when:
-
-- Release fails if signing/provenance generation fails.
-- Users can verify artifact integrity and origin from documented commands.
-- SBOM covers shipped source and binary package contents.
+Done when release generation fails on missing signing/provenance, and users can
+verify artifact integrity and origin from documented commands.
 
 ### 4. Improve User Entry Points Only When Needed
 
 Goal: make common use safer without expanding scope blindly.
 
-Candidates:
+- Add `CONTRIBUTING.md` only when outside contributors need one-command local
+  checks.
+- Add examples only when README recipes become too crowded.
+- Add CLI `inspect` or `verify` only after operators provide real use cases.
+- Add package-manager recipes only after release archives are validated.
 
-- `CONTRIBUTING.md` when outside contributors need one-command local checks.
-- Examples directory when README recipes become too crowded.
-- CLI `inspect`/`verify` when operators provide real use cases.
-- Package-manager recipes after a release archive is validated.
+Done when each addition has a concrete user need, one runnable check, and no
+security-model contradiction.
 
-Done when each candidate has:
+## Parked
 
-- concrete user or maintainer need;
-- smallest runnable check;
-- no contradiction with the security model.
+These stay blocked until the gate is met:
 
-## Gated Ideas
-
-These stay parked until the gate is met:
-
-- Result-style APIs: two real call sites must show exceptions are the wrong
-  boundary.
-- Object-oriented APIs beyond packet streaming: two real call sites must
-  duplicate lifecycle logic that free functions cannot express cleanly.
+- Result-style APIs: two real call sites show exceptions are the wrong boundary.
+- Object-oriented APIs beyond packet streaming: two real call sites duplicate
+  lifecycle logic that free functions cannot express cleanly.
 - New password-file KDF profile: format spec, downgrade behavior, bounds,
-  fixture policy, and at least three known-answer vectors first.
+  fixture policy, and at least three known-answer vectors.
 - Additional streaming format: written threat model for plaintext-before-auth
-  and output ownership first.
+  and output ownership.
 - OpenSSL provider or FIPS helpers: documented support policy and dedicated
-  tests first.
-- Scheduled long-running fuzz: corpus policy and useful smoke-target signal
-  first.
-- Negative compatibility fixture expansion: specific uncovered FORMAT reject
-  rule first.
-- CLI split: repeated edit conflicts in `src/cli/main.cpp` first.
+  tests.
+- Scheduled long-running fuzz: corpus policy and useful smoke-target signal.
+- Negative compatibility fixture expansion: specific uncovered `FORMAT.md`
+  reject rule.
+- CLI split: repeated edit conflicts in `src/cli/main.cpp`.
 - Benchmarks: correctness, format, and release gates stay stable first.
 
 ## Not Planned
