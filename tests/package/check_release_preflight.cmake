@@ -245,6 +245,8 @@ file(GLOB _securekit_binary_artifacts
 list(FILTER _securekit_binary_artifacts EXCLUDE REGEX "-source\\.")
 file(GLOB _securekit_source_artifacts
   "${_securekit_artifact_dir}/${SECUREKIT_PROJECT_NAME}-${SECUREKIT_PROJECT_VERSION}-source.*")
+set(_securekit_source_zip_artifact "${_securekit_artifact_dir}/${SECUREKIT_PROJECT_NAME}-${SECUREKIT_PROJECT_VERSION}-source.zip")
+set(_securekit_source_tgz_artifact "${_securekit_artifact_dir}/${SECUREKIT_PROJECT_NAME}-${SECUREKIT_PROJECT_VERSION}-source.tar.gz")
 
 list(LENGTH _securekit_binary_artifacts _securekit_binary_artifact_count)
 if(_securekit_binary_artifact_count EQUAL 0)
@@ -254,6 +256,12 @@ endif()
 list(LENGTH _securekit_source_artifacts _securekit_source_artifact_count)
 if(_securekit_source_artifact_count EQUAL 0)
   message(FATAL_ERROR "No source package artifacts found for ${SECUREKIT_PROJECT_VERSION}")
+endif()
+if(NOT EXISTS "${_securekit_source_zip_artifact}")
+  message(FATAL_ERROR "Source ZIP package artifact not found: ${_securekit_source_zip_artifact}")
+endif()
+if(NOT EXISTS "${_securekit_source_tgz_artifact}")
+  message(FATAL_ERROR "Source TGZ package artifact not found: ${_securekit_source_tgz_artifact}")
 endif()
 
 foreach(_securekit_release_artifact IN LISTS _securekit_release_artifacts)
