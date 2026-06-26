@@ -347,6 +347,8 @@ jobs:
           fi
 
           declare -A copied_source
+          expected_source_zip="securekit-${tag_version}-source.zip"
+          expected_source_tgz="securekit-${tag_version}-source.tar.gz"
           for artifact in release-artifacts/**/*; do
             if [[ ! -f "$artifact" ]]; then
               continue
@@ -370,8 +372,12 @@ jobs:
             cp "$artifact" "dist/${artifact_name}-${base}"
           done
 
-          if [[ "${#copied_source[@]}" -eq 0 ]]; then
-            echo "No source package artifact found" >&2
+          if [[ ! -f "dist/$expected_source_zip" ]]; then
+            echo "No source ZIP package artifact found: $expected_source_zip" >&2
+            exit 1
+          fi
+          if [[ ! -f "dist/$expected_source_tgz" ]]; then
+            echo "No source TGZ package artifact found: $expected_source_tgz" >&2
             exit 1
           fi
 
