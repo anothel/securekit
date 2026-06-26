@@ -349,6 +349,16 @@ jobs:
           declare -A copied_source
           expected_source_zip="securekit-${tag_version}-source.zip"
           expected_source_tgz="securekit-${tag_version}-source.tar.gz"
+          expected_binary_artifacts=(
+            "securekit-ubuntu-latest-gcc-Release-packages"
+            "securekit-ubuntu-latest-clang-Release-packages"
+            "securekit-ubuntu-latest-gcc-Debug-packages"
+            "securekit-windows-latest-msvc-Release-packages"
+            "securekit-ubuntu-gcc-release-install-only-packages"
+            "securekit-ubuntu-gcc-release-static-packages"
+            "securekit-windows-msvc-release-shared-packages"
+            "securekit-macos-clang-release-packages"
+          )
           for artifact in release-artifacts/**/*; do
             if [[ ! -f "$artifact" ]]; then
               continue
@@ -380,6 +390,13 @@ jobs:
             echo "No source TGZ package artifact found: $expected_source_tgz" >&2
             exit 1
           fi
+          for expected_binary_artifact in "${expected_binary_artifacts[@]}"; do
+            expected_binary_matches=(dist/"${expected_binary_artifact}-securekit-${tag_version}-"*)
+            if [[ "${#expected_binary_matches[@]}" -eq 0 ]]; then
+              echo "No binary package artifact found for $expected_binary_artifact" >&2
+              exit 1
+            fi
+          done
 
           find dist -maxdepth 1 -type f -print | sort
           (cd dist && sha256sum * > SHA256SUMS.txt)
