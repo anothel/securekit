@@ -262,8 +262,8 @@ Packet and file commands can also take optional AAD with either `--aad-text` or
 `open-file-password`, and AAD is authenticated but not stored in the packet or
 file. `--aad-text` uses the argument bytes directly. `--aad-hex` strictly
 decodes hex to bytes. If AAD is lost or changed, decryption/opening fails with
-the same generic authentication failure used for wrong keys, wrong passwords, or
-modified ciphertext.
+the same generic authentication failure used for wrong keys, wrong passwords,
+modified nonces, modified ciphertext, or modified tags.
 Packet and file command options may be supplied in any order, but each command
 must provide exactly one input source and one key source or password source.
 File commands also require exactly one output destination. For `seal-file`,
@@ -295,8 +295,10 @@ Decode commands use the same strict validation as the C++ APIs.
 For automation, treat stdout from file commands as binary, check the process
 exit code before trusting output, and read diagnostics from stderr. Output paths
 are never overwritten; choose a fresh destination or remove old files before
-running the command. Wrong keys, wrong passwords, changed AAD, and modified
-ciphertext all fail with the same generic authentication failure.
+running the command. Wrong keys, wrong passwords, changed AAD, modified nonces,
+modified ciphertext, and modified tags all fail with the same generic
+authentication failure. Malformed packet or file structure may fail separately
+with invalid packet or file diagnostics.
 
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
 usage text. `securekit --version` and `securekit version` print the package
@@ -665,13 +667,15 @@ Each chunk record:
 
 The file header, chunk index, plaintext size, final flag, and caller-provided
 AAD are authenticated with every chunk. `open_file` rejects malformed headers,
-truncated records, appended data, reordered chunks, wrong keys, wrong AAD, and
-tag failures. Path overload output files must not already exist; SecureKit
-writes a unique temporary file in the output directory and commits it to the
-final output path only after successful completion. Stream overloads operate on
-caller-provided streams and do not perform output path checks or temporary-file
-renames. When opening from a stream, callers should treat plaintext output as
-accepted only after the function returns successfully.
+unsupported versions, unsupported chunk sizes, truncated records, non-monotonic
+chunk indexes, non-final short chunks, chunks after the final chunk, missing
+final chunks, appended data, wrong keys, wrong AAD, and tag failures. Path
+overload output files must not already exist; SecureKit writes a unique
+temporary file in the output directory and commits it to the final output path
+only after successful completion. Stream overloads operate on caller-provided
+streams and do not perform output path checks or temporary-file renames. When
+opening from a stream, callers should treat plaintext output as accepted only
+after the function returns successfully.
 
 ## SKP1 Password File Format
 
@@ -707,9 +711,11 @@ File header:
 
 The `SKP1` header, chunk index, plaintext size, final flag, and caller-provided
 AAD are authenticated with every chunk. `open_file_with_password` rejects
-malformed headers, unsupported scrypt parameters, truncated records, appended
-data, reordered chunks, wrong passwords, wrong AAD, and tag failures. Wrong
-passwords and tag failures report the same generic
+malformed headers, unsupported versions, unsupported cipher IDs, unsupported KDF
+IDs, unsupported flags, unsupported scrypt parameters, truncated records,
+non-monotonic chunk indexes, non-final short chunks, chunks after the final
+chunk, missing final chunks, appended data, wrong passwords, wrong AAD, and tag
+failures. Wrong passwords, wrong AAD, and tag failures report the same generic
 `securekit::error_code::authentication_failed` message as other file
 authentication failures.
 
@@ -774,9 +780,11 @@ that configuration.
 OpenSSL allocation, initialization, cipher, digest, MAC, KDF, or
 random-generation failures are reported as
 `securekit::error_code::backend_failure`. SecureKit does not add OpenSSL
-error-queue details to public exception messages. AEAD packet, SKF1 chunk, and
-SKP1 chunk tag verification failures are reported separately as
-`securekit::error_code::authentication_failed` with generic messages.
+error-queue details to public exception messages. AEAD packet and file
+authentication failures are reported as
+`securekit::error_code::authentication_failed` with generic messages. Malformed
+or unsupported packet and file structure is reported as
+`securekit::error_code::invalid_packet`.
 
 ## Compatibility Fixtures
 
