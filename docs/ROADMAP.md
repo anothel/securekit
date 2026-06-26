@@ -21,25 +21,7 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-### 1. Keep Security Docs Matching Code
-
-Goal: prevent public docs from promising more than code and tests provide.
-
-- Keep `SECURITY.md` current with private reporting path, supported versions,
-  disclosure scope, and in-scope surfaces.
-- Keep `docs/FORMAT.md` current with `SKT1`, `SKF1`, and `SKP1` layouts, IDs,
-  AAD rules, record limits, and reject rules.
-- Keep `docs/SECURITY_MODEL.md` current with threat model, non-goals,
-  plaintext-before-auth behavior, file output safety, KDF policy, memory-wipe
-  limits, and error-message policy.
-- Keep `docs/KDF_AGILITY.md` as the gate for any future password-file KDF
-  profile.
-
-Done when docs contradict `include/`, `src/`, tests, or fixtures zero times.
-
-## Next
-
-### 3. Add Supply-Chain Trust After Release Shape Stabilizes
+### 1. Add Supply-Chain Trust After Release Shape Stabilizes
 
 Goal: let users verify release artifact origin, not only checksums.
 
@@ -51,7 +33,9 @@ Goal: let users verify release artifact origin, not only checksums.
 Done when release generation fails on missing signing/provenance, and users can
 verify artifact integrity and origin from documented commands.
 
-### 4. Improve User Entry Points Only When Needed
+## Next
+
+### 2. Improve User Entry Points Only When Needed
 
 Goal: make common use safer without expanding scope blindly.
 
