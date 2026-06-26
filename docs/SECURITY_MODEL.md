@@ -69,8 +69,10 @@ For `packet_decryptor`, `update()` returns unverified plaintext before
 hold that plaintext in a non-observable location until `finalize(tag)` returns
 successfully.
 
-Wrong keys, wrong AAD, modified ciphertext, modified headers, and modified tags
-must not be distinguishable through detailed public error messages.
+Wrong keys, wrong AAD, modified non-structural authenticated bytes, modified
+ciphertext, modified nonces, and modified tags must not be distinguishable
+through detailed public error messages. Malformed or unsupported packet and file
+structure is reported as `invalid_packet`.
 
 ## File Output Safety
 
@@ -127,7 +129,8 @@ Expected public categories:
 - OpenSSL, filesystem, or other backend failure: `backend_failure`
 
 Authentication failures should not reveal whether the key, password, AAD,
-ciphertext, header, or tag was wrong.
+ciphertext, nonce, or tag was wrong. Malformed or unsupported structure may be
+reported separately as `invalid_packet`.
 
 ## Known Limitations
 

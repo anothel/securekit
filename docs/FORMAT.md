@@ -104,7 +104,7 @@ chunks after the final chunk, missing final chunks, appended data, wrong keys,
 wrong AAD, and tag failures.
 
 The maximum chunk index is `0xffffffff`, so the maximum represented plaintext is
-almost 4 PiB with 1 MiB chunks.
+4 PiB with 1 MiB chunks.
 
 ## SKP1 Password File Format
 
@@ -145,8 +145,10 @@ using the complete serialized `SKP1` header.
 
 Readers reject malformed headers, unsupported versions, unsupported cipher IDs,
 unsupported KDF IDs, unsupported flags, unsupported scrypt parameters,
-truncated records, appended data, wrong passwords, wrong AAD, and tag failures.
-Wrong passwords and tag failures use the same generic file authentication error.
+truncated records, non-monotonic chunk indexes, non-final short chunks, chunks
+after the final chunk, missing final chunks, appended data, wrong passwords,
+wrong AAD, and tag failures. Wrong passwords, wrong AAD, and tag failures use
+the same generic file authentication error.
 
 ## Compatibility Rules
 
