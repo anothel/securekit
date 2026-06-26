@@ -359,6 +359,7 @@ jobs:
             "securekit-windows-msvc-release-shared-packages"
             "securekit-macos-clang-release-packages"
           )
+          expected_binary_suffixes=(".zip" ".tar.gz")
           for artifact in release-artifacts/**/*; do
             if [[ ! -f "$artifact" ]]; then
               continue
@@ -391,11 +392,13 @@ jobs:
             exit 1
           fi
           for expected_binary_artifact in "${expected_binary_artifacts[@]}"; do
-            expected_binary_matches=(dist/"${expected_binary_artifact}-securekit-${tag_version}-"*)
-            if [[ "${#expected_binary_matches[@]}" -eq 0 ]]; then
-              echo "No binary package artifact found for $expected_binary_artifact" >&2
-              exit 1
-            fi
+            for expected_binary_suffix in "${expected_binary_suffixes[@]}"; do
+              expected_binary_matches=(dist/"${expected_binary_artifact}-securekit-${tag_version}-"*"$expected_binary_suffix")
+              if [[ "${#expected_binary_matches[@]}" -eq 0 ]]; then
+                echo "No binary $expected_binary_suffix package artifact found for $expected_binary_artifact" >&2
+                exit 1
+              fi
+            done
           done
 
           find dist -maxdepth 1 -type f -print | sort
