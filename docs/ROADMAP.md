@@ -21,22 +21,7 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-### 1. Cut The First Release Candidate
-
-Goal: make tagging `v0.1.0` mechanical.
-
-- Confirm `project(... VERSION 0.1.0)` and README release examples still agree.
-- Run `release-preflight`.
-- Confirm `SecureKit CI` required jobs are green, including Linux sanitizers,
-  macOS package-check, Windows package-check, and release asset staging.
-- Confirm `CodeQL` is green.
-- Confirm release assets include binary archives, source archives, and
-  `SHA256SUMS.txt`.
-
-Done when required CI failures, package version mismatches, missing release
-assets, and broken documented release commands are all zero.
-
-### 2. Keep Security Docs Matching Code
+### 1. Keep Security Docs Matching Code
 
 Goal: prevent public docs from promising more than code and tests provide.
 

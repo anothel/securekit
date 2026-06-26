@@ -101,14 +101,6 @@ _securekit_require_text(
   "${_securekit_release_checklist_text}"
   "git push origin ${_securekit_expected_tag}")
 _securekit_require_text(
-  "roadmap release version"
-  "${_securekit_roadmap_text}"
-  "project(... VERSION ${SECUREKIT_PROJECT_VERSION})")
-_securekit_require_text(
-  "roadmap release tag"
-  "${_securekit_roadmap_text}"
-  "${_securekit_expected_tag}")
-_securekit_require_text(
   "roadmap local target release-preflight"
   "${_securekit_roadmap_text}"
   "--target release-preflight")
