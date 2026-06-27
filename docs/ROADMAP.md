@@ -12,6 +12,7 @@ standing changelog.
    first-class release surfaces.
 5. Do not add public API, wire formats, package channels, CI cost, or release
    ceremony without a written problem, regression check, and rollback plan.
+6. Active roadmap items must name an existing SecureKit surface.
 
 Release-impacting work must pass the matching configured build directory:
 
@@ -21,24 +22,7 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-### 1. Keep Claims, Contracts, and Tests Aligned
-
-Goal: keep the public story no broader than the verified C++ library surface.
-
-- Keep README feature claims, `docs/SECURITY_MODEL.md`, `docs/FORMAT.md`, and
-  release packaging checks aligned with real code.
-- Keep API, CLI, CMake install/export, and archive contents covered by local
-  checks before calling any surface release-ready.
-- Treat external roadmap or audit notes as triage input, not scope expansion.
-  Web middleware items such as JWT, CSRF, NestJS, rate limiting, and diagnostic
-  routes are not part of this repository unless the project identity changes.
-- Add one regression check for each fixed security, data-loss, format, or
-  packaging bug.
-
-Done when release-relevant docs and claims are checked by `release-preflight`,
-and every active roadmap item maps to an existing SecureKit surface.
-
-### 2. Tighten Negative Compatibility Coverage
+### 1. Tighten Negative Compatibility Coverage
 
 Goal: make malformed or hostile `SKT1`, `SKF1`, and `SKP1` inputs boringly
 rejectable.
@@ -56,7 +40,7 @@ matching test fails without the fix.
 
 ## Next
 
-### 3. Improve User Entry Points Only When Needed
+### 2. Improve User Entry Points Only When Needed
 
 Goal: make common use safer without expanding scope blindly.
 

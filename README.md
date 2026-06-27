@@ -46,6 +46,14 @@ The current identity is:
 - Guaranteed key erasure.
 - Homegrown cryptographic primitives.
 
+## Release Surface Contract
+
+Public claims are limited to the C++ APIs listed in Public API, CLI commands
+listed in CLI, the `SKT1`, `SKF1`, and `SKP1` formats, and packaged CMake
+surfaces described here. `release-preflight` checks these docs against public
+headers, CLI command usage, install/export/package artifacts, release assets,
+and provenance files before release.
+
 ## Requirements
 
 - C++20 compiler.

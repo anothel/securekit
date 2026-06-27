@@ -34,6 +34,16 @@ set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
+set(_securekit_aead_header "${SECUREKIT_SOURCE_DIR}/include/securekit/aead.hpp")
+set(_securekit_base64_header "${SECUREKIT_SOURCE_DIR}/include/securekit/base64.hpp")
+set(_securekit_compare_header "${SECUREKIT_SOURCE_DIR}/include/securekit/compare.hpp")
+set(_securekit_file_header "${SECUREKIT_SOURCE_DIR}/include/securekit/file.hpp")
+set(_securekit_hash_header "${SECUREKIT_SOURCE_DIR}/include/securekit/hash.hpp")
+set(_securekit_hex_header "${SECUREKIT_SOURCE_DIR}/include/securekit/hex.hpp")
+set(_securekit_key_wrap_header "${SECUREKIT_SOURCE_DIR}/include/securekit/key_wrap.hpp")
+set(_securekit_packet_stream_header "${SECUREKIT_SOURCE_DIR}/include/securekit/packet_stream.hpp")
+set(_securekit_random_header "${SECUREKIT_SOURCE_DIR}/include/securekit/random.hpp")
+set(_securekit_version_header "${SECUREKIT_SOURCE_DIR}/include/securekit/version.hpp")
 set(_securekit_cli_source "${SECUREKIT_SOURCE_DIR}/src/cli/main.cpp")
 
 foreach(_securekit_required_file IN ITEMS
@@ -46,6 +56,16 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
     "${_securekit_public_header}"
+    "${_securekit_aead_header}"
+    "${_securekit_base64_header}"
+    "${_securekit_compare_header}"
+    "${_securekit_file_header}"
+    "${_securekit_hash_header}"
+    "${_securekit_hex_header}"
+    "${_securekit_key_wrap_header}"
+    "${_securekit_packet_stream_header}"
+    "${_securekit_random_header}"
+    "${_securekit_version_header}"
     "${_securekit_cli_source}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
@@ -61,6 +81,16 @@ file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 file(READ "${_securekit_public_header}" _securekit_public_header_text)
+file(READ "${_securekit_aead_header}" _securekit_aead_header_text)
+file(READ "${_securekit_base64_header}" _securekit_base64_header_text)
+file(READ "${_securekit_compare_header}" _securekit_compare_header_text)
+file(READ "${_securekit_file_header}" _securekit_file_header_text)
+file(READ "${_securekit_hash_header}" _securekit_hash_header_text)
+file(READ "${_securekit_hex_header}" _securekit_hex_header_text)
+file(READ "${_securekit_key_wrap_header}" _securekit_key_wrap_header_text)
+file(READ "${_securekit_packet_stream_header}" _securekit_packet_stream_header_text)
+file(READ "${_securekit_random_header}" _securekit_random_header_text)
+file(READ "${_securekit_version_header}" _securekit_version_header_text)
 file(READ "${_securekit_cli_source}" _securekit_cli_source_text)
 
 function(_securekit_require_text description haystack needle)
@@ -130,9 +160,8 @@ _securekit_require_text(
 _securekit_require_terms(
   "roadmap active release-surface items"
   "${_securekit_roadmap_text}"
-  "Keep Claims, Contracts, and Tests Aligned"
   "Tighten Negative Compatibility Coverage"
-  "Done when release-relevant docs and claims are checked by `release-preflight`"
+  "Active roadmap items must name an existing SecureKit surface"
   "Web framework middleware"
   "JWT"
   "CSRF"
@@ -159,6 +188,18 @@ _securekit_require_terms(
   "Password-based chunked file sealing and opening with `SKP1` and scrypt.")
 
 _securekit_require_terms(
+  "README release surface contract"
+  "${_securekit_readme_text}"
+  "Release Surface Contract"
+  "Public claims are limited to the C++ APIs listed in Public API"
+  "listed in CLI"
+  "`SKT1`, `SKF1`, and `SKP1` formats"
+  "`release-preflight` checks these docs against public"
+  "CLI command usage"
+  "install/export/package artifacts"
+  "release assets")
+
+_securekit_require_terms(
   "public aggregate header feature mapping"
   "${_securekit_public_header_text}"
   "securekit/aead.hpp"
@@ -171,6 +212,64 @@ _securekit_require_terms(
   "securekit/packet_stream.hpp"
   "securekit/random.hpp"
   "securekit/version.hpp")
+
+_securekit_require_terms(
+  "public hex header API mapping"
+  "${_securekit_hex_header_text}"
+  "hex_encode"
+  "hex_decode")
+_securekit_require_terms(
+  "public base64 header API mapping"
+  "${_securekit_base64_header_text}"
+  "base64_encode"
+  "base64_decode"
+  "base64url_encode"
+  "base64url_decode")
+_securekit_require_terms(
+  "public hash header API mapping"
+  "${_securekit_hash_header_text}"
+  "sha256"
+  "hmac_sha256"
+  "hkdf_sha256")
+_securekit_require_terms(
+  "public compare header API mapping"
+  "${_securekit_compare_header_text}"
+  "constant_time_equal")
+_securekit_require_terms(
+  "public random header API mapping"
+  "${_securekit_random_header_text}"
+  "random_bytes"
+  "generate_key"
+  "random_token")
+_securekit_require_terms(
+  "public AEAD header API mapping"
+  "${_securekit_aead_header_text}"
+  "encrypt"
+  "decrypt")
+_securekit_require_terms(
+  "public key wrap header API mapping"
+  "${_securekit_key_wrap_header_text}"
+  "wrap_key"
+  "unwrap_key")
+_securekit_require_terms(
+  "public packet stream header API mapping"
+  "${_securekit_packet_stream_header_text}"
+  "packet_encryptor"
+  "packet_decryptor")
+_securekit_require_terms(
+  "public file header API mapping"
+  "${_securekit_file_header_text}"
+  "seal_file"
+  "open_file"
+  "seal_file_with_password"
+  "open_file_with_password")
+_securekit_require_terms(
+  "public version header API mapping"
+  "${_securekit_version_header_text}"
+  "version()"
+  "version_major"
+  "version_minor"
+  "version_patch")
 
 _securekit_require_terms(
   "CLI release surface mapping"
