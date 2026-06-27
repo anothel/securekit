@@ -482,14 +482,14 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           title="SecureKit ${tag}"
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$title"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --title "$title"
           else
-            gh release create "$tag" --verify-tag --title "$title" --generate-notes
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$title" --generate-notes
           fi
 
       - name: Upload release assets
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/* --clobber
