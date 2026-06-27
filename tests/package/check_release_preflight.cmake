@@ -178,11 +178,10 @@ _securekit_require_text(
 _securekit_require_terms(
   "roadmap scope guard"
   "${_securekit_roadmap_text}"
-  "Prepare v0.2.0 release candidate"
-  "This is release closure work, not a"
-  "reason to add more features."
   "Dogfood SecureKit in one real consumer"
   "real call-site pressure"
+  "No queued feature work."
+  "real repeated friction"
   "parked item has a proven gate"
   "Keep v0.x public API changes minimal"
   "Active roadmap items must name an existing SecureKit surface"
