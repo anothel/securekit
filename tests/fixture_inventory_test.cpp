@@ -62,6 +62,20 @@ std::set<std::string> actual_hex_fixture_names()
 	return names;
 }
 
+std::set<std::string> actual_negative_hex_fixture_names()
+{
+	std::set<std::string> names;
+	for (const auto &name : actual_hex_fixture_names())
+	{
+		constexpr std::string_view prefix = "negative/";
+		if (name.starts_with(prefix))
+		{
+			names.insert(name.substr(prefix.size()));
+		}
+	}
+	return names;
+}
+
 std::set<std::string> documented_hex_fixture_names()
 {
 	const std::string readme = read_text_file(fixture_dir() / "README.md");
@@ -80,6 +94,31 @@ std::set<std::string> documented_hex_fixture_names()
 		if (token.ends_with(".hex"))
 		{
 			EXPECT_TRUE(names.insert(token).second) << "duplicate fixture README entry: " << token;
+		}
+		cursor = close + 1;
+	}
+
+	return names;
+}
+
+std::set<std::string> documented_negative_hex_fixture_names()
+{
+	const std::string readme = read_text_file(fixture_dir() / "negative" / "README.md");
+	std::set<std::string> names;
+	std::size_t cursor = 0;
+
+	while ((cursor = readme.find('`', cursor)) != std::string::npos)
+	{
+		const std::size_t close = readme.find('`', cursor + 1);
+		if (close == std::string::npos)
+		{
+			break;
+		}
+
+		const std::string token = readme.substr(cursor + 1, close - cursor - 1);
+		if (token.ends_with(".hex"))
+		{
+			EXPECT_TRUE(names.insert(token).second) << "duplicate negative fixture README entry: " << token;
 		}
 		cursor = close + 1;
 	}
@@ -112,6 +151,11 @@ std::uint32_t read_be32(const securekit::bytes &bytes, std::size_t offset)
 TEST(FixtureInventory, ReadmeDocumentsEveryHexFixture)
 {
 	EXPECT_EQ(documented_hex_fixture_names(), actual_hex_fixture_names());
+}
+
+TEST(FixtureInventory, NegativeReadmeDocumentsEveryNegativeHexFixture)
+{
+	EXPECT_EQ(documented_negative_hex_fixture_names(), actual_negative_hex_fixture_names());
 }
 
 TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)

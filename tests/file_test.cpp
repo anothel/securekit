@@ -820,6 +820,10 @@ TEST(File, RejectsNegativeCompatibilitySkf1FormatRuleFixtures)
 	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skf1-missing-final-chunk.hex"},
 	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skf1-chunk-after-final.hex"},
 	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skf1-non-monotonic-index.hex"},
+	         std::pair<std::string_view, std::string_view>{"bad-magic", "negative/skf1-bad-magic.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-version", "negative/skf1-unsupported-version.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-chunk-size", "negative/skf1-unsupported-chunk-size.hex"},
+	         std::pair<std::string_view, std::string_view>{"truncated-record", "negative/skf1-truncated-record.hex"},
 	     })
 	{
 		SCOPED_TRACE(label);
@@ -1313,6 +1317,12 @@ TEST(File, PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures)
 	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skp1-missing-final-chunk.hex"},
 	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skp1-chunk-after-final.hex"},
 	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skp1-non-monotonic-index.hex"},
+	         std::pair<std::string_view, std::string_view>{"bad-magic", "negative/skp1-bad-magic.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-version", "negative/skp1-unsupported-version.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-cipher", "negative/skp1-unsupported-cipher.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-kdf", "negative/skp1-unsupported-kdf.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-params", "negative/skp1-unsupported-scrypt-params.hex"},
+	         std::pair<std::string_view, std::string_view>{"truncated-record", "negative/skp1-truncated-record.hex"},
 	     })
 	{
 		SCOPED_TRACE(label);

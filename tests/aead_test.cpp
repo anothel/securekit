@@ -256,6 +256,20 @@ TEST(Aead, RejectsNegativeCompatibilityFixtureMissingTag)
 	expect_invalid_packet([&] { (void)securekit::decrypt(packet, key); });
 }
 
+TEST(Aead, RejectsNegativeCompatibilitySkt1HeaderRuleFixtures)
+{
+	const securekit::key256 key = key_from_seed(0x40);
+	for (const std::string_view fixture_name : {
+	         "negative/skt1-bad-magic.hex",
+	         "negative/skt1-unsupported-version.hex",
+	     })
+	{
+		SCOPED_TRACE(fixture_name);
+		const securekit::bytes packet = securekit::test::read_hex_fixture(fixture_name);
+		expect_invalid_packet([&] { (void)securekit::decrypt(packet, key); });
+	}
+}
+
 TEST(Aead, DetectsPacketMutation)
 {
 	const securekit::key256 key = key_from_seed(0x50);
