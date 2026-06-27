@@ -96,6 +96,8 @@ CLI file commands inherit the same distinction:
 
 - path output refuses overwrite and commits after success
 - `--out -` writes to stdout and cannot be rolled back
+- `verify-file` and `verify-file-password` take no output path, discard
+  recovered plaintext, and report authentication success through the exit code
 
 ## Password-Based Encryption
 

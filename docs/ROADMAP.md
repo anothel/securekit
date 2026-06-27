@@ -26,14 +26,7 @@ No active release-critical work is queued.
 
 ## Next
 
-### 1. Improve User Entry Points Only When Needed
-
-Goal: make common use safer without expanding scope blindly.
-
-- Add CLI `inspect` or `verify` only after operators provide real use cases.
-
-Done when each addition has a concrete user need, one runnable check, and no
-security-model contradiction.
+No active user-entry-point work is queued.
 
 ## Parked
 

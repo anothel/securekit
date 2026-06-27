@@ -170,7 +170,7 @@ _securekit_require_terms(
   "roadmap scope guard"
   "${_securekit_roadmap_text}"
   "No active release-critical work is queued."
-  "Improve User Entry Points Only When Needed"
+  "No active user-entry-point work is queued."
   "Active roadmap items must name an existing SecureKit surface"
   "Web framework middleware"
   "JWT"
@@ -220,6 +220,25 @@ _securekit_require_terms(
   "CLI command usage"
   "install/export/package artifacts"
   "release assets")
+
+_securekit_require_terms(
+  "README CLI verify entry point"
+  "${_securekit_readme_text}"
+  "securekit verify-file"
+  "securekit verify-file-password"
+  "without creating a plaintext output file"
+  "write nothing to stdout on success"
+  "authentication verification")
+
+_securekit_require_terms(
+  "security model CLI verify output contract"
+  "${_securekit_security_model_text}"
+  "verify-file"
+  "verify-file-password"
+  "take no output path"
+  "discard"
+  "recovered plaintext"
+  "exit code")
 
 _securekit_require_terms(
   "README contributor entry point"
@@ -343,8 +362,10 @@ _securekit_require_terms(
   "securekit decrypt"
   "securekit seal-file"
   "securekit open-file"
+  "securekit verify-file"
   "securekit seal-file-password"
-  "securekit open-file-password")
+  "securekit open-file-password"
+  "securekit verify-file-password")
 
 _securekit_forbid_terms(
   "README web middleware scope expansion"

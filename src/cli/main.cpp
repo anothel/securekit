@@ -11,6 +11,7 @@
 #include <iterator>
 #include <span>
 #include <stdexcept>
+#include <streambuf>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -58,9 +59,15 @@ void print_help()
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file --in <path|-> --out <path|-> --key-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit verify-file --in <path|-> --key-hex <64-hex> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit verify-file --in <path|-> --key-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
+	             "[--aad-text <text>|--aad-hex <hex>]\n"
+	          << "  securekit verify-file-password --in <path|-> --password-file <path> "
 	             "[--aad-text <text>|--aad-hex <hex>]\n"
 	          << "  securekit help [command]\n";
 }
@@ -153,7 +160,12 @@ std::string_view file_command_usage(std::string_view command)
 		return "Usage:\n  securekit seal-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) "
 		       "[--aad-text <text>|--aad-hex <hex>]";
 	}
-	return "Usage:\n  securekit open-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) "
+	if (command == "open-file")
+	{
+		return "Usage:\n  securekit open-file --in <path|-> --out <path|-> (--key-hex <64-hex>|--key-file <path>) "
+		       "[--aad-text <text>|--aad-hex <hex>]";
+	}
+	return "Usage:\n  securekit verify-file --in <path|-> (--key-hex <64-hex>|--key-file <path>) "
 	       "[--aad-text <text>|--aad-hex <hex>]";
 }
 
@@ -164,7 +176,12 @@ std::string_view password_file_command_usage(std::string_view command)
 		return "Usage:\n  securekit seal-file-password --in <path|-> --out <path|-> --password-file <path> "
 		       "[--aad-text <text>|--aad-hex <hex>]";
 	}
-	return "Usage:\n  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
+	if (command == "open-file-password")
+	{
+		return "Usage:\n  securekit open-file-password --in <path|-> --out <path|-> --password-file <path> "
+		       "[--aad-text <text>|--aad-hex <hex>]";
+	}
+	return "Usage:\n  securekit verify-file-password --in <path|-> --password-file <path> "
 	       "[--aad-text <text>|--aad-hex <hex>]";
 }
 
@@ -250,12 +267,22 @@ bool print_command_help(std::string_view command)
 		std::cout << file_command_usage(command) << '\n';
 		return true;
 	}
+	if (command == "verify-file")
+	{
+		std::cout << file_command_usage(command) << '\n';
+		return true;
+	}
 	if (command == "seal-file-password")
 	{
 		std::cout << password_file_command_usage(command) << '\n';
 		return true;
 	}
 	if (command == "open-file-password")
+	{
+		std::cout << password_file_command_usage(command) << '\n';
+		return true;
+	}
+	if (command == "verify-file-password")
 	{
 		std::cout << password_file_command_usage(command) << '\n';
 		return true;
@@ -517,7 +544,9 @@ bool is_standard_stream_marker(std::string_view value)
 
 file_command_options parse_file_command_options(int argc, char **argv)
 {
-	if (argc < 8 || ((argc - 2) % 2) != 0)
+	const std::string_view command = argv[1];
+	const bool requires_output = command != "verify-file";
+	if (argc < (requires_output ? 8 : 6) || ((argc - 2) % 2) != 0)
 	{
 		throw std::runtime_error(std::string(file_command_usage(argv[1])));
 	}
@@ -537,6 +566,10 @@ file_command_options parse_file_command_options(int argc, char **argv)
 		}
 		else if (option == "--out")
 		{
+			if (!requires_output)
+			{
+				throw std::runtime_error(std::string("unsupported file option: ") + std::string(option));
+			}
 			reject_duplicate(options.has_output, option);
 			options.output = std::filesystem::path(value);
 			options.output_is_stdout = is_standard_stream_marker(value);
@@ -566,7 +599,7 @@ file_command_options parse_file_command_options(int argc, char **argv)
 		}
 	}
 
-	if (!options.has_input || !options.has_output || !options.has_key)
+	if (!options.has_input || (requires_output && !options.has_output) || !options.has_key)
 	{
 		throw std::runtime_error(std::string(file_command_usage(argv[1])));
 	}
@@ -576,7 +609,9 @@ file_command_options parse_file_command_options(int argc, char **argv)
 
 password_file_command_options parse_password_file_command_options(int argc, char **argv)
 {
-	if (argc < 8 || ((argc - 2) % 2) != 0)
+	const std::string_view command = argv[1];
+	const bool requires_output = command != "verify-file-password";
+	if (argc < (requires_output ? 8 : 6) || ((argc - 2) % 2) != 0)
 	{
 		throw std::runtime_error(std::string(password_file_command_usage(argv[1])));
 	}
@@ -596,6 +631,10 @@ password_file_command_options parse_password_file_command_options(int argc, char
 		}
 		else if (option == "--out")
 		{
+			if (!requires_output)
+			{
+				throw std::runtime_error(std::string("unsupported password file option: ") + std::string(option));
+			}
 			reject_duplicate(options.has_output, option);
 			options.output = std::filesystem::path(value);
 			options.output_is_stdout = is_standard_stream_marker(value);
@@ -622,7 +661,7 @@ password_file_command_options parse_password_file_command_options(int argc, char
 		}
 	}
 
-	if (!options.has_input || !options.has_output || !options.has_password)
+	if (!options.has_input || (requires_output && !options.has_output) || !options.has_password)
 	{
 		throw std::runtime_error(std::string(password_file_command_usage(argv[1])));
 	}
@@ -867,6 +906,41 @@ void run_streaming_file_command(const Options &options, Operation operation)
 		}
 		throw;
 	}
+}
+
+class discard_stream_buffer final : public std::streambuf
+{
+protected:
+	std::streamsize xsputn(const char *, std::streamsize count) override
+	{
+		return count;
+	}
+
+	int overflow(int ch) override
+	{
+		return traits_type::not_eof(ch);
+	}
+};
+
+template <typename Options, typename Operation>
+void run_verify_file_command(const Options &options, Operation operation)
+{
+	if (options.input_is_stdin)
+	{
+		set_stdin_binary();
+	}
+
+	std::ifstream input_file;
+	std::istream *input = &std::cin;
+	if (!options.input_is_stdin)
+	{
+		input_file = open_cli_input_file(options.input);
+		input = &input_file;
+	}
+
+	discard_stream_buffer buffer;
+	std::ostream output(&buffer);
+	operation(*input, output);
 }
 
 wrap_key_options parse_wrap_key_options(int argc, char **argv)
@@ -1330,7 +1404,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file")))
+		if (argc >= 2 && (is_arg(argv[1], "seal-file") || is_arg(argv[1], "open-file") || is_arg(argv[1], "verify-file")))
 		{
 			const file_command_options options = parse_file_command_options(argc, argv);
 			const bool uses_standard_stream = options.input_is_stdin || options.output_is_stdout;
@@ -1348,7 +1422,7 @@ int main(int argc, char **argv)
 					securekit::seal_file(options.input, options.output, options.key, options.aad);
 				}
 			}
-			else
+			else if (is_arg(argv[1], "open-file"))
 			{
 				if (uses_standard_stream)
 				{
@@ -1361,10 +1435,17 @@ int main(int argc, char **argv)
 					securekit::open_file(options.input, options.output, options.key, options.aad);
 				}
 			}
+			else
+			{
+				run_verify_file_command(options, [&](std::istream &input, std::ostream &output) {
+					securekit::open_file(input, output, options.key, options.aad);
+				});
+			}
 			return 0;
 		}
 
-		if (argc >= 2 && (is_arg(argv[1], "seal-file-password") || is_arg(argv[1], "open-file-password")))
+		if (argc >= 2 && (is_arg(argv[1], "seal-file-password") || is_arg(argv[1], "open-file-password") ||
+		                     is_arg(argv[1], "verify-file-password")))
 		{
 			const password_file_command_options options = parse_password_file_command_options(argc, argv);
 			const bool uses_standard_stream = options.input_is_stdin || options.output_is_stdout;
@@ -1382,7 +1463,7 @@ int main(int argc, char **argv)
 					securekit::seal_file_with_password(options.input, options.output, options.password, options.aad);
 				}
 			}
-			else
+			else if (is_arg(argv[1], "open-file-password"))
 			{
 				if (uses_standard_stream)
 				{
@@ -1394,6 +1475,12 @@ int main(int argc, char **argv)
 				{
 					securekit::open_file_with_password(options.input, options.output, options.password, options.aad);
 				}
+			}
+			else
+			{
+				run_verify_file_command(options, [&](std::istream &input, std::ostream &output) {
+					securekit::open_file_with_password(input, output, options.password, options.aad);
+				});
 			}
 			return 0;
 		}

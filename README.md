@@ -223,11 +223,15 @@ securekit seal-file --in plain.bin --out plain.bin.skf --key-hex 000102030405060
 securekit open-file --in plain.bin.skf --out plain.bin --key-hex 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --aad-hex 7265636f72643a7631
 securekit seal-file --in - --out - --key-file key.hex < plain.bin > plain.bin.skf
 securekit open-file --in - --out - --key-file key.hex < plain.bin.skf > plain.bin
+securekit help verify-file
+securekit verify-file --in plain.bin.skf --key-file key.hex --aad-text record:v1
 securekit help seal-file-password
 securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin
 securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin
 securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin --aad-text record:v1
 securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin --aad-text record:v1
+securekit help verify-file-password
+securekit verify-file-password --in plain.bin.skp --password-file password.bin --aad-text record:v1
 ```
 
 Common file recipes:
@@ -246,21 +250,25 @@ securekit open-file --in plain.bin.skf --out plain.bin --key-file key.hex --aad-
 securekit seal-file-password --in plain.bin --out plain.bin.skp --password-file password.bin
 securekit open-file-password --in plain.bin.skp --out plain.bin --password-file password.bin
 
+# Verify before restore without creating a plaintext output file.
+securekit verify-file --in plain.bin.skf --key-file key.hex
+securekit verify-file-password --in plain.bin.skp --password-file password.bin
+
 # Pipe binary data through stdin/stdout.
 securekit seal-file --in - --out - --key-file key.hex < plain.bin > plain.bin.skf
 securekit open-file --in - --out - --key-file key.hex < plain.bin.skf > plain.bin
 ```
 
 The packet CLI commands use the `SKT1` packet format, and the file commands use
-the `SKF1` or `SKP1` file formats. `seal-file` and `open-file` use `SKF1` with
-a caller-provided 32-byte key. `seal-file-password` and `open-file-password` use
-`SKP1` with scrypt-derived keys from `--password-file`. `--key-hex` must be a
-strict 64-character hex string for a 32-byte key. `keygen` writes a fresh key as
-64 lowercase hex characters plus a trailing newline and refuses to overwrite an
-existing output file. `--key-file` reads the same text format, trimming leading
-and trailing ASCII whitespace before strict validation. `--password-file` reads
-raw bytes exactly, without trimming or normalization; empty password files are
-rejected.
+the `SKF1` or `SKP1` file formats. `seal-file`, `open-file`, and `verify-file`
+use `SKF1` with a caller-provided 32-byte key. `seal-file-password`,
+`open-file-password`, and `verify-file-password` use `SKP1` with scrypt-derived
+keys from `--password-file`. `--key-hex` must be a strict 64-character hex
+string for a 32-byte key. `keygen` writes a fresh key as 64 lowercase hex
+characters plus a trailing newline and refuses to overwrite an existing output
+file. `--key-file` reads the same text format, trimming leading and trailing
+ASCII whitespace before strict validation. `--password-file` reads raw bytes
+exactly, without trimming or normalization; empty password files are rejected.
 
 `encrypt` accepts either `--text` or `--in` plus exactly one key source. Without
 `--out`, it writes the resulting `SKT1` packet as lowercase hex. With `--out`,
@@ -271,19 +279,24 @@ trailing newline. With `--out`, it writes the raw plaintext bytes to a file and
 refuses to overwrite an existing file.
 
 Packet and file commands can also take optional AAD with either `--aad-text` or
-`--aad-hex`; the same AAD bytes must be provided to `decrypt`, `open-file`, or
-`open-file-password`, and AAD is authenticated but not stored in the packet or
-file. `--aad-text` uses the argument bytes directly. `--aad-hex` strictly
-decodes hex to bytes. If AAD is lost or changed, decryption/opening fails with
-the same generic authentication failure used for wrong keys, wrong passwords,
-modified nonces, modified ciphertext, or modified tags.
+`--aad-hex`; the same AAD bytes must be provided to `decrypt`, `open-file`,
+`verify-file`, `open-file-password`, or `verify-file-password`, and AAD is
+authenticated but not stored in the packet or file. `--aad-text` uses the
+argument bytes directly. `--aad-hex` strictly decodes hex to bytes. If AAD is
+lost or changed, decryption/opening/verification fails with the same generic
+authentication failure used for wrong keys, wrong passwords, modified nonces,
+modified ciphertext, or modified tags.
 Packet and file command options may be supplied in any order, but each command
 must provide exactly one input source and one key source or password source.
-File commands also require exactly one output destination. For `seal-file`,
-`open-file`, `seal-file-password`, and `open-file-password`, `--in -` reads from
-stdin and `--out -` writes raw binary output to stdout. At most one AAD option
-may be provided. The CLI does not expose password prompts, password text
-arguments, or environment-variable key loading.
+`seal-file`, `open-file`, `seal-file-password`, and `open-file-password` also
+require exactly one output destination. `verify-file` and `verify-file-password`
+take no output option, authenticate the whole file, discard recovered plaintext,
+write nothing to stdout on success, and report success or failure through the
+process exit code. For `seal-file`, `open-file`, `seal-file-password`, and
+`open-file-password`, `--in -` reads from stdin and `--out -` writes raw binary
+output to stdout. For verification commands, `--in -` reads the sealed file from
+stdin. At most one AAD option may be provided. The CLI does not expose password
+prompts, password text arguments, or environment-variable key loading.
 
 `hmac-sha256` accepts an arbitrary strict hex key and either text or file input.
 `hkdf-sha256` accepts strict hex key material and salt, accepts `info` as either
@@ -306,12 +319,14 @@ the active process encoding; the CLI does not normalize or transcode Unicode.
 Decode commands use the same strict validation as the C++ APIs.
 
 For automation, treat stdout from file commands as binary, check the process
-exit code before trusting output, and read diagnostics from stderr. Output paths
-are never overwritten; choose a fresh destination or remove old files before
-running the command. Wrong keys, wrong passwords, changed AAD, modified nonces,
-modified ciphertext, and modified tags all fail with the same generic
-authentication failure. Malformed packet or file structure may fail separately
-with invalid packet or file diagnostics.
+exit code before trusting output, and read diagnostics from stderr. Use
+`verify-file` or `verify-file-password` when a backup or deployment pipeline
+needs authentication verification without creating a plaintext output file.
+Output paths are never overwritten; choose a fresh destination or remove old
+files before running commands that take `--out`. Wrong keys, wrong passwords,
+changed AAD, modified nonces, modified ciphertext, and modified tags all fail
+with the same generic authentication failure. Malformed packet or file structure
+may fail separately with invalid packet or file diagnostics.
 
 Running `securekit`, `securekit help`, or `securekit --help` prints the top-level
 usage text. `securekit --version` and `securekit version` print the package
