@@ -33,6 +33,7 @@ set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
+set(_securekit_dogfooding "${SECUREKIT_SOURCE_DIR}/docs/DOGFOODING.md")
 set(_securekit_release_notes "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_NOTES.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
@@ -61,6 +62,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
     "${_securekit_fuzzing}"
+    "${_securekit_dogfooding}"
     "${_securekit_release_notes}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
@@ -92,6 +94,7 @@ file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
+file(READ "${_securekit_dogfooding}" _securekit_dogfooding_text)
 file(READ "${_securekit_release_notes}" _securekit_release_notes_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
@@ -178,8 +181,9 @@ _securekit_require_text(
 _securekit_require_terms(
   "roadmap scope guard"
   "${_securekit_roadmap_text}"
-  "Dogfood SecureKit in one real consumer"
-  "real call-site pressure"
+  "No active queued work."
+  "dogfood-check"
+  "no repeated friction"
   "No queued feature work."
   "real repeated friction"
   "parked item has a proven gate"
@@ -191,6 +195,21 @@ _securekit_require_terms(
   "NestJS"
   "rate limiting"
   "diagnostic web routes")
+
+_securekit_require_terms(
+  "dogfooding record"
+  "${_securekit_dogfooding_text}"
+  "cmake --build build --config Release --target dogfood-check"
+  "keygen"
+  "seal-file"
+  "verify-file"
+  "open-file"
+  "seal-file-password"
+  "verify-file-password"
+  "open-file-password"
+  "C++ consumer"
+  "no repeated friction recorded"
+  "No parked item is promoted")
 
 _securekit_require_terms(
   "contributor one-command local checks"

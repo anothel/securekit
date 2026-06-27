@@ -23,25 +23,9 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-### Dogfood SecureKit in one real consumer
-
-Surface: C++ API, installed CMake package, CLI.
-
-Problem:
-The project needs real call-site pressure before adding Result-style APIs, OO
-APIs, new KDF profiles, streaming formats, or package channels.
-
-Check:
-
-- Build one small external consumer from the installed package or release
-  archive.
-- Use at least: `keygen`, `seal-file` / `open-file`, `verify-file`, password
-  file flow, and one C++ API path.
-- Record repeated friction as concrete issues with command/API examples.
-
-Done:
-Either no new surface is needed, or a parked item has a proven gate and can move
-to `Next`.
+No active queued work. `dogfood-check` covers the v0.2.0 post-release
+consumer loop and recorded no repeated friction. A parked item has a proven gate
+only after that friction is recorded, and then can move to `Next`.
 
 ## Next
 
