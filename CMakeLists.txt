@@ -83,6 +83,17 @@ if(SECUREKIT_BUILD_CLI)
   target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
 endif()
 
+add_executable(securekit_example_basic EXCLUDE_FROM_ALL
+  examples/basic/main.cpp)
+target_link_libraries(securekit_example_basic PRIVATE securekit::securekit)
+target_compile_features(securekit_example_basic PRIVATE cxx_std_20)
+target_compile_options(securekit_example_basic PRIVATE ${_securekit_compile_options})
+
+add_custom_target(examples-check
+  COMMAND $<TARGET_FILE:securekit_example_basic>
+  DEPENDS securekit_example_basic
+  USES_TERMINAL)
+
 if(SECUREKIT_BUILD_FUZZ)
   if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "SECUREKIT_BUILD_FUZZ=ON requires Clang with libFuzzer support")
@@ -262,6 +273,10 @@ if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
       --build ${CMAKE_CURRENT_BINARY_DIR}
       --config $<CONFIG>
       --target check
+    COMMAND ${CMAKE_COMMAND}
+      --build ${CMAKE_CURRENT_BINARY_DIR}
+      --config $<CONFIG>
+      --target examples-check
     COMMAND ${CMAKE_COMMAND}
       --build ${CMAKE_CURRENT_BINARY_DIR}
       --config $<CONFIG>

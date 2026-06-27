@@ -34,6 +34,8 @@ set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
+set(_securekit_example_cmakelists "${SECUREKIT_SOURCE_DIR}/examples/basic/CMakeLists.txt")
+set(_securekit_example_main "${SECUREKIT_SOURCE_DIR}/examples/basic/main.cpp")
 set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
 set(_securekit_aead_header "${SECUREKIT_SOURCE_DIR}/include/securekit/aead.hpp")
 set(_securekit_base64_header "${SECUREKIT_SOURCE_DIR}/include/securekit/base64.hpp")
@@ -57,6 +59,8 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_kdf_agility}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
+    "${_securekit_example_cmakelists}"
+    "${_securekit_example_main}"
     "${_securekit_public_header}"
     "${_securekit_aead_header}"
     "${_securekit_base64_header}"
@@ -83,6 +87,8 @@ file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
+file(READ "${_securekit_example_cmakelists}" _securekit_example_cmakelists_text)
+file(READ "${_securekit_example_main}" _securekit_example_main_text)
 file(READ "${_securekit_public_header}" _securekit_public_header_text)
 file(READ "${_securekit_aead_header}" _securekit_aead_header_text)
 file(READ "${_securekit_base64_header}" _securekit_base64_header_text)
@@ -220,6 +226,35 @@ _securekit_require_terms(
   "${_securekit_readme_text}"
   "[CONTRIBUTING.md](CONTRIBUTING.md)"
   "one-command local release check")
+
+_securekit_require_terms(
+  "README example and package-manager entry points"
+  "${_securekit_readme_text}"
+  "[examples/basic](examples/basic)"
+  "cmake --build build --config Release --target examples-check"
+  "FetchContent"
+  "release source archive"
+  "release archive checksum")
+
+_securekit_require_terms(
+  "CMake examples check target"
+  "${_securekit_cmakelists_text}"
+  "securekit_example_basic"
+  "examples-check")
+
+_securekit_require_terms(
+  "basic example uses public API"
+  "${_securekit_example_main_text}"
+  "securekit/securekit.hpp"
+  "securekit::encrypt"
+  "securekit::decrypt"
+  "securekit::sha256")
+
+_securekit_require_terms(
+  "basic example CMake recipe"
+  "${_securekit_example_cmakelists_text}"
+  "find_package(securekit CONFIG"
+  "securekit::securekit")
 
 _securekit_require_terms(
   "public aggregate header feature mapping"

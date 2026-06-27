@@ -341,6 +341,34 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE securekit::securekit)
 ```
 
+From a release source archive with CMake `FetchContent`:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  securekit
+  URL https://github.com/anothel/securekit/releases/download/v0.1.0/securekit-0.1.0-source.tar.gz
+  URL_HASH SHA256=<release archive checksum>)
+
+FetchContent_MakeAvailable(securekit)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE securekit::securekit)
+```
+
+Use the checksum from the matching `SHA256SUMS.txt` release asset before
+building from a release source archive. On single-config generators, set
+`CMAKE_BUILD_TYPE=Release` when linking against a Release package archive.
+
+## Examples
+
+The checked C++ example lives in [examples/basic](examples/basic):
+
+```sh
+cmake --build build --config Release --target examples-check
+```
+
 ## C++ Example
 
 ```cpp
