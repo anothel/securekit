@@ -52,11 +52,11 @@ std::string without_ascii_whitespace(std::string text)
 std::set<std::string> actual_hex_fixture_names()
 {
 	std::set<std::string> names;
-	for (const auto &entry : std::filesystem::directory_iterator(fixture_dir()))
+	for (const auto &entry : std::filesystem::recursive_directory_iterator(fixture_dir()))
 	{
 		if (entry.is_regular_file() && entry.path().extension() == ".hex")
 		{
-			names.insert(entry.path().filename().string());
+			names.insert(entry.path().lexically_relative(fixture_dir()).generic_string());
 		}
 	}
 	return names;
