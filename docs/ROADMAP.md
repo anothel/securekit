@@ -38,17 +38,15 @@ Goal: keep the public story no broader than the verified C++ library surface.
 Done when release-relevant docs and claims are checked by `release-preflight`,
 and every active roadmap item maps to an existing SecureKit surface.
 
-### 2. Add Supply-Chain Trust After Release Shape Stabilizes
+### 2. Add Release SBOM After Archive Contents Stabilize
 
-Goal: let users verify release artifact origin, not only checksums.
+Goal: let users inspect release contents without unpacking every archive.
 
-- Sign or attest `SHA256SUMS.txt`.
-- Add provenance attestation if the GitHub Actions release flow stays stable.
 - Add SBOM generation after archive contents stop changing.
 - Document user verification steps in `docs/RELEASE_CHECKLIST.md`.
 
-Done when release generation fails on missing signing/provenance, and users can
-verify artifact integrity and origin from documented commands.
+Done when release generation fails on missing SBOM output, and users can map
+release assets to documented package contents.
 
 ## Next
 

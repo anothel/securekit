@@ -327,6 +327,8 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Download package artifacts
@@ -403,6 +405,11 @@ jobs:
 
           find dist -maxdepth 1 -type f -print | sort
           (cd dist && sha256sum * > SHA256SUMS.txt)
+
+      - name: Attest release assets
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/*
 
       - name: Create or update GitHub Release
         shell: bash

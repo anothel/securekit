@@ -139,4 +139,5 @@ reported separately as `invalid_packet`.
 - No protection against process memory inspection.
 - No protection against compromised OpenSSL providers.
 - No rollback guarantee for stream outputs.
-- No release-artifact signing or provenance beyond checksums yet.
+- Release assets are checksummed and provenance-attested by GitHub Actions.
+- No SBOM is generated yet.

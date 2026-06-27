@@ -131,7 +131,7 @@ _securekit_require_terms(
   "roadmap active release-surface items"
   "${_securekit_roadmap_text}"
   "Keep Claims, Contracts, and Tests Aligned"
-  "Add Supply-Chain Trust After Release Shape Stabilizes"
+  "Add Release SBOM After Archive Contents Stabilize"
   "Done when release-relevant docs and claims are checked by `release-preflight`"
   "Web framework middleware"
   "JWT"
@@ -234,6 +234,17 @@ _securekit_require_text(
   "release checklist local target release-preflight"
   "${_securekit_release_checklist_text}"
   "--target release-preflight")
+_securekit_require_terms(
+  "release provenance verification docs"
+  "${_securekit_release_checklist_text}"
+  "GitHub artifact attestations"
+  "gh attestation verify SHA256SUMS.txt --repo anothel/securekit"
+  "sha256sum -c SHA256SUMS.txt")
+_securekit_require_terms(
+  "README release provenance claim"
+  "${_securekit_readme_text}"
+  "artifact attestations for release assets"
+  "release provenance attestation wiring")
 
 _securekit_require_terms(
   "SECURITY private advisory path"
@@ -314,7 +325,8 @@ _securekit_require_terms(
   "invalid_packet"
   "authentication_failed"
   "backend_failure"
-  "No release-artifact signing or provenance beyond checksums yet")
+  "Release assets are checksummed and provenance-attested by GitHub Actions"
+  "No SBOM is generated yet")
 
 _securekit_require_terms(
   "KDF agility downgrade and fixture gates"

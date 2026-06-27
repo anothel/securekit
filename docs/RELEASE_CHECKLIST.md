@@ -46,7 +46,7 @@ run `securekit --version`.
 `release-preflight` runs `check`, `package-check`, and `release-workflow-check`,
 then checks SemVer shape, README and release-checklist version examples,
 documented local target names, package artifact version prefixes, staged release
-assets, and `SHA256SUMS.txt`.
+assets, `SHA256SUMS.txt`, and release provenance attestation wiring.
 
 On Windows with dynamically linked OpenSSL, configure the build with
 `SECUREKIT_OPENSSL_RUNTIME_DIR` so tests and package checks can run installed
@@ -84,11 +84,21 @@ After the tag workflow finishes, check the GitHub Release for:
 - One source `.tar.gz`.
 - Binary archives from all package-check jobs, each prefixed by the CI artifact
   name to avoid asset-name collisions.
+- GitHub artifact attestations for `SHA256SUMS.txt` and release archives.
 - Release title `SecureKit vX.Y.Z`.
 - GitHub-generated release notes are present and match the tagged changes well
   enough for users.
 
-Download `SHA256SUMS.txt` and verify a sample of uploaded assets if practical.
+Download `SHA256SUMS.txt`, verify checksums, and verify GitHub artifact
+attestations for the checksum file and at least one archive:
+
+```sh
+sha256sum -c SHA256SUMS.txt
+gh attestation verify SHA256SUMS.txt --repo anothel/securekit
+gh attestation verify securekit-0.1.0-source.tar.gz --repo anothel/securekit
+```
+
+Replace the archive name with the released version and asset you downloaded.
 
 ## 7. Failure Handling
 

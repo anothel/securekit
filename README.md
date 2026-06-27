@@ -84,7 +84,8 @@ archives are written under `<build>/package-check/artifacts`.
 `release-preflight` runs the local release targets, stages release assets under
 `<build>/package-check/release-assets`, writes `SHA256SUMS.txt`, and then checks
 SemVer, README/release-checklist version examples, documented local targets,
-package artifact version prefixes, and staged release asset checksums.
+package artifact version prefixes, staged release asset checksums, and release
+provenance attestation wiring.
 
 ## CMake Options
 
@@ -154,8 +155,9 @@ cmake --install build --prefix /path/to/prefix --config Release
 ## Release
 
 Release automation runs on version tags matching `v*`. A tag push runs the CI
-matrix, gathers package artifacts, writes `SHA256SUMS.txt`, and creates or
-updates the GitHub Release.
+matrix, gathers package artifacts, writes `SHA256SUMS.txt`, creates GitHub
+artifact attestations for release assets, and creates or updates the GitHub
+Release.
 
 The tag version must match the CMake project version. For example,
 `project(... VERSION 0.1.0)` should be released with tag `v0.1.0`.
@@ -812,9 +814,10 @@ GitHub Actions runs the main supported build and package surfaces:
 - CPack binary and source package artifact uploads.
 
 `release-workflow-check` locally guards the release workflow shape, artifact
-version checks, and current GitHub Action major versions. CodeQL runs in a
-separate `CodeQL` workflow on pushes and pull requests to `main`, plus a weekly
-schedule, with manual CMake configure/build steps.
+version checks, release provenance attestation wiring, and current GitHub Action
+major versions. CodeQL runs in a separate `CodeQL` workflow on pushes and pull
+requests to `main`, plus a weekly schedule, with manual CMake configure/build
+steps.
 
 Local preflight:
 
