@@ -88,7 +88,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: securekit-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-packages
-          path: build/package-check/artifacts/*
+          path: |
+            build/package-check/artifacts/*.zip
+            build/package-check/artifacts/*.tar.gz
 
   install-only:
     name: ubuntu-latest gcc Release install-only
@@ -119,7 +121,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: securekit-ubuntu-gcc-release-install-only-packages
-          path: build/package-check/artifacts/*
+          path: |
+            build/package-check/artifacts/*.zip
+            build/package-check/artifacts/*.tar.gz
 
       - name: Verify package files
         run: |
@@ -170,7 +174,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: securekit-ubuntu-gcc-release-static-packages
-          path: build/package-check/artifacts/*
+          path: |
+            build/package-check/artifacts/*.zip
+            build/package-check/artifacts/*.tar.gz
 
       - name: Verify static package files
         run: |
@@ -222,7 +228,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: securekit-windows-msvc-release-shared-packages
-          path: build/package-check/artifacts/*
+          path: |
+            build/package-check/artifacts/*.zip
+            build/package-check/artifacts/*.tar.gz
 
       - name: Verify shared package files
         shell: pwsh
@@ -318,7 +326,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: securekit-macos-clang-release-packages
-          path: build/package-check/artifacts/*
+          path: |
+            build/package-check/artifacts/*.zip
+            build/package-check/artifacts/*.tar.gz
 
   release:
     name: GitHub Release
@@ -362,7 +372,7 @@ jobs:
             "securekit-macos-clang-release-packages"
           )
           expected_binary_suffixes=(".zip" ".tar.gz")
-          for artifact in release-artifacts/**/*; do
+          for artifact in release-artifacts/*/securekit-"$tag_version"-*.zip release-artifacts/*/securekit-"$tag_version"-*.tar.gz; do
             if [[ ! -f "$artifact" ]]; then
               continue
             fi
