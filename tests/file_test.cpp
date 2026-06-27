@@ -798,6 +798,22 @@ TEST(File, RejectsMalformedRecordShape)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, RejectsNegativeCompatibilityFixtureNonFinalShortChunk)
+{
+	const auto sealed_path = test_path("negative-non-final-short-chunk.skf");
+	const auto opened_path = test_path("negative-non-final-short-chunk-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("negative/skf1-non-final-short-chunk.hex");
+	write_file(sealed_path, fixture);
+
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key_from_seed(0x00)); });
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
 TEST(File, RoundTripsChunkBoundarySizes)
 {
 	constexpr std::size_t chunk_size = 1024u * 1024u;
@@ -1246,6 +1262,23 @@ TEST(File, PasswordRejectsMalformedRecordShape)
 	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
 
 	std::filesystem::remove(plain_path);
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags)
+{
+	const auto sealed_path = test_path("negative-unsupported-flags.skp");
+	const auto opened_path = test_path("negative-unsupported-flags-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("negative fixture password");
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("negative/skp1-unsupported-flags.hex");
+	write_file(sealed_path, fixture);
+
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
 }

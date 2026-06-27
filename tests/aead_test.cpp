@@ -248,6 +248,14 @@ TEST(Aead, RejectsInvalidPacketShape)
 	expect_invalid_packet([&] { (void)securekit::decrypt(bad_version, key); });
 }
 
+TEST(Aead, RejectsNegativeCompatibilityFixtureMissingTag)
+{
+	const securekit::key256 key = key_from_seed(0x40);
+	const securekit::bytes packet = securekit::test::read_hex_fixture("negative/skt1-missing-tag-format-minimum-size.hex");
+
+	expect_invalid_packet([&] { (void)securekit::decrypt(packet, key); });
+}
+
 TEST(Aead, DetectsPacketMutation)
 {
 	const securekit::key256 key = key_from_seed(0x50);

@@ -20,6 +20,9 @@ fixture and README entry in the same change.
 Existing baseline fixture names must remain present unless a deliberate v1
 compatibility change replaces them.
 
+Malformed compatibility fixtures live under `negative/` and must name the
+specific `docs/FORMAT.md` rejection rule they protect.
+
 ## Inventory
 
 Files are lowercase hex encodings of serialized packets/files:
