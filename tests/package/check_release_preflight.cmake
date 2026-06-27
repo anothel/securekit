@@ -33,6 +33,7 @@ set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
+set(_securekit_release_notes "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_NOTES.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
@@ -60,6 +61,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
     "${_securekit_fuzzing}"
+    "${_securekit_release_notes}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
     "${_securekit_negative_fixtures_readme}"
@@ -90,6 +92,7 @@ file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
+file(READ "${_securekit_release_notes}" _securekit_release_notes_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
@@ -181,7 +184,7 @@ _securekit_require_terms(
   "Dogfood SecureKit in one real consumer"
   "real call-site pressure"
   "parked item has a proven gate"
-  "Keep v0.1.x public API changes minimal"
+  "Keep v0.x public API changes minimal"
   "Active roadmap items must name an existing SecureKit surface"
   "Web framework middleware"
   "JWT"
@@ -471,6 +474,19 @@ _securekit_require_terms(
   "artifact attestations for release assets"
   "release SPDX SBOM"
   "release provenance attestation wiring")
+
+_securekit_require_terms(
+  "v0.2.0 release notes"
+  "${_securekit_release_notes_text}"
+  "## v0.2.0"
+  "`securekit verify-file`"
+  "`securekit verify-file-password`"
+  "checked basic C++ example"
+  "negative compatibility coverage"
+  "release SPDX SBOM"
+  "GitHub provenance attestation checks"
+  "No intentional `SKT1`, `SKF1`, or `SKP1` format change."
+  "No breaking C++ API change.")
 
 _securekit_require_terms(
   "SECURITY private advisory path"

@@ -6,7 +6,7 @@ standing changelog.
 ## Rules
 
 1. Security, data loss, and format compatibility come first.
-2. Keep v0.1.x public API changes minimal and keep the v1 free-function API
+2. Keep v0.x public API changes minimal and keep the v1 free-function API
    stable unless real call sites prove otherwise.
 3. Keep OpenSSL as the crypto backend.
 4. Keep CMake install/export, the CLI, and GitHub Actions package checks as

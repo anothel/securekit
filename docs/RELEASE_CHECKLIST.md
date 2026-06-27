@@ -5,7 +5,7 @@ for tags matching `v*`.
 
 ## 1. Choose The Version
 
-- Decide the next semantic version, for example `0.1.0`.
+- Decide the next semantic version, for example `0.2.0`.
 - Update `project(... VERSION x.y.z)` in `CMakeLists.txt`.
 - Confirm `SECURITY.md`, `docs/FORMAT.md`, and `docs/SECURITY_MODEL.md` still
   match the shipped behavior.
@@ -70,11 +70,11 @@ Do not create the version tag from an unverified commit.
 Create the tag on the verified `main` commit:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
-Replace `v0.1.0` with the version chosen in step 1.
+Replace `v0.2.0` with the version chosen in step 1.
 
 ## 6. Verify The GitHub Release
 
@@ -97,7 +97,7 @@ attestations for the checksum file and at least one archive:
 ```sh
 sha256sum -c SHA256SUMS.txt
 gh attestation verify SHA256SUMS.txt --repo anothel/securekit
-gh attestation verify securekit-0.1.0-source.tar.gz --repo anothel/securekit
+gh attestation verify securekit-0.2.0-source.tar.gz --repo anothel/securekit
 ```
 
 Replace the archive name with the released version and asset you downloaded.
