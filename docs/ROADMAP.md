@@ -83,8 +83,8 @@ These stay blocked until the gate is met:
 - OpenSSL provider or FIPS helpers: documented support policy and dedicated
   tests.
 - Scheduled long-running fuzz: corpus policy and useful smoke-target signal.
-- Negative compatibility fixture expansion: specific uncovered `FORMAT.md`
-  reject rule.
+- Further negative compatibility fixture expansion after the current pass:
+  specific uncovered `FORMAT.md` reject rule.
 - CLI split: repeated edit conflicts in `src/cli/main.cpp`.
 - Benchmarks: correctness, format, and release gates stay stable first.
 

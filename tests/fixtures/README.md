@@ -39,4 +39,10 @@ Files are lowercase hex encodings of serialized packets/files:
 - `skp1-binary-aad.hex`: `SKP1` file containing binary plaintext, password `known SKP1 binary password`, AAD `fixture:password:binary`.
 - `negative/skt1-missing-tag-format-minimum-size.hex`: malformed `SKT1` packet shorter than the 33-byte minimum.
 - `negative/skf1-non-final-short-chunk.hex`: malformed `SKF1` file with a non-final chunk smaller than 1 MiB.
+- `negative/skf1-missing-final-chunk.hex`: malformed `SKF1` file with no final chunk.
+- `negative/skf1-chunk-after-final.hex`: malformed `SKF1` file with data after the final chunk.
+- `negative/skf1-non-monotonic-index.hex`: malformed `SKF1` file whose first chunk index is not 0.
 - `negative/skp1-unsupported-flags.hex`: malformed `SKP1` header with unsupported flags.
+- `negative/skp1-missing-final-chunk.hex`: malformed `SKP1` file with no final chunk.
+- `negative/skp1-chunk-after-final.hex`: malformed `SKP1` file with data after the final chunk.
+- `negative/skp1-non-monotonic-index.hex`: malformed `SKP1` file whose first chunk index is not 0.

@@ -814,6 +814,30 @@ TEST(File, RejectsNegativeCompatibilityFixtureNonFinalShortChunk)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, RejectsNegativeCompatibilitySkf1FormatRuleFixtures)
+{
+	for (const auto [label, fixture_name] : {
+	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skf1-missing-final-chunk.hex"},
+	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skf1-chunk-after-final.hex"},
+	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skf1-non-monotonic-index.hex"},
+	     })
+	{
+		SCOPED_TRACE(label);
+		const auto sealed_path = test_path("negative-skf1-" + std::string(label) + ".skf");
+		const auto opened_path = test_path("negative-skf1-" + std::string(label) + "-opened.bin");
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+
+		const securekit::bytes fixture = securekit::test::read_hex_fixture(fixture_name);
+		write_file(sealed_path, fixture);
+
+		expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key_from_seed(0x00)); });
+
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+	}
+}
+
 TEST(File, RoundTripsChunkBoundarySizes)
 {
 	constexpr std::size_t chunk_size = 1024u * 1024u;
@@ -1281,4 +1305,29 @@ TEST(File, PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags)
 
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
+}
+
+TEST(File, PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures)
+{
+	for (const auto [label, fixture_name] : {
+	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skp1-missing-final-chunk.hex"},
+	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skp1-chunk-after-final.hex"},
+	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skp1-non-monotonic-index.hex"},
+	     })
+	{
+		SCOPED_TRACE(label);
+		const auto sealed_path = test_path("negative-skp1-" + std::string(label) + ".skp");
+		const auto opened_path = test_path("negative-skp1-" + std::string(label) + "-opened.bin");
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+
+		const securekit::bytes password = bytes_from_text("negative fixture password");
+		const securekit::bytes fixture = securekit::test::read_hex_fixture(fixture_name);
+		write_file(sealed_path, fixture);
+
+		expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
+		std::filesystem::remove(sealed_path);
+		std::filesystem::remove(opened_path);
+	}
 }
