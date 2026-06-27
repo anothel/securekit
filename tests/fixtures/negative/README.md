@@ -13,9 +13,15 @@ These fixtures are malformed by design. Tests use them to pin specific
 - `skf1-bad-magic.hex`: protects `SKF1` malformed magic rejection.
 - `skf1-unsupported-version.hex`: protects `SKF1` unsupported version
   rejection.
+- `skf1-unsupported-algorithm.hex`: protects the `SKF1` Cipher/KDF header byte
+  value.
 - `skf1-unsupported-chunk-size.hex`: protects `SKF1` unsupported chunk size
   rejection.
 - `skf1-truncated-record.hex`: protects `SKF1` truncated record rejection.
+- `skf1-record-oversized-plaintext.hex`: protects the `SKF1` chunk record
+  plaintext size range.
+- `skf1-record-unsupported-final-flag.hex`: protects the `SKF1` chunk record
+  final flag value set.
 - `skf1-missing-final-chunk.hex`: protects `SKF1` readers reject files without
   a final chunk.
 - `skf1-chunk-after-final.hex`: protects `SKF1` readers reject appended data
@@ -30,9 +36,15 @@ These fixtures are malformed by design. Tests use them to pin specific
 - `skp1-unsupported-cipher.hex`: protects `SKP1` unsupported cipher ID
   rejection.
 - `skp1-unsupported-kdf.hex`: protects `SKP1` unsupported KDF ID rejection.
+- `skp1-unsupported-chunk-size.hex`: protects `SKP1` unsupported chunk size
+  rejection.
 - `skp1-unsupported-scrypt-params.hex`: protects `SKP1` unsupported scrypt
   parameter rejection.
 - `skp1-truncated-record.hex`: protects `SKP1` truncated record rejection.
+- `skp1-record-oversized-plaintext.hex`: protects the `SKP1` chunk record
+  plaintext size range.
+- `skp1-record-unsupported-final-flag.hex`: protects the `SKP1` chunk record
+  final flag value set.
 - `skp1-missing-final-chunk.hex`: protects `SKP1` readers reject files without
   a final chunk.
 - `skp1-chunk-after-final.hex`: protects `SKP1` readers reject appended data
@@ -48,18 +60,21 @@ These fixtures are malformed by design. Tests use them to pin specific
   `Aead.RejectsNegativeCompatibilityFixtureMissingTag` and
   `Aead.RejectsNegativeCompatibilitySkt1HeaderRuleFixtures`.
 - `SKF1` structural format rules: skf1-bad-magic.hex,
-  skf1-unsupported-version.hex, skf1-unsupported-chunk-size.hex,
-  skf1-truncated-record.hex, skf1-non-final-short-chunk.hex,
-  skf1-missing-final-chunk.hex, skf1-chunk-after-final.hex, and
-  skf1-non-monotonic-index.hex; covered by
+  skf1-unsupported-version.hex, skf1-unsupported-algorithm.hex,
+  skf1-unsupported-chunk-size.hex, skf1-truncated-record.hex,
+  skf1-record-oversized-plaintext.hex,
+  skf1-record-unsupported-final-flag.hex,
+  skf1-non-final-short-chunk.hex, skf1-missing-final-chunk.hex,
+  skf1-chunk-after-final.hex, and skf1-non-monotonic-index.hex; covered by
   `File.RejectsNegativeCompatibilityFixtureNonFinalShortChunk` and
   `File.RejectsNegativeCompatibilitySkf1FormatRuleFixtures`.
 - `SKP1` structural format rules: skp1-bad-magic.hex,
   skp1-unsupported-version.hex, skp1-unsupported-cipher.hex,
   skp1-unsupported-kdf.hex, skp1-unsupported-flags.hex,
-  skp1-unsupported-scrypt-params.hex, skp1-truncated-record.hex,
-  skp1-missing-final-chunk.hex, skp1-chunk-after-final.hex, and
-  skp1-non-monotonic-index.hex; covered by
+  skp1-unsupported-chunk-size.hex, skp1-unsupported-scrypt-params.hex,
+  skp1-truncated-record.hex, skp1-record-oversized-plaintext.hex,
+  skp1-record-unsupported-final-flag.hex, skp1-missing-final-chunk.hex,
+  skp1-chunk-after-final.hex, and skp1-non-monotonic-index.hex; covered by
   `File.PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags` and
   `File.PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures`.
 - Generic authentication failures are covered by

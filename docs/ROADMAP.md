@@ -30,22 +30,26 @@ No active user-entry-point work is queued.
 
 ## Parked
 
-These stay blocked until the gate is met:
+These are blocked candidates, not queued work. Move one to `Now` or `Next` only
+after its gate is proven and a runnable check is named.
 
-- Result-style APIs: two real call sites show exceptions are the wrong boundary.
-- Object-oriented APIs beyond packet streaming: two real call sites duplicate
-  lifecycle logic that free functions cannot express cleanly.
-- New password-file KDF profile: format spec, downgrade behavior, bounds,
-  fixture policy, and at least three known-answer vectors.
-- Additional streaming format: written threat model for plaintext-before-auth
-  and output ownership.
-- OpenSSL provider or FIPS helpers: documented support policy and dedicated
-  tests.
-- Scheduled long-running fuzz: corpus policy and useful smoke-target signal.
-- Further negative compatibility fixture expansion: specific uncovered
-  `FORMAT.md` reject rule.
-- CLI split: repeated edit conflicts in `src/cli/main.cpp`.
-- Benchmarks: correctness, format, and release gates stay stable first.
+- Result-style APIs: gate is two real call sites showing exceptions are the
+  wrong boundary.
+- Object-oriented APIs beyond packet streaming: gate is two real call sites
+  duplicating lifecycle logic that free functions cannot express cleanly.
+- New password-file KDF profile: gate is format spec, downgrade behavior,
+  bounds, fixture policy, and at least three known-answer vectors.
+- Additional streaming format: gate is a written threat model for
+  plaintext-before-auth and output ownership.
+- OpenSSL provider or FIPS helpers: gate is documented support policy and
+  dedicated tests.
+- Scheduled long-running fuzz: gate is corpus policy and useful smoke-target
+  signal.
+- Further negative compatibility fixture expansion: gate is a specific
+  uncovered `FORMAT.md` reject rule found by comparing `docs/FORMAT.md` with
+  `tests/fixtures/negative/README.md`.
+- CLI split: gate is repeated edit conflicts in `src/cli/main.cpp`.
+- Benchmarks: gate is stable correctness, format, and release checks.
 
 ## Not Planned
 

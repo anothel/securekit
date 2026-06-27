@@ -43,8 +43,11 @@ Files are lowercase hex encodings of serialized packets/files:
 - `negative/skf1-non-final-short-chunk.hex`: malformed `SKF1` file with a non-final chunk smaller than 1 MiB.
 - `negative/skf1-bad-magic.hex`: malformed `SKF1` header with wrong magic.
 - `negative/skf1-unsupported-version.hex`: malformed `SKF1` header with unsupported version.
+- `negative/skf1-unsupported-algorithm.hex`: malformed `SKF1` header with unsupported Cipher/KDF byte.
 - `negative/skf1-unsupported-chunk-size.hex`: malformed `SKF1` header with unsupported chunk size.
 - `negative/skf1-truncated-record.hex`: malformed `SKF1` file with truncated final chunk record.
+- `negative/skf1-record-oversized-plaintext.hex`: malformed `SKF1` record with plaintext size above 1 MiB.
+- `negative/skf1-record-unsupported-final-flag.hex`: malformed `SKF1` record with unsupported final flag.
 - `negative/skf1-missing-final-chunk.hex`: malformed `SKF1` file with no final chunk.
 - `negative/skf1-chunk-after-final.hex`: malformed `SKF1` file with data after the final chunk.
 - `negative/skf1-non-monotonic-index.hex`: malformed `SKF1` file whose first chunk index is not 0.
@@ -53,8 +56,11 @@ Files are lowercase hex encodings of serialized packets/files:
 - `negative/skp1-unsupported-version.hex`: malformed `SKP1` header with unsupported version.
 - `negative/skp1-unsupported-cipher.hex`: malformed `SKP1` header with unsupported cipher ID.
 - `negative/skp1-unsupported-kdf.hex`: malformed `SKP1` header with unsupported KDF ID.
+- `negative/skp1-unsupported-chunk-size.hex`: malformed `SKP1` header with unsupported chunk size.
 - `negative/skp1-unsupported-scrypt-params.hex`: malformed `SKP1` header with unsupported scrypt parameters.
 - `negative/skp1-truncated-record.hex`: malformed `SKP1` file with truncated final chunk record.
+- `negative/skp1-record-oversized-plaintext.hex`: malformed `SKP1` record with plaintext size above 1 MiB.
+- `negative/skp1-record-unsupported-final-flag.hex`: malformed `SKP1` record with unsupported final flag.
 - `negative/skp1-missing-final-chunk.hex`: malformed `SKP1` file with no final chunk.
 - `negative/skp1-chunk-after-final.hex`: malformed `SKP1` file with data after the final chunk.
 - `negative/skp1-non-monotonic-index.hex`: malformed `SKP1` file whose first chunk index is not 0.

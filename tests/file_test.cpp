@@ -822,8 +822,11 @@ TEST(File, RejectsNegativeCompatibilitySkf1FormatRuleFixtures)
 	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skf1-non-monotonic-index.hex"},
 	         std::pair<std::string_view, std::string_view>{"bad-magic", "negative/skf1-bad-magic.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-version", "negative/skf1-unsupported-version.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-algorithm", "negative/skf1-unsupported-algorithm.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-chunk-size", "negative/skf1-unsupported-chunk-size.hex"},
 	         std::pair<std::string_view, std::string_view>{"truncated-record", "negative/skf1-truncated-record.hex"},
+	         std::pair<std::string_view, std::string_view>{"record-oversized-plaintext", "negative/skf1-record-oversized-plaintext.hex"},
+	         std::pair<std::string_view, std::string_view>{"record-unsupported-final-flag", "negative/skf1-record-unsupported-final-flag.hex"},
 	     })
 	{
 		SCOPED_TRACE(label);
@@ -1321,8 +1324,11 @@ TEST(File, PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures)
 	         std::pair<std::string_view, std::string_view>{"unsupported-version", "negative/skp1-unsupported-version.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-cipher", "negative/skp1-unsupported-cipher.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-kdf", "negative/skp1-unsupported-kdf.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-chunk-size", "negative/skp1-unsupported-chunk-size.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-params", "negative/skp1-unsupported-scrypt-params.hex"},
 	         std::pair<std::string_view, std::string_view>{"truncated-record", "negative/skp1-truncated-record.hex"},
+	         std::pair<std::string_view, std::string_view>{"record-oversized-plaintext", "negative/skp1-record-oversized-plaintext.hex"},
+	         std::pair<std::string_view, std::string_view>{"record-unsupported-final-flag", "negative/skp1-record-unsupported-final-flag.hex"},
 	     })
 	{
 		SCOPED_TRACE(label);
