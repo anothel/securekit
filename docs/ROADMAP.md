@@ -22,25 +22,11 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-### 1. Tighten Negative Compatibility Coverage
-
-Goal: make malformed or hostile `SKT1`, `SKF1`, and `SKP1` inputs boringly
-rejectable.
-
-- Add negative fixtures only for specific uncovered `docs/FORMAT.md` rules.
-- Keep authentication failures generic and indistinguishable where the security
-  model requires it.
-- Keep path-based file open behavior covered for no-overwrite, temp-file commit,
-  and cleanup after authentication failure.
-- Keep stream-output rollback limits documented and tested only where the API can
-  enforce behavior.
-
-Done when each new fixture names the format rule it protects, and the smallest
-matching test fails without the fix.
+No active release-critical work is queued.
 
 ## Next
 
-### 2. Improve User Entry Points Only When Needed
+### 1. Improve User Entry Points Only When Needed
 
 Goal: make common use safer without expanding scope blindly.
 
@@ -67,8 +53,8 @@ These stay blocked until the gate is met:
 - OpenSSL provider or FIPS helpers: documented support policy and dedicated
   tests.
 - Scheduled long-running fuzz: corpus policy and useful smoke-target signal.
-- Further negative compatibility fixture expansion after the current pass:
-  specific uncovered `FORMAT.md` reject rule.
+- Further negative compatibility fixture expansion: specific uncovered
+  `FORMAT.md` reject rule.
 - CLI split: repeated edit conflicts in `src/cli/main.cpp`.
 - Benchmarks: correctness, format, and release gates stay stable first.
 

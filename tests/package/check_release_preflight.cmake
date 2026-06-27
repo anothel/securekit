@@ -158,9 +158,10 @@ _securekit_require_text(
   "--target release-preflight")
 
 _securekit_require_terms(
-  "roadmap active release-surface items"
+  "roadmap scope guard"
   "${_securekit_roadmap_text}"
-  "Tighten Negative Compatibility Coverage"
+  "No active release-critical work is queued."
+  "Improve User Entry Points Only When Needed"
   "Active roadmap items must name an existing SecureKit surface"
   "Web framework middleware"
   "JWT"

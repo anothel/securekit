@@ -39,3 +39,35 @@ These fixtures are malformed by design. Tests use them to pin specific
   after a final chunk.
 - `skp1-non-monotonic-index.hex`: protects `SKP1` readers reject chunk indexes
   that do not start at 0 and increment by 1.
+
+## Coverage Matrix
+
+- `SKT1` structural format rules: skt1-bad-magic.hex,
+  skt1-unsupported-version.hex, and
+  skt1-missing-tag-format-minimum-size.hex; covered by
+  `Aead.RejectsNegativeCompatibilityFixtureMissingTag` and
+  `Aead.RejectsNegativeCompatibilitySkt1HeaderRuleFixtures`.
+- `SKF1` structural format rules: skf1-bad-magic.hex,
+  skf1-unsupported-version.hex, skf1-unsupported-chunk-size.hex,
+  skf1-truncated-record.hex, skf1-non-final-short-chunk.hex,
+  skf1-missing-final-chunk.hex, skf1-chunk-after-final.hex, and
+  skf1-non-monotonic-index.hex; covered by
+  `File.RejectsNegativeCompatibilityFixtureNonFinalShortChunk` and
+  `File.RejectsNegativeCompatibilitySkf1FormatRuleFixtures`.
+- `SKP1` structural format rules: skp1-bad-magic.hex,
+  skp1-unsupported-version.hex, skp1-unsupported-cipher.hex,
+  skp1-unsupported-kdf.hex, skp1-unsupported-flags.hex,
+  skp1-unsupported-scrypt-params.hex, skp1-truncated-record.hex,
+  skp1-missing-final-chunk.hex, skp1-chunk-after-final.hex, and
+  skp1-non-monotonic-index.hex; covered by
+  `File.PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags` and
+  `File.PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures`.
+- Generic authentication failures are covered by
+  `File.AuthenticationFailuresUseGenericMessage` and
+  `File.PasswordRejectsWrongPasswordAndAad`.
+- Path output safety is covered by `File.RejectsExistingOutput`,
+  `File.RemovesTemporaryOutputAfterOpenFailure`, and
+  `File.RemovesPartialTemporaryOutputAfterLateOpenFailure`.
+- Stream rollback limits are covered by
+  `File.StreamRejectsTrailingDataBeforeWritingFinalPlaintext` and
+  `File.PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext`.

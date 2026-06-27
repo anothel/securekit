@@ -138,6 +138,14 @@ void expect_fixture_exists(const std::set<std::string> &names, const char *name)
 	EXPECT_TRUE(names.contains(name)) << "missing required baseline fixture: " << name;
 }
 
+void expect_text_contains_terms(std::string_view text, std::string_view description, std::initializer_list<std::string_view> terms)
+{
+	for (const std::string_view term : terms)
+	{
+		EXPECT_NE(text.find(term), std::string_view::npos) << description << " missing: " << term;
+	}
+}
+
 std::uint32_t read_be32(const securekit::bytes &bytes, std::size_t offset)
 {
 	return (static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset])) << 24u) |
@@ -156,6 +164,31 @@ TEST(FixtureInventory, ReadmeDocumentsEveryHexFixture)
 TEST(FixtureInventory, NegativeReadmeDocumentsEveryNegativeHexFixture)
 {
 	EXPECT_EQ(documented_negative_hex_fixture_names(), actual_negative_hex_fixture_names());
+}
+
+TEST(FixtureInventory, NegativeReadmeMapsFormatRulesToRegressionTests)
+{
+	const std::string readme = read_text_file(fixture_dir() / "negative" / "README.md");
+
+	expect_text_contains_terms(readme, "negative compatibility coverage matrix", {
+		"## Coverage Matrix",
+		"`SKT1` structural format rules",
+		"`Aead.RejectsNegativeCompatibilityFixtureMissingTag`",
+		"`Aead.RejectsNegativeCompatibilitySkt1HeaderRuleFixtures`",
+		"`SKF1` structural format rules",
+		"`File.RejectsNegativeCompatibilityFixtureNonFinalShortChunk`",
+		"`File.RejectsNegativeCompatibilitySkf1FormatRuleFixtures`",
+		"`SKP1` structural format rules",
+		"`File.PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags`",
+		"`File.PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures`",
+		"`File.AuthenticationFailuresUseGenericMessage`",
+		"`File.PasswordRejectsWrongPasswordAndAad`",
+		"`File.RejectsExistingOutput`",
+		"`File.RemovesTemporaryOutputAfterOpenFailure`",
+		"`File.RemovesPartialTemporaryOutputAfterLateOpenFailure`",
+		"`File.StreamRejectsTrailingDataBeforeWritingFinalPlaintext`",
+		"`File.PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext`",
+	});
 }
 
 TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)
