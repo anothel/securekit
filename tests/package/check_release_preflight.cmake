@@ -28,6 +28,7 @@ endif()
 set(_securekit_cmakelists "${SECUREKIT_SOURCE_DIR}/CMakeLists.txt")
 set(_securekit_readme "${SECUREKIT_SOURCE_DIR}/README.md")
 set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
+set(_securekit_contributing "${SECUREKIT_SOURCE_DIR}/CONTRIBUTING.md")
 set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
@@ -50,6 +51,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
     "${_securekit_readme}"
     "${_securekit_security}"
+    "${_securekit_contributing}"
     "${_securekit_format}"
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
@@ -75,6 +77,7 @@ endforeach()
 file(READ "${_securekit_cmakelists}" _securekit_cmakelists_text)
 file(READ "${_securekit_readme}" _securekit_readme_text)
 file(READ "${_securekit_security}" _securekit_security_text)
+file(READ "${_securekit_contributing}" _securekit_contributing_text)
 file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
@@ -171,6 +174,18 @@ _securekit_require_terms(
   "diagnostic web routes")
 
 _securekit_require_terms(
+  "contributor one-command local checks"
+  "${_securekit_contributing_text}"
+  "One-command local check"
+  "cmake --build build --config Release --target release-preflight"
+  "SECUREKIT_BUILD_TESTS=ON"
+  "SECUREKIT_BUILD_CLI=ON"
+  "SECUREKIT_INSTALL_CLI=ON"
+  "Do not add public API"
+  "regression check"
+  "rollback plan.")
+
+_securekit_require_terms(
   "README verified feature claims"
   "${_securekit_readme_text}"
   "Hex encode and decode."
@@ -199,6 +214,12 @@ _securekit_require_terms(
   "CLI command usage"
   "install/export/package artifacts"
   "release assets")
+
+_securekit_require_terms(
+  "README contributor entry point"
+  "${_securekit_readme_text}"
+  "[CONTRIBUTING.md](CONTRIBUTING.md)"
+  "one-command local release check")
 
 _securekit_require_terms(
   "public aggregate header feature mapping"

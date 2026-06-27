@@ -62,6 +62,9 @@ and provenance files before release.
 
 ## Build
 
+Contributor workflow: see [CONTRIBUTING.md](CONTRIBUTING.md) for the
+one-command local release check.
+
 Generic CMake:
 
 ```sh

@@ -30,8 +30,6 @@ No active release-critical work is queued.
 
 Goal: make common use safer without expanding scope blindly.
 
-- Add `CONTRIBUTING.md` only when outside contributors need one-command local
-  checks.
 - Add examples only when README recipes become too crowded.
 - Add CLI `inspect` or `verify` only after operators provide real use cases.
 - Add package-manager recipes only after release archives are validated.
