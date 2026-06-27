@@ -32,6 +32,7 @@ set(_securekit_contributing "${SECUREKIT_SOURCE_DIR}/CONTRIBUTING.md")
 set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
+set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
@@ -58,6 +59,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_format}"
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
+    "${_securekit_fuzzing}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
     "${_securekit_negative_fixtures_readme}"
@@ -87,6 +89,7 @@ file(READ "${_securekit_contributing}" _securekit_contributing_text)
 file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
+file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
@@ -281,9 +284,23 @@ _securekit_require_terms(
   "non-final short chunk"
   "`SKP1` structural format rules"
   "unsupported scrypt parameters"
+  "skp1-unsupported-scrypt-n.hex"
+  "skp1-unsupported-scrypt-r.hex"
+  "skp1-unsupported-scrypt-p.hex"
+  "duplicate index is generated in test"
   "Generic authentication failures"
   "Path output safety"
   "Stream rollback limits")
+
+_securekit_require_terms(
+  "fuzz corpus policy"
+  "${_securekit_fuzzing_text}"
+  "## Corpus Policy"
+  "Keep checked-in corpus entries small, stable, and format-focused."
+  "tests/fixtures"
+  "tests/fuzz/corpus"
+  "Minimized crash reproducers"
+  "Do not check in generated fuzz output")
 
 _securekit_require_terms(
   "CMake examples check target"

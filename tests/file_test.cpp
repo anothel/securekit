@@ -743,6 +743,11 @@ TEST(File, DetectsTruncationAppendAndReorder)
 	write_file(sealed_path, reordered);
 	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
 
+	securekit::bytes duplicate_index = original;
+	std::fill_n(duplicate_index.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size), 4, std::byte{0x00});
+	write_file(sealed_path, duplicate_index);
+	expect_invalid_packet([&] { securekit::open_file(sealed_path, opened_path, key); });
+
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
@@ -1242,6 +1247,11 @@ TEST(File, PasswordDetectsTruncationAppendAndReorder)
 	write_file(sealed_path, reordered);
 	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
 
+	securekit::bytes duplicate_index = original;
+	std::fill_n(duplicate_index.begin() + static_cast<std::ptrdiff_t>(header_size + full_record_size), 4, std::byte{0x00});
+	write_file(sealed_path, duplicate_index);
+	expect_invalid_packet([&] { securekit::open_file_with_password(sealed_path, opened_path, password); });
+
 	std::filesystem::remove(plain_path);
 	std::filesystem::remove(sealed_path);
 	std::filesystem::remove(opened_path);
@@ -1326,6 +1336,9 @@ TEST(File, PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures)
 	         std::pair<std::string_view, std::string_view>{"unsupported-kdf", "negative/skp1-unsupported-kdf.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-chunk-size", "negative/skp1-unsupported-chunk-size.hex"},
 	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-params", "negative/skp1-unsupported-scrypt-params.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-n", "negative/skp1-unsupported-scrypt-n.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-r", "negative/skp1-unsupported-scrypt-r.hex"},
+	         std::pair<std::string_view, std::string_view>{"unsupported-scrypt-p", "negative/skp1-unsupported-scrypt-p.hex"},
 	         std::pair<std::string_view, std::string_view>{"truncated-record", "negative/skp1-truncated-record.hex"},
 	         std::pair<std::string_view, std::string_view>{"record-oversized-plaintext", "negative/skp1-record-oversized-plaintext.hex"},
 	         std::pair<std::string_view, std::string_view>{"record-unsupported-final-flag", "negative/skp1-record-unsupported-final-flag.hex"},

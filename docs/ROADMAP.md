@@ -93,8 +93,8 @@ after its gate is proven and a runnable check is named.
   plaintext-before-auth and output ownership.
 - OpenSSL provider or FIPS helpers: gate is documented support policy and
   dedicated tests.
-- Scheduled long-running fuzz: gate is corpus policy and useful smoke-target
-  signal.
+- Scheduled long-running fuzz: gate is repeated useful `fuzz-smoke` signal and
+  an owner for the scheduled job.
 - Further negative compatibility fixture expansion: gate is a specific
   uncovered `FORMAT.md` reject rule found by comparing `docs/FORMAT.md` with
   `tests/fixtures/negative/README.md`.

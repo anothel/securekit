@@ -58,6 +58,9 @@ Files are lowercase hex encodings of serialized packets/files:
 - `negative/skp1-unsupported-kdf.hex`: malformed `SKP1` header with unsupported KDF ID.
 - `negative/skp1-unsupported-chunk-size.hex`: malformed `SKP1` header with unsupported chunk size.
 - `negative/skp1-unsupported-scrypt-params.hex`: malformed `SKP1` header with unsupported scrypt parameters.
+- `negative/skp1-unsupported-scrypt-n.hex`: malformed `SKP1` header with unsupported scrypt `N`.
+- `negative/skp1-unsupported-scrypt-r.hex`: malformed `SKP1` header with unsupported scrypt `r`.
+- `negative/skp1-unsupported-scrypt-p.hex`: malformed `SKP1` header with unsupported scrypt `p`.
 - `negative/skp1-truncated-record.hex`: malformed `SKP1` file with truncated final chunk record.
 - `negative/skp1-record-oversized-plaintext.hex`: malformed `SKP1` record with plaintext size above 1 MiB.
 - `negative/skp1-record-unsupported-final-flag.hex`: malformed `SKP1` record with unsupported final flag.
