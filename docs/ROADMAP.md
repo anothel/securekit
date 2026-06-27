@@ -22,11 +22,60 @@ cmake --build build --config Release --target release-preflight
 
 ## Now
 
-No active release-critical work is queued.
+### Prepare v0.2.0 release candidate
+
+Surface: CLI, release assets, package checks, docs.
+
+Problem:
+`main` contains post-v0.1.0 user-facing CLI verification commands, checked
+examples, negative compatibility coverage, and release provenance/SBOM work
+that are not yet shipped in a release. This is release closure work, not a
+reason to add more features.
+
+Checks:
+
+- `release-preflight`
+- SecureKit CI
+- Linux sanitizer job
+- macOS package-check
+- Windows package-check
+- CodeQL
+- README, `FORMAT.md`, `SECURITY_MODEL.md`, and release checklist match
+  behavior
+
+Rollback:
+Delay the tag, or revert/postpone the CLI verification commands if the surface
+is not ready to support.
+
+Done:
+v0.2.0 is tagged and published with release notes covering:
+
+- `verify-file` / `verify-file-password`
+- checked basic example
+- negative compatibility fixture hardening
+- release SBOM / provenance attestation changes
 
 ## Next
 
-No active user-entry-point work is queued.
+### Dogfood SecureKit in one real consumer
+
+Surface: C++ API, installed CMake package, CLI.
+
+Problem:
+The project needs real call-site pressure before adding Result-style APIs, OO
+APIs, new KDF profiles, streaming formats, or package channels.
+
+Check:
+
+- Build one small external consumer from the installed package or release
+  archive.
+- Use at least: `keygen`, `seal-file` / `open-file`, `verify-file`, password
+  file flow, and one C++ API path.
+- Record repeated friction as concrete issues with command/API examples.
+
+Done:
+Either no new surface is needed, or a parked item has a proven gate and can move
+to `Next`.
 
 ## Parked
 
