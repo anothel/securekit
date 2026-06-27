@@ -46,7 +46,8 @@ run `securekit --version`.
 `release-preflight` runs `check`, `package-check`, and `release-workflow-check`,
 then checks SemVer shape, README and release-checklist version examples,
 documented local target names, package artifact version prefixes, staged release
-assets, `SHA256SUMS.txt`, and release provenance attestation wiring.
+assets, `SHA256SUMS.txt`, the release SPDX SBOM, and release provenance
+attestation wiring.
 
 On Windows with dynamically linked OpenSSL, configure the build with
 `SECUREKIT_OPENSSL_RUNTIME_DIR` so tests and package checks can run installed
@@ -80,6 +81,7 @@ Replace `v0.1.0` with the version chosen in step 1.
 After the tag workflow finishes, check the GitHub Release for:
 
 - One `SHA256SUMS.txt`.
+- One `securekit-X.Y.Z-release.spdx.json`.
 - One source `.zip`.
 - One source `.tar.gz`.
 - Binary archives from all package-check jobs, each prefixed by the CI artifact
@@ -99,6 +101,8 @@ gh attestation verify securekit-0.1.0-source.tar.gz --repo anothel/securekit
 ```
 
 Replace the archive name with the released version and asset you downloaded.
+Inspect `securekit-X.Y.Z-release.spdx.json` to map release assets to their
+SHA-256 checksums without unpacking every archive.
 
 ## 7. Failure Handling
 

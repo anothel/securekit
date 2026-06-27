@@ -38,19 +38,7 @@ Goal: keep the public story no broader than the verified C++ library surface.
 Done when release-relevant docs and claims are checked by `release-preflight`,
 and every active roadmap item maps to an existing SecureKit surface.
 
-### 2. Add Release SBOM After Archive Contents Stabilize
-
-Goal: let users inspect release contents without unpacking every archive.
-
-- Add SBOM generation after archive contents stop changing.
-- Document user verification steps in `docs/RELEASE_CHECKLIST.md`.
-
-Done when release generation fails on missing SBOM output, and users can map
-release assets to documented package contents.
-
-## Next
-
-### 3. Tighten Negative Compatibility Coverage
+### 2. Tighten Negative Compatibility Coverage
 
 Goal: make malformed or hostile `SKT1`, `SKF1`, and `SKP1` inputs boringly
 rejectable.
@@ -66,7 +54,9 @@ rejectable.
 Done when each new fixture names the format rule it protects, and the smallest
 matching test fails without the fix.
 
-### 4. Improve User Entry Points Only When Needed
+## Next
+
+### 3. Improve User Entry Points Only When Needed
 
 Goal: make common use safer without expanding scope blindly.
 

@@ -131,7 +131,7 @@ _securekit_require_terms(
   "roadmap active release-surface items"
   "${_securekit_roadmap_text}"
   "Keep Claims, Contracts, and Tests Aligned"
-  "Add Release SBOM After Archive Contents Stabilize"
+  "Tighten Negative Compatibility Coverage"
   "Done when release-relevant docs and claims are checked by `release-preflight`"
   "Web framework middleware"
   "JWT"
@@ -238,12 +238,14 @@ _securekit_require_terms(
   "release provenance verification docs"
   "${_securekit_release_checklist_text}"
   "GitHub artifact attestations"
+  "securekit-X.Y.Z-release.spdx.json"
   "gh attestation verify SHA256SUMS.txt --repo anothel/securekit"
   "sha256sum -c SHA256SUMS.txt")
 _securekit_require_terms(
   "README release provenance claim"
   "${_securekit_readme_text}"
   "artifact attestations for release assets"
+  "release SPDX SBOM"
   "release provenance attestation wiring")
 
 _securekit_require_terms(
@@ -326,7 +328,7 @@ _securekit_require_terms(
   "authentication_failed"
   "backend_failure"
   "Release assets are checksummed and provenance-attested by GitHub Actions"
-  "No SBOM is generated yet")
+  "Release assets include a generated SPDX SBOM")
 
 _securekit_require_terms(
   "KDF agility downgrade and fixture gates"
@@ -402,6 +404,22 @@ if(NOT EXISTS "${_securekit_checksum_file}")
   message(FATAL_ERROR "Release asset checksum file not found: ${_securekit_checksum_file}")
 endif()
 
+set(_securekit_sbom_name "${SECUREKIT_PROJECT_NAME}-${SECUREKIT_PROJECT_VERSION}-release.spdx.json")
+set(_securekit_sbom_file "${_securekit_release_asset_dir}/${_securekit_sbom_name}")
+if(NOT EXISTS "${_securekit_sbom_file}")
+  message(FATAL_ERROR "Release SBOM not found: ${_securekit_sbom_file}")
+endif()
+file(READ "${_securekit_sbom_file}" _securekit_sbom_text)
+_securekit_require_terms(
+  "release SBOM SPDX content"
+  "${_securekit_sbom_text}"
+  "\"spdxVersion\": \"SPDX-2.3\""
+  "\"SPDXID\": \"SPDXRef-DOCUMENT\""
+  "\"name\": \"${SECUREKIT_PROJECT_NAME} ${SECUREKIT_PROJECT_VERSION} release assets\""
+  "\"packages\""
+  "\"checksums\""
+  "\"algorithm\": \"SHA256\"")
+
 file(GLOB _securekit_staged_release_assets LIST_DIRECTORIES FALSE
   "${_securekit_release_asset_dir}/*")
 list(FILTER _securekit_staged_release_assets EXCLUDE REGEX "/SHA256SUMS\\.txt$")
@@ -418,7 +436,7 @@ endif()
 
 set(_securekit_checksum_asset_names)
 foreach(_securekit_checksum_line IN LISTS _securekit_checksum_lines)
-  if(NOT _securekit_checksum_line MATCHES "^([0-9a-f]+)  (.+\\.(zip|tar\\.gz))$")
+  if(NOT _securekit_checksum_line MATCHES "^([0-9a-f]+)  (.+\\.(zip|tar\\.gz|spdx\\.json))$")
     message(FATAL_ERROR "Release asset checksum line format mismatch: ${_securekit_checksum_line}")
   endif()
   set(_securekit_expected_sha256 "${CMAKE_MATCH_1}")

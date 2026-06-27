@@ -156,8 +156,8 @@ cmake --install build --prefix /path/to/prefix --config Release
 
 Release automation runs on version tags matching `v*`. A tag push runs the CI
 matrix, gathers package artifacts, writes `SHA256SUMS.txt`, creates GitHub
-artifact attestations for release assets, and creates or updates the GitHub
-Release.
+artifact attestations for release assets, writes a release SPDX SBOM, and
+creates or updates the GitHub Release.
 
 The tag version must match the CMake project version. For example,
 `project(... VERSION 0.1.0)` should be released with tag `v0.1.0`.

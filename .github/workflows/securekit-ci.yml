@@ -404,7 +404,59 @@ jobs:
           done
 
           find dist -maxdepth 1 -type f -print | sort
-          (cd dist && sha256sum * > SHA256SUMS.txt)
+
+      - name: Generate release SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          sbom_name="securekit-${tag_version}-release.spdx.json"
+          python3 - "$tag_version" "$sbom_name" <<'PY'
+          import datetime
+          import hashlib
+          import json
+          import pathlib
+          import re
+          import sys
+
+          tag_version = sys.argv[1]
+          sbom_name = sys.argv[2]
+          dist = pathlib.Path("dist")
+          assets = sorted(
+              path for path in dist.iterdir()
+              if path.is_file() and path.name not in {sbom_name, "SHA256SUMS.txt"}
+          )
+          packages = []
+          for asset in assets:
+              spdx_id = re.sub(r"[^A-Za-z0-9.-]", "-", asset.name)
+              packages.append({
+                  "name": asset.name,
+                  "SPDXID": f"SPDXRef-Package-{spdx_id}",
+                  "downloadLocation": "NOASSERTION",
+                  "filesAnalyzed": False,
+                  "checksums": [{
+                      "algorithm": "SHA256",
+                      "checksumValue": hashlib.sha256(asset.read_bytes()).hexdigest(),
+                  }],
+                  "licenseConcluded": "NOASSERTION",
+                  "licenseDeclared": "NOASSERTION",
+                  "copyrightText": "NOASSERTION",
+              })
+          document = {
+              "spdxVersion": "SPDX-2.3",
+              "dataLicense": "CC0-1.0",
+              "SPDXID": "SPDXRef-DOCUMENT",
+              "name": f"securekit {tag_version} release assets",
+              "documentNamespace": f"https://github.com/anothel/securekit/releases/tag/v{tag_version}/sbom",
+              "creationInfo": {
+                  "created": datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+                  "creators": ["Tool: SecureKit release workflow"],
+              },
+              "packages": packages,
+          }
+          (dist / sbom_name).write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+          PY
+          (cd dist && rm -f SHA256SUMS.txt && sha256sum * > SHA256SUMS.txt)
 
       - name: Attest release assets
         uses: actions/attest-build-provenance@v3

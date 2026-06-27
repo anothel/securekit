@@ -150,6 +150,51 @@ foreach(_securekit_binary_artifact IN LISTS _securekit_binary_artifacts)
 endforeach()
 
 list(SORT _securekit_staged_names)
+set(_securekit_sbom_name "${SECUREKIT_PROJECT_NAME}-${SECUREKIT_PROJECT_VERSION}-release.spdx.json")
+set(_securekit_sbom_file "${_securekit_release_asset_dir}/${_securekit_sbom_name}")
+string(TIMESTAMP _securekit_sbom_created "%Y-%m-%dT%H:%M:%SZ" UTC)
+file(WRITE "${_securekit_sbom_file}"
+  "{\n"
+  "  \"spdxVersion\": \"SPDX-2.3\",\n"
+  "  \"dataLicense\": \"CC0-1.0\",\n"
+  "  \"SPDXID\": \"SPDXRef-DOCUMENT\",\n"
+  "  \"name\": \"${SECUREKIT_PROJECT_NAME} ${SECUREKIT_PROJECT_VERSION} release assets\",\n"
+  "  \"documentNamespace\": \"https://github.com/anothel/securekit/releases/tag/v${SECUREKIT_PROJECT_VERSION}/sbom\",\n"
+  "  \"creationInfo\": {\n"
+  "    \"created\": \"${_securekit_sbom_created}\",\n"
+  "    \"creators\": [\"Tool: SecureKit release-preflight\"]\n"
+  "  },\n"
+  "  \"packages\": [\n")
+set(_securekit_sbom_separator "")
+foreach(_securekit_staged_name IN LISTS _securekit_staged_names)
+  file(SHA256
+    "${_securekit_release_asset_dir}/${_securekit_staged_name}"
+    _securekit_staged_sha256)
+  string(REGEX REPLACE "[^A-Za-z0-9.-]" "-" _securekit_spdx_id "${_securekit_staged_name}")
+  file(APPEND "${_securekit_sbom_file}"
+    "${_securekit_sbom_separator}"
+    "    {\n"
+    "      \"name\": \"${_securekit_staged_name}\",\n"
+    "      \"SPDXID\": \"SPDXRef-Package-${_securekit_spdx_id}\",\n"
+    "      \"downloadLocation\": \"NOASSERTION\",\n"
+    "      \"filesAnalyzed\": false,\n"
+    "      \"checksums\": [{\"algorithm\": \"SHA256\", \"checksumValue\": \"${_securekit_staged_sha256}\"}],\n"
+    "      \"licenseConcluded\": \"NOASSERTION\",\n"
+    "      \"licenseDeclared\": \"NOASSERTION\",\n"
+    "      \"copyrightText\": \"NOASSERTION\"\n"
+    "    }")
+  set(_securekit_sbom_separator ",\n")
+endforeach()
+file(APPEND "${_securekit_sbom_file}"
+  "\n"
+  "  ]\n"
+  "}\n")
+
+if(NOT EXISTS "${_securekit_sbom_file}")
+  message(FATAL_ERROR "Release SBOM not found: ${_securekit_sbom_file}")
+endif()
+list(APPEND _securekit_staged_names "${_securekit_sbom_name}")
+
 set(_securekit_checksum_file "${_securekit_release_asset_dir}/SHA256SUMS.txt")
 file(WRITE "${_securekit_checksum_file}" "")
 
@@ -170,7 +215,7 @@ if(NOT _securekit_checksum_line_count EQUAL _securekit_staged_count)
 endif()
 
 foreach(_securekit_checksum_line IN LISTS _securekit_checksum_lines)
-  if(NOT _securekit_checksum_line MATCHES "^([0-9a-f]+)  (.+\\.(zip|tar\\.gz))$")
+  if(NOT _securekit_checksum_line MATCHES "^([0-9a-f]+)  (.+\\.(zip|tar\\.gz|spdx\\.json))$")
     message(FATAL_ERROR "SHA256SUMS.txt line format mismatch: ${_securekit_checksum_line}")
   endif()
   string(LENGTH "${CMAKE_MATCH_1}" _securekit_checksum_hash_length)

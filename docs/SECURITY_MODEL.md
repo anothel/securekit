@@ -140,4 +140,4 @@ reported separately as `invalid_packet`.
 - No protection against compromised OpenSSL providers.
 - No rollback guarantee for stream outputs.
 - Release assets are checksummed and provenance-attested by GitHub Actions.
-- No SBOM is generated yet.
+- Release assets include a generated SPDX SBOM.
