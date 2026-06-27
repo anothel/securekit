@@ -816,7 +816,7 @@ TEST(File, RejectsNegativeCompatibilityFixtureNonFinalShortChunk)
 
 TEST(File, RejectsNegativeCompatibilitySkf1FormatRuleFixtures)
 {
-	for (const auto [label, fixture_name] : {
+	for (const auto& [label, fixture_name] : {
 	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skf1-missing-final-chunk.hex"},
 	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skf1-chunk-after-final.hex"},
 	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skf1-non-monotonic-index.hex"},
@@ -1313,7 +1313,7 @@ TEST(File, PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags)
 
 TEST(File, PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures)
 {
-	for (const auto [label, fixture_name] : {
+	for (const auto& [label, fixture_name] : {
 	         std::pair<std::string_view, std::string_view>{"missing-final-chunk", "negative/skp1-missing-final-chunk.hex"},
 	         std::pair<std::string_view, std::string_view>{"chunk-after-final", "negative/skp1-chunk-after-final.hex"},
 	         std::pair<std::string_view, std::string_view>{"non-monotonic-index", "negative/skp1-non-monotonic-index.hex"},
