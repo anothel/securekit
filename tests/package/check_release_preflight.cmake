@@ -33,6 +33,8 @@ set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
+set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
+set(_securekit_cli_source "${SECUREKIT_SOURCE_DIR}/src/cli/main.cpp")
 
 foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
@@ -42,7 +44,9 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
     "${_securekit_release_checklist}"
-    "${_securekit_roadmap}")
+    "${_securekit_roadmap}"
+    "${_securekit_public_header}"
+    "${_securekit_cli_source}")
   if(NOT EXISTS "${_securekit_required_file}")
     message(FATAL_ERROR "Release preflight file not found: ${_securekit_required_file}")
   endif()
@@ -56,6 +60,8 @@ file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
+file(READ "${_securekit_public_header}" _securekit_public_header_text)
+file(READ "${_securekit_cli_source}" _securekit_cli_source_text)
 
 function(_securekit_require_text description haystack needle)
   string(FIND "${haystack}" "${needle}" _securekit_found_at)
@@ -74,6 +80,22 @@ endfunction()
 function(_securekit_require_terms description haystack)
   foreach(_securekit_term IN LISTS ARGN)
     _securekit_require_text(
+      "${description}"
+      "${haystack}"
+      "${_securekit_term}")
+  endforeach()
+endfunction()
+
+function(_securekit_forbid_text description haystack needle)
+  string(FIND "${haystack}" "${needle}" _securekit_found_at)
+  if(NOT _securekit_found_at EQUAL -1)
+    message(FATAL_ERROR "Release preflight found out-of-scope ${description}: ${needle}")
+  endif()
+endfunction()
+
+function(_securekit_forbid_terms description haystack)
+  foreach(_securekit_term IN LISTS ARGN)
+    _securekit_forbid_text(
       "${description}"
       "${haystack}"
       "${_securekit_term}")
@@ -104,6 +126,94 @@ _securekit_require_text(
   "roadmap local target release-preflight"
   "${_securekit_roadmap_text}"
   "--target release-preflight")
+
+_securekit_require_terms(
+  "roadmap active release-surface items"
+  "${_securekit_roadmap_text}"
+  "Keep Claims, Contracts, and Tests Aligned"
+  "Add Supply-Chain Trust After Release Shape Stabilizes"
+  "Done when release-relevant docs and claims are checked by `release-preflight`"
+  "Web framework middleware"
+  "JWT"
+  "CSRF"
+  "NestJS"
+  "rate limiting"
+  "diagnostic web routes")
+
+_securekit_require_terms(
+  "README verified feature claims"
+  "${_securekit_readme_text}"
+  "Hex encode and decode."
+  "Base64 encode and decode."
+  "Base64URL encode and decode."
+  "SHA-256 digest."
+  "HMAC-SHA-256 digest."
+  "HKDF-SHA-256 key derivation."
+  "Constant-time byte comparison for equal-length secret values."
+  "Cryptographically secure random bytes."
+  "URL-safe random token generation."
+  "AES-256-GCM packet encryption and decryption."
+  "Move-only packet streaming encryptor and decryptor for `SKT1`."
+  "AES-256-GCM key wrapping helpers."
+  "Chunked file sealing and opening with path and stream APIs."
+  "Password-based chunked file sealing and opening with `SKP1` and scrypt.")
+
+_securekit_require_terms(
+  "public aggregate header feature mapping"
+  "${_securekit_public_header_text}"
+  "securekit/aead.hpp"
+  "securekit/base64.hpp"
+  "securekit/compare.hpp"
+  "securekit/file.hpp"
+  "securekit/hash.hpp"
+  "securekit/hex.hpp"
+  "securekit/key_wrap.hpp"
+  "securekit/packet_stream.hpp"
+  "securekit/random.hpp"
+  "securekit/version.hpp")
+
+_securekit_require_terms(
+  "CLI release surface mapping"
+  "${_securekit_cli_source_text}"
+  "securekit token <byte-size>"
+  "securekit sha256 --text <text>"
+  "securekit hmac-sha256 --key-hex <hex>"
+  "securekit hkdf-sha256 --key-hex <hex>"
+  "securekit hex-encode --text <text>"
+  "securekit base64url-encode --text <text>"
+  "securekit wrap-key"
+  "securekit unwrap-key"
+  "securekit encrypt"
+  "securekit decrypt"
+  "securekit seal-file"
+  "securekit open-file"
+  "securekit seal-file-password"
+  "securekit open-file-password")
+
+_securekit_forbid_terms(
+  "README web middleware scope expansion"
+  "${_securekit_readme_text}"
+  "JWT"
+  "CSRF"
+  "NestJS"
+  "rate limiting"
+  "diagnostic routes")
+_securekit_forbid_terms(
+  "FORMAT web middleware scope expansion"
+  "${_securekit_format_text}"
+  "JWT"
+  "CSRF"
+  "NestJS"
+  "rate limiting"
+  "diagnostic routes")
+_securekit_forbid_terms(
+  "SECURITY_MODEL web middleware scope expansion"
+  "${_securekit_security_model_text}"
+  "JWT"
+  "CSRF"
+  "NestJS"
+  "rate limiting"
+  "diagnostic routes")
 
 foreach(_securekit_target_name IN ITEMS check package-check release-workflow-check)
   _securekit_require_text(
