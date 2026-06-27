@@ -54,35 +54,11 @@ These fixtures are malformed by design. Tests use them to pin specific
 
 ## Coverage Matrix
 
-- `SKT1` structural format rules: skt1-bad-magic.hex,
-  skt1-unsupported-version.hex, and
-  skt1-missing-tag-format-minimum-size.hex; covered by
-  `Aead.RejectsNegativeCompatibilityFixtureMissingTag` and
-  `Aead.RejectsNegativeCompatibilitySkt1HeaderRuleFixtures`.
-- `SKF1` structural format rules: skf1-bad-magic.hex,
-  skf1-unsupported-version.hex, skf1-unsupported-algorithm.hex,
-  skf1-unsupported-chunk-size.hex, skf1-truncated-record.hex,
-  skf1-record-oversized-plaintext.hex,
-  skf1-record-unsupported-final-flag.hex,
-  skf1-non-final-short-chunk.hex, skf1-missing-final-chunk.hex,
-  skf1-chunk-after-final.hex, and skf1-non-monotonic-index.hex; covered by
-  `File.RejectsNegativeCompatibilityFixtureNonFinalShortChunk` and
-  `File.RejectsNegativeCompatibilitySkf1FormatRuleFixtures`.
-- `SKP1` structural format rules: skp1-bad-magic.hex,
-  skp1-unsupported-version.hex, skp1-unsupported-cipher.hex,
-  skp1-unsupported-kdf.hex, skp1-unsupported-flags.hex,
-  skp1-unsupported-chunk-size.hex, skp1-unsupported-scrypt-params.hex,
-  skp1-truncated-record.hex, skp1-record-oversized-plaintext.hex,
-  skp1-record-unsupported-final-flag.hex, skp1-missing-final-chunk.hex,
-  skp1-chunk-after-final.hex, and skp1-non-monotonic-index.hex; covered by
-  `File.PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags` and
-  `File.PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures`.
-- Generic authentication failures are covered by
-  `File.AuthenticationFailuresUseGenericMessage` and
-  `File.PasswordRejectsWrongPasswordAndAad`.
-- Path output safety is covered by `File.RejectsExistingOutput`,
-  `File.RemovesTemporaryOutputAfterOpenFailure`, and
-  `File.RemovesPartialTemporaryOutputAfterLateOpenFailure`.
-- Stream rollback limits are covered by
-  `File.StreamRejectsTrailingDataBeforeWritingFinalPlaintext` and
-  `File.PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext`.
+| Family | `FORMAT.md` reject rule group | Fixture coverage | Regression check |
+| --- | --- | --- | --- |
+| `SKT1` structural format rules | malformed magic, unsupported version, missing tag, minimum size | skt1-bad-magic.hex, skt1-unsupported-version.hex, skt1-missing-tag-format-minimum-size.hex | `Aead.RejectsNegativeCompatibilityFixtureMissingTag`, `Aead.RejectsNegativeCompatibilitySkt1HeaderRuleFixtures` |
+| `SKF1` structural format rules | malformed magic, unsupported version, unsupported Cipher/KDF, unsupported chunk size, truncated records, oversized plaintext size, unsupported final flag, non-final short chunk, missing final chunk, chunk after final, non-monotonic index | skf1-bad-magic.hex, skf1-unsupported-version.hex, skf1-unsupported-algorithm.hex, skf1-unsupported-chunk-size.hex, skf1-truncated-record.hex, skf1-record-oversized-plaintext.hex, skf1-record-unsupported-final-flag.hex, skf1-non-final-short-chunk.hex, skf1-missing-final-chunk.hex, skf1-chunk-after-final.hex, skf1-non-monotonic-index.hex | `File.RejectsNegativeCompatibilityFixtureNonFinalShortChunk`, `File.RejectsNegativeCompatibilitySkf1FormatRuleFixtures` |
+| `SKP1` structural format rules | malformed magic, unsupported version, unsupported cipher, unsupported KDF, unsupported flags, unsupported chunk size, unsupported scrypt parameters, truncated records, oversized plaintext size, unsupported final flag, missing final chunk, chunk after final, non-monotonic index | skp1-bad-magic.hex, skp1-unsupported-version.hex, skp1-unsupported-cipher.hex, skp1-unsupported-kdf.hex, skp1-unsupported-flags.hex, skp1-unsupported-chunk-size.hex, skp1-unsupported-scrypt-params.hex, skp1-truncated-record.hex, skp1-record-oversized-plaintext.hex, skp1-record-unsupported-final-flag.hex, skp1-missing-final-chunk.hex, skp1-chunk-after-final.hex, skp1-non-monotonic-index.hex | `File.PasswordRejectsNegativeCompatibilityFixtureUnsupportedFlags`, `File.PasswordRejectsNegativeCompatibilitySkp1FormatRuleFixtures` |
+| Generic authentication failures | wrong key, wrong password, wrong AAD, modified non-structural authenticated bytes, modified ciphertext, nonce, or tag | positive fixtures modified inside tests | `File.AuthenticationFailuresUseGenericMessage`, `File.PasswordRejectsWrongPasswordAndAad` |
+| Path output safety | no overwrite, temporary output cleanup after authentication failure | positive fixtures modified inside tests | `File.RejectsExistingOutput`, `File.RemovesTemporaryOutputAfterOpenFailure`, `File.RemovesPartialTemporaryOutputAfterLateOpenFailure` |
+| Stream rollback limits | caller-owned stream output cannot be fully rolled back after accepted writes | positive fixtures modified inside tests | `File.StreamRejectsTrailingDataBeforeWritingFinalPlaintext`, `File.PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext` |

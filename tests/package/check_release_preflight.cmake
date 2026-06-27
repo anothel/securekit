@@ -34,6 +34,7 @@ set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
+set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
 set(_securekit_example_cmakelists "${SECUREKIT_SOURCE_DIR}/examples/basic/CMakeLists.txt")
 set(_securekit_example_main "${SECUREKIT_SOURCE_DIR}/examples/basic/main.cpp")
 set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
@@ -59,6 +60,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_kdf_agility}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
+    "${_securekit_negative_fixtures_readme}"
     "${_securekit_example_cmakelists}"
     "${_securekit_example_main}"
     "${_securekit_public_header}"
@@ -87,6 +89,7 @@ file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
+file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
 file(READ "${_securekit_example_cmakelists}" _securekit_example_cmakelists_text)
 file(READ "${_securekit_example_main}" _securekit_example_main_text)
 file(READ "${_securekit_public_header}" _securekit_public_header_text)
@@ -175,6 +178,7 @@ _securekit_require_terms(
   "Dogfood SecureKit in one real consumer"
   "real call-site pressure"
   "parked item has a proven gate"
+  "Keep v0.1.x public API changes minimal"
   "Active roadmap items must name an existing SecureKit surface"
   "Web framework middleware"
   "JWT"
@@ -232,6 +236,8 @@ _securekit_require_terms(
   "securekit verify-file-password"
   "without creating a plaintext output file"
   "write nothing to stdout on success"
+  "exit code: 0 on success, 1 on failure"
+  "Usage, parse, file, or decoding failures return exit code 1"
   "authentication verification")
 
 _securekit_require_terms(
@@ -242,7 +248,9 @@ _securekit_require_terms(
   "take no output path"
   "discard"
   "recovered plaintext"
-  "exit code")
+  "exit code 0"
+  "exit code 1"
+  "writes no stdout for failed commands")
 
 _securekit_require_terms(
   "README contributor entry point"
@@ -255,9 +263,27 @@ _securekit_require_terms(
   "${_securekit_readme_text}"
   "[examples/basic](examples/basic)"
   "cmake --build build --config Release --target examples-check"
+  "consumer"
+  "CMake project against the installed package"
   "FetchContent"
   "release source archive"
   "release archive checksum")
+
+_securekit_require_terms(
+  "negative compatibility fixture matrix"
+  "${_securekit_negative_fixtures_readme_text}"
+  "## Coverage Matrix"
+  "| Family | `FORMAT.md` reject rule group | Fixture coverage | Regression check |"
+  "`SKT1` structural format rules"
+  "malformed magic, unsupported version, missing tag, minimum size"
+  "`SKF1` structural format rules"
+  "unsupported Cipher/KDF"
+  "non-final short chunk"
+  "`SKP1` structural format rules"
+  "unsupported scrypt parameters"
+  "Generic authentication failures"
+  "Path output safety"
+  "Stream rollback limits")
 
 _securekit_require_terms(
   "CMake examples check target"

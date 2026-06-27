@@ -104,8 +104,8 @@ function(run_cli_failure expected_stderr)
     OUTPUT_VARIABLE stdout
     ERROR_VARIABLE stderr)
 
-  if(result EQUAL 0)
-    message(FATAL_ERROR "Expected command to fail: ${ARGN}")
+  if(NOT result EQUAL 1)
+    message(FATAL_ERROR "Expected exit 1, got ${result}: ${ARGN}")
   endif()
   if(NOT stdout STREQUAL "")
     message(FATAL_ERROR "Failed command should not write stdout. stdout=[${stdout}]")

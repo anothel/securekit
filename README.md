@@ -88,10 +88,11 @@ cmake --build build-vcpkg --config Release --target release-preflight
 ```
 
 `package-check` installs SecureKit, runs the installed CLI, verifies a consumer
-CMake project, builds CPack binary and source archives, checks key files inside
-those archives, extracts one source archive, and verifies that the extracted
-source can configure, build, install, and run `securekit --version`. Generated
-archives are written under `<build>/package-check/artifacts`.
+CMake project against the installed package, builds CPack binary and source
+archives, checks key files inside those archives, extracts one source archive,
+and verifies that the extracted source can configure, build, install, and run
+`securekit --version`. Generated archives are written under
+`<build>/package-check/artifacts`.
 `release-preflight` runs the local release targets, stages release assets under
 `<build>/package-check/release-assets`, writes `SHA256SUMS.txt`, and then checks
 SemVer, README/release-checklist version examples, documented local targets,
@@ -292,7 +293,8 @@ must provide exactly one input source and one key source or password source.
 require exactly one output destination. `verify-file` and `verify-file-password`
 take no output option, authenticate the whole file, discard recovered plaintext,
 write nothing to stdout on success, and report success or failure through the
-process exit code. For `seal-file`, `open-file`, `seal-file-password`, and
+process exit code: 0 on success, 1 on failure. For `seal-file`, `open-file`,
+`seal-file-password`, and
 `open-file-password`, `--in -` reads from stdin and `--out -` writes raw binary
 output to stdout. For verification commands, `--in -` reads the sealed file from
 stdin. At most one AAD option may be provided. The CLI does not expose password
@@ -313,8 +315,8 @@ not expose AAD.
 
 Successful text-output CLI commands write the result plus one trailing newline
 to stdout. File commands with `--out -` write raw binary bytes without adding a
-newline. Usage, parse, file, or decoding failures return a non-zero exit code
-and write a short message to stderr. Text arguments are treated as raw bytes in
+newline. Usage, parse, file, or decoding failures return exit code 1 and write a
+short message to stderr. Text arguments are treated as raw bytes in
 the active process encoding; the CLI does not normalize or transcode Unicode.
 Decode commands use the same strict validation as the C++ APIs.
 

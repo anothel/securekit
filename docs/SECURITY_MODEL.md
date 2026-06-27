@@ -97,7 +97,8 @@ CLI file commands inherit the same distinction:
 - path output refuses overwrite and commits after success
 - `--out -` writes to stdout and cannot be rolled back
 - `verify-file` and `verify-file-password` take no output path, discard
-  recovered plaintext, and report authentication success through the exit code
+  recovered plaintext, and report authentication success with exit code 0 and
+  failure with exit code 1
 
 ## Password-Based Encryption
 
@@ -133,6 +134,9 @@ Expected public categories:
 Authentication failures should not reveal whether the key, password, AAD,
 ciphertext, nonce, or tag was wrong. Malformed or unsupported structure may be
 reported separately as `invalid_packet`.
+
+The CLI maps public failures in these categories to exit code 1, writes the
+short diagnostic to stderr, and writes no stdout for failed commands.
 
 ## Known Limitations
 
