@@ -26,6 +26,25 @@ Release-impacting work must pass the matching configured build directory:
 cmake --build build --config Release --target release-preflight
 ```
 
+## External Analysis Triage
+
+Broad audit documents must be split before implementation. Do the smallest
+repo-relevant work first, then leave the rest parked or not planned.
+
+| Audit theme | SecureKit handling | Required check |
+| --- | --- | --- |
+| Docs and implementation mismatch | Keep README, `FORMAT.md`, `SECURITY_MODEL.md`, release checklist, and public headers aligned with the C++ library and CLI. | `release-preflight` |
+| Package and release trust | Keep install/export/package archives, release assets, checksums, SBOM, and provenance wiring checked before release. | `package-check`, `release-workflow-check`, `release-preflight` |
+| Test gates and negative cases | Add regression coverage only for an existing SecureKit API, CLI, format, package, or release bug. | Smallest matching unit, CLI, fixture, or package check |
+| New API shape | Park until real call sites prove the need and name one runnable check. | Item-specific gate below |
+| Web middleware findings | Not planned for this repository. | Roadmap scope guard |
+
+The analyzed Node.js backend middleware backlog maps to Not Planned unless the
+project identity changes: NestJS exports, Express/Koa/Fastify adapter parity,
+CORS, CSRF, JWT, security event routing, diagnostics routes, sanitization,
+file-upload validation, distributed rate limiting, public cache defaults, npm
+package exports, `TEST_SUMMARY`, and CLI audit/config placeholders.
+
 ## Now
 
 No active queued work. `dogfood-check` covers the v0.2.0 post-release

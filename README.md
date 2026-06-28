@@ -54,6 +54,12 @@ surfaces described here. `release-preflight` checks these docs against public
 headers, CLI command usage, install/export/package artifacts, release assets,
 and provenance files before release.
 
+External audits and roadmap notes are handled through this contract. Items that
+do not map to the C++ API, CLI, `SKT1`/`SKF1`/`SKP1`, CMake package, release
+asset, or security-reporting surface are triage input, not implementation scope.
+`docs/ROADMAP.md` records the active split between applicable work, parked
+candidates, and not-planned work.
+
 ## Requirements
 
 - C++20 compiler.
