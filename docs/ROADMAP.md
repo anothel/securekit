@@ -62,16 +62,6 @@ After the `Now` release-confidence pass, work through these fixes. Each item
 must keep the current public API and format contracts unless its own check proves
 the change is required.
 
-- `src/file.cpp` internal split: split internals behind the same public file APIs:
-  - format parse/serialize
-  - password KDF/header handling
-  - chunk AEAD
-  - path/temp-file commit
-  - verify-only paths
-  - check: `cmake --build build --config Release --target release-preflight`
-- CLI split: move command handling out of `src/cli/main.cpp` without changing command
-  shape or exit codes.
-  - check: `cmake --build build --config Release --target release-preflight`
 - Package-manager recipes: add recipes after release archives are validated.
   - check: consumer project builds against the published recipe and the release
     archive checksum matches `SHA256SUMS.txt`

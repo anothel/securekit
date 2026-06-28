@@ -58,7 +58,7 @@ set(_securekit_key_wrap_header "${SECUREKIT_SOURCE_DIR}/include/securekit/key_wr
 set(_securekit_packet_stream_header "${SECUREKIT_SOURCE_DIR}/include/securekit/packet_stream.hpp")
 set(_securekit_random_header "${SECUREKIT_SOURCE_DIR}/include/securekit/random.hpp")
 set(_securekit_version_header "${SECUREKIT_SOURCE_DIR}/include/securekit/version.hpp")
-set(_securekit_cli_source "${SECUREKIT_SOURCE_DIR}/src/cli/main.cpp")
+set(_securekit_cli_source "${SECUREKIT_SOURCE_DIR}/src/cli/commands.cpp")
 
 foreach(_securekit_required_file IN ITEMS
     "${_securekit_cmakelists}"
@@ -245,8 +245,6 @@ _securekit_require_terms(
 _securekit_require_terms(
   "roadmap repository-specific candidates"
   "${_securekit_roadmap_text}"
-  "`src/file.cpp` internal split"
-  "CLI split"
   "Package-manager recipes")
 
 _securekit_forbid_terms(
@@ -465,16 +463,16 @@ _securekit_require_terms(
   "${_securekit_internals_text}"
   "Current Ownership"
   "`src/file.cpp`"
-  "`SKF1` and `SKP1` file format parsing/serialization"
-  "path open temp-file commit"
-  "password header handling"
+  "`src/file_detail.hpp`"
+  "`src/file_crypto.cpp`"
+  "`src/file_io.cpp`"
+  "`src/cli/main.cpp`"
+  "`src/cli/commands.cpp`"
+  "`SKF1`/`SKP1` header parse/serialize"
+  "exclusive temp-output creation"
   "Split Gates"
   "must not change public C++ APIs, CLI command shape, or `SKT1`/`SKF1`/`SKP1`"
-  "`file_format_internal.*`"
-  "`file_io_internal.*`"
-  "`file_crypto_internal.*`"
-  "`password_kdf_internal.*`"
-  "Do not split it just because it is long."
+  "Further splits require repeated edit"
   "--target release-preflight")
 
 _securekit_require_terms(

@@ -71,7 +71,9 @@ add_library(securekit
   src/base64.cpp
   src/compare.cpp
   src/error.cpp
+  src/file_crypto.cpp
   src/file.cpp
+  src/file_io.cpp
   src/hash.cpp
   src/hex.cpp
   src/key_wrap.cpp
@@ -106,6 +108,7 @@ target_link_options(securekit PUBLIC ${_securekit_coverage_options})
 
 if(SECUREKIT_BUILD_CLI)
   add_executable(securekit_cli
+    src/cli/commands.cpp
     src/cli/main.cpp)
 
   set_target_properties(securekit_cli PROPERTIES OUTPUT_NAME securekit)
