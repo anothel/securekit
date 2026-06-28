@@ -14,6 +14,11 @@ standing changelog.
 5. Do not add public API, wire formats, package channels, CI cost, or release
    ceremony without a written problem, regression check, and rollback plan.
 6. Active roadmap items must name an existing SecureKit surface.
+7. External audit or roadmap notes are triage input only. Notes for Node.js
+   backend middleware repositories, including `package.json`, npm,
+   `TEST_SUMMARY`, Express, Koa, Fastify, NestJS, JWT, CSRF, CORS, rate
+   limiting, request validation, diagnostic routes, or adapter parity, do not
+   become SecureKit work unless this repository's identity changes.
 
 Release-impacting work must pass the matching configured build directory:
 

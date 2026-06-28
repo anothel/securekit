@@ -189,12 +189,22 @@ _securekit_require_terms(
   "parked item has a proven gate"
   "Keep v0.x public API changes minimal"
   "Active roadmap items must name an existing SecureKit surface"
+  "External audit or roadmap notes are triage input only"
+  "Node.js"
+  "backend middleware repositories"
+  "`package.json`"
+  "npm"
+  "`TEST_SUMMARY`"
   "Web framework middleware"
+  "Express"
+  "Koa"
+  "Fastify"
   "JWT"
   "CSRF"
+  "CORS"
   "NestJS"
   "rate limiting"
-  "diagnostic web routes")
+  "diagnostic routes")
 
 _securekit_require_terms(
   "dogfooding record"
