@@ -162,6 +162,13 @@ function(_securekit_forbid_text description haystack needle)
   endif()
 endfunction()
 
+function(_securekit_forbid_regex description haystack pattern)
+  string(REGEX MATCH "${pattern}" _securekit_match "${haystack}")
+  if(NOT _securekit_match STREQUAL "")
+    message(FATAL_ERROR "Release preflight found out-of-scope ${description}: ${pattern}")
+  endif()
+endfunction()
+
 function(_securekit_forbid_terms description haystack)
   foreach(_securekit_term IN LISTS ARGN)
     _securekit_forbid_text(
@@ -230,10 +237,7 @@ _securekit_require_terms(
   "External audit or roadmap notes are triage input only"
   "Node.js"
   "backend middleware"
-  "## Recently Finished"
-  "Use Git history and `docs/RELEASE_NOTES.md` for full completed-change detail"
-  "Package and release trust"
-  "## Not Planned")
+  "Package and release trust")
 
 _securekit_require_terms(
   "roadmap repository-specific candidates"
@@ -253,10 +257,15 @@ _securekit_forbid_terms(
   "Already resolved"
   "Already resolved, keep guarded"
   "Accepted as release-confidence work"
-  "## Parked"
-  "Parked"
-  "parked"
   "These are blocked candidates")
+_securekit_forbid_regex(
+  "roadmap deferred-work section"
+  "${_securekit_roadmap_text}"
+  "## [Pp]arked|[Pp]arked|## Not[ ]Planned")
+_securekit_forbid_regex(
+  "roadmap completed-work section"
+  "${_securekit_roadmap_text}"
+  "## Recently[ ]Finished|Recently[ ]Finished")
 
 _securekit_require_terms(
   "dogfooding record"
@@ -271,7 +280,8 @@ _securekit_require_terms(
   "open-file-password"
   "C++ consumer"
   "no repeated friction recorded"
-  "No parked item is promoted")
+  "Follow-up work now lives in"
+  "Fix Queue")
 
 _securekit_require_terms(
   "contributor one-command local checks"

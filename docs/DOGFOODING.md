@@ -22,6 +22,5 @@ The check:
 
 Result: no repeated friction recorded.
 
-No parked item is promoted from this run. Result-style APIs, OO APIs, new KDF
-profiles, new streaming formats, package channels, and CLI split stay parked
-until real repeated friction proves their gate.
+This run did not require extra public surface. Follow-up work now lives in
+`docs/ROADMAP.md` under `Fix Queue`, with a named check for each item.

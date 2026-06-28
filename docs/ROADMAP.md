@@ -18,6 +18,10 @@ Future work only. Completed work belongs in Git history and
    npm/package metadata, web framework middleware, JWT, CSRF, CORS, rate limiting,
    request validation, diagnostic routes, and adapter parity do not become
    SecureKit work unless this repository's identity changes.
+8. Keep out-of-scope boundaries as rules, not queued work: no custom crypto
+   primitives, custom string classes or allocators, TLS/networking, secure key
+   storage, guaranteed memory erasure claims, or framework-scale abstractions
+   without call-site pressure.
 
 Release-impacting work must pass the matching configured build directory:
 
@@ -82,41 +86,26 @@ the change is required.
 - Run focused external security review after the release trust pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface
-
-## Recently Finished
-
-This is a short orientation list, not a changelog. Use Git history and `docs/RELEASE_NOTES.md` for full completed-change detail.
-
-- Public README, `FORMAT.md`, `SECURITY_MODEL.md`, release checklist, release
-  notes, and public headers were aligned with current C++ APIs, CLI commands,
-  and `SKT1`/`SKF1`/`SKP1` formats.
-- `verify-file` and `verify-file-password` CLI paths were added to verify
-  encrypted files without creating plaintext output files.
-- Negative compatibility fixture inventory, known-answer vector provenance,
-  dependency/update hygiene, local `format-check`, non-blocking coverage report,
-  release asset/SBOM checks, and `dogfood-check` are now covered by local
-  release checks.
-- `docs/INTERNALS.md` records the split gates for `src/file.cpp` and
-  `src/cli/main.cpp`; no split is queued without repeated friction.
-
-## Not Planned
-
-- Custom crypto primitives.
-- Custom string classes or allocators.
-- TLS or networking.
-- Web framework middleware, including Express, Koa, Fastify, NestJS, JWT, CSRF,
-  CORS, rate limiting, request validation, or diagnostic web routes.
-- Secure key storage.
-- Guaranteed memory erasure.
-- Framework-scale abstractions without call-site pressure.
-- Result-style public APIs unless a breaking-change proposal proves exceptions
-  are the wrong boundary for current users.
-- Object-oriented APIs beyond packet streaming unless current call sites require
-  lifecycle state that free functions cannot express.
-- New password-file KDF profile until there is a format spec, downgrade behavior,
-  bounds, fixture policy, and at least three known-answer vectors.
-- Additional streaming format until there is a written threat model for
-  plaintext-before-auth and output ownership.
-- OpenSSL provider or FIPS helpers until there is a documented support policy.
-- Scheduled long-running fuzz until `fuzz-smoke` produces repeated useful signal
-  and someone owns the scheduled job.
+- Public error/API shape review: decide whether exceptions remain the v1 boundary
+  or a result-style API is needed for current users.
+  - check: proposal names affected APIs, migration cost, rollback path, and one
+    caller that is currently worse with exceptions
+- Public object-lifecycle review: decide whether more OO APIs are needed beyond
+  packet streaming.
+  - check: proposal names a current lifecycle state that free functions cannot
+    express cleanly
+- Password-file KDF profile design: write the spec before adding another profile.
+  - check: spec covers format bytes, downgrade behavior, bounds, fixture policy,
+    and at least three known-answer vectors
+- Additional streaming format threat model: decide plaintext-before-auth and output
+  ownership before adding any format.
+  - check: threat model maps to `docs/FORMAT.md`, `docs/SECURITY_MODEL.md`, and
+    negative fixtures
+- OpenSSL provider/FIPS policy: decide support policy before adding provider or
+  FIPS helpers.
+  - check: policy states supported OpenSSL versions, failure behavior, and release
+    test coverage
+- Scheduled fuzzing plan: promote only after `fuzz-smoke` gives repeated useful
+  signal and an owner exists.
+  - check: scheduled job has owner, runtime limit, artifact policy, and failure
+    triage path
