@@ -29,35 +29,37 @@ cmake --build build --config Release --target release-preflight
 ## External Analysis Triage
 
 Broad audit documents must be split before implementation. Do the smallest
-repo-relevant work first, then leave the rest parked or not planned.
+repo-relevant work first, then leave the rest parked or not planned. The
+2026-06-28 SecureKit analysis is tracked here as maintenance and release
+confidence work, not as a feature expansion plan.
 
 | Audit theme | SecureKit handling | Required check |
 | --- | --- | --- |
 | Docs and implementation mismatch | Keep README, `FORMAT.md`, `SECURITY_MODEL.md`, release checklist, release notes, and public headers aligned with the C++ library and CLI. | `release-preflight` |
 | Public contract comments | Keep path open, stream rollback, password byte handling, decrypt authentication, HKDF output size, and constant-time length caveats visible from public headers. | `public_headers_test`, `release-preflight` |
-| Package and release trust | Keep install/export/package archives, release assets, checksums, SBOM, and provenance wiring checked before release. | `package-check`, `release-workflow-check`, `release-preflight` |
+| Package and release trust | Before tagging v0.2.0 or later, verify install/export/package archives, release assets, checksums, SBOM, provenance wiring, and release notes source of truth. | `package-check`, `release-workflow-check`, `release-preflight` |
 | Test gates and negative cases | Add regression coverage only for an existing SecureKit API, CLI, format, package, or release bug. | Smallest matching unit, CLI, fixture, or package check |
 | Internal boundary pressure | Keep `src/file.cpp` and `src/cli/main.cpp` split gates documented before refactoring. | `docs/INTERNALS.md`, `release-preflight` |
 | Fuzz and parser hardening | Keep fuzz smoke optional and corpus policy explicit; schedule long runs only with useful signal and an owner. | `fuzz-smoke` when configured |
 | New API shape | Park until real call sites prove the need and name one runnable check. | Item-specific gate below |
 | Web middleware findings | Not planned for this repository. | Roadmap scope guard |
 
-The analyzed Node.js backend middleware backlog maps to Not Planned unless the
-project identity changes: NestJS exports, Express/Koa/Fastify adapter parity,
-CORS, CSRF, JWT, security event routing, diagnostics routes, sanitization,
+Unrelated Node.js backend middleware repositories remain out of scope unless
+the project identity changes: NestJS exports, Express/Koa/Fastify adapter parity,
+CORS, CSRF, JWT, security event routing, diagnostic routes, sanitization,
 file-upload validation, distributed rate limiting, public cache defaults, npm
-package exports, `TEST_SUMMARY`, and CLI audit/config placeholders.
+package exports, `package.json`, `TEST_SUMMARY`, and CLI audit/config placeholders.
 
 ## Now
 
 No active queued work. `dogfood-check` covers the v0.2.0 post-release
-consumer loop and recorded no repeated friction. A parked item has a proven gate
-only after that friction is recorded, and then can move to `Next`.
+consumer loop; no repeated friction is recorded. A parked item has a proven gate
+only after real repeated friction is recorded, and then can move to `Next`.
 
 ## Next
 
-No queued feature work. This is a maintenance audit, not a feature start.
-Promote one parked item only after dogfooding records real repeated friction,
+No queued feature work. After the `Now` release-confidence pass, promote at
+most one parked item only after dogfooding records real repeated friction,
 proves the item's gate, and names one runnable check.
 
 ## Parked
@@ -80,6 +82,9 @@ after its gate is proven and a runnable check is named.
 - Further negative compatibility fixture expansion: gate is a specific
   uncovered `FORMAT.md` reject rule found by comparing `docs/FORMAT.md` with
   `tests/fixtures/negative/README.md`.
+- External security review or focused audit: gate is a v1-facing threat model,
+  stable compatibility fixtures, release artifact verification, and an owner
+  for findings triage.
 - `src/file.cpp` internal split: gate is repeated local edit pressure or safety
   work that is simpler after separating format parse/serialize, KDF, chunk
   AEAD, temp-file commit, and password header handling.
