@@ -56,7 +56,7 @@ only after that friction is recorded, and then can move to `Next`.
 
 ## Next
 
-No queued feature work. These are maintenance audits, not feature starts.
+No queued feature work. This is a maintenance audit, not a feature start.
 Promote one parked item only after dogfooding records real repeated friction,
 proves the item's gate, and names one runnable check.
 
@@ -78,44 +78,6 @@ Check:
 Done:
 Every uncovered rule either has a named regression check or is explicitly
 documented as covered by an in-test mutation.
-
-### 2. Packet Stream Key Cleanup Investigation
-
-Surface: `src/packet_stream.cpp`, `docs/SECURITY_MODEL.md`.
-
-Problem:
-The streaming classes own key and AAD copies internally. Cleanup can reduce
-ordinary memory retention, but SecureKit must not claim guaranteed erasure.
-
-Check:
-
-- Add cleanup only if it is small, local, and does not change the public API.
-- Keep `SECURITY_MODEL.md` saying no guaranteed memory erasure.
-- Run `check` and `release-preflight`.
-
-Done:
-Either a minimal cleanup lands with tests still passing, or the investigation
-records why the current OpenSSL/context ownership is left unchanged.
-
-### 3. Public Contract Drift Audit
-
-Surface: README, public headers, `docs/SECURITY_MODEL.md`, CLI help.
-
-Problem:
-Header comments, README recipes, CLI help text, and the security model should
-describe the same caller responsibilities.
-
-Check:
-
-- Verify path open no-overwrite and temp-file commit wording.
-- Verify stream output rollback wording.
-- Verify password byte handling wording.
-- Verify decrypt and verify command authentication failure wording.
-- Run `release-preflight`.
-
-Done:
-The public story is no broader than the verified C++ API, CLI, and format
-surface.
 
 ## Parked
 

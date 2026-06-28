@@ -9,6 +9,7 @@
 #include <span>
 
 #include "aead_internal.hpp"
+#include "wipe.hpp"
 
 namespace
 {
@@ -96,6 +97,13 @@ struct packet_encryptor::impl
 		internal_aead::check_update_size(aad.size(), "AAD");
 	}
 
+	~impl()
+	{
+		context.reset();
+		internal::secure_wipe(key);
+		internal::secure_wipe(aad);
+	}
+
 	key256 key{};
 	bytes aad;
 	internal_aead::CipherContext context;
@@ -110,6 +118,13 @@ struct packet_decryptor::impl
 	      context(nullptr, EVP_CIPHER_CTX_free)
 	{
 		internal_aead::check_update_size(aad.size(), "AAD");
+	}
+
+	~impl()
+	{
+		context.reset();
+		internal::secure_wipe(key);
+		internal::secure_wipe(aad);
 	}
 
 	key256 key{};
