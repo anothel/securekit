@@ -32,10 +32,8 @@ must map to an existing SecureKit API, CLI command, serialized format, CMake
 package surface, release asset, or security-reporting surface.
 
 Put work in `Now` only when it has a named surface, a concrete problem, one
-runnable check, and a rollback path. Put work in `Next` only when the `Now`
-gate is done and the next item has evidence. Put speculative work in `Parked`.
-A parked item has a proven gate only after real repeated friction is recorded
-and one runnable check is named.
+runnable check, and a rollback path. Put accepted fixes in `Fix Queue` until
+they move to `Now`. Do not leave accepted fixes deferred.
 
 Completed items leave the roadmap. Use Git history and `docs/RELEASE_NOTES.md` for full completed-change detail.
 
@@ -52,13 +50,38 @@ Release Trust:
   `SHA256SUMS.txt`, release SPDX SBOM, GitHub artifact attestations, and release
   notes source of truth.
 - Run `dogfood-check` after package generation. If no repeated friction is
-  recorded, do not promote a parked split or API expansion.
+  recorded, do not promote a deferred split or API expansion.
 
-### Next
+### Fix Queue
 
-No queued feature work. After the `Now` release-confidence pass, promote at
-most one parked item only after dogfooding records real repeated friction,
-proves the item's gate, and names one runnable check.
+After the `Now` release-confidence pass, work through these fixes. Each item
+must keep the current public API and format contracts unless its own check proves
+the change is required.
+
+- `src/file.cpp` internal split: split internals behind the same public file APIs:
+  - format parse/serialize
+  - password KDF/header handling
+  - chunk AEAD
+  - path/temp-file commit
+  - verify-only paths
+  - check: `cmake --build build --config Release --target release-preflight`
+- CLI split: move command handling out of `src/cli/main.cpp` without changing command
+  shape or exit codes.
+  - check: `cmake --build build --config Release --target release-preflight`
+- README split into `docs/CLI.md` or `docs/API.md`: move detail out, leaving README as the
+  short entry point.
+  - check: `cmake --build build --config Release --target release-preflight`
+- Package-manager recipes: add recipes after release archives are validated.
+  - check: consumer project builds against the published recipe and the release
+    archive checksum matches `SHA256SUMS.txt`
+- Add benchmarks for crypto/file paths after the release checks stay green.
+  - check: benchmark target builds and reports stable local measurements
+- Expand negative compatibility fixtures for uncovered `FORMAT.md` reject rules.
+  - check: compare `docs/FORMAT.md` with `tests/fixtures/negative/README.md`,
+    then run `cmake --build build --config Release --target release-preflight`
+- Run focused external security review after the release trust pass.
+  - check: findings map to an existing API, CLI command, serialized format, CMake
+    package surface, release asset, or security-reporting surface
 
 ## Recently Finished
 
@@ -76,39 +99,6 @@ This is a short orientation list, not a changelog. Use Git history and `docs/REL
 - `docs/INTERNALS.md` records the split gates for `src/file.cpp` and
   `src/cli/main.cpp`; no split is queued without repeated friction.
 
-## Parked
-
-These are blocked candidates, not queued work. Move one to `Now` or `Next` only
-after its gate is proven and a runnable check is named.
-
-- Result-style APIs: gate is two real call sites showing exceptions are the
-  wrong boundary.
-- Object-oriented APIs beyond packet streaming: gate is two real call sites
-  duplicating lifecycle logic that free functions cannot express cleanly.
-- New password-file KDF profile: gate is format spec, downgrade behavior,
-  bounds, fixture policy, and at least three known-answer vectors.
-- Additional streaming format: gate is a written threat model for
-  plaintext-before-auth and output ownership.
-- OpenSSL provider or FIPS helpers: gate is documented support policy and
-  dedicated tests.
-- Scheduled long-running fuzz: gate is repeated useful `fuzz-smoke` signal and
-  an owner for the scheduled job.
-- Further negative compatibility fixture expansion: gate is a specific
-  uncovered `FORMAT.md` reject rule found by comparing `docs/FORMAT.md` with
-  `tests/fixtures/negative/README.md`.
-- External security review or focused audit: gate is a v1-facing threat model,
-  stable compatibility fixtures, release artifact verification, and an owner
-  for findings triage.
-- `src/file.cpp` internal split: gate is repeated local edit pressure or safety
-  work that is simpler after separating format parse/serialize, KDF, chunk
-  AEAD, temp-file commit, and password header handling.
-- CLI split: gate is repeated edit conflicts in `src/cli/main.cpp`.
-- README split into `docs/CLI.md` or `docs/API.md`: gate is repeated reader or
-  edit friction, not file length alone.
-- Package-manager recipes: gate is validated release archives plus a real
-  consumer request for a package-channel recipe.
-- Benchmarks: gate is stable correctness, format, and release checks.
-
 ## Not Planned
 
 - Custom crypto primitives.
@@ -119,3 +109,14 @@ after its gate is proven and a runnable check is named.
 - Secure key storage.
 - Guaranteed memory erasure.
 - Framework-scale abstractions without call-site pressure.
+- Result-style public APIs unless a breaking-change proposal proves exceptions
+  are the wrong boundary for current users.
+- Object-oriented APIs beyond packet streaming unless current call sites require
+  lifecycle state that free functions cannot express.
+- New password-file KDF profile until there is a format spec, downgrade behavior,
+  bounds, fixture policy, and at least three known-answer vectors.
+- Additional streaming format until there is a written threat model for
+  plaintext-before-auth and output ownership.
+- OpenSSL provider or FIPS helpers until there is a documented support policy.
+- Scheduled long-running fuzz until `fuzz-smoke` produces repeated useful signal
+  and someone owns the scheduled job.

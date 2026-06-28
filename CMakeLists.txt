@@ -360,36 +360,21 @@ endif()
 if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
   add_custom_target(release-preflight
     COMMAND ${CMAKE_COMMAND}
-      --build ${CMAKE_CURRENT_BINARY_DIR}
-      --config $<CONFIG>
-      --target check
-    COMMAND ${CMAKE_COMMAND}
-      --build ${CMAKE_CURRENT_BINARY_DIR}
-      --config $<CONFIG>
-      --target examples-check
-    COMMAND ${CMAKE_COMMAND}
-      --build ${CMAKE_CURRENT_BINARY_DIR}
-      --config $<CONFIG>
-      --target package-check
-    COMMAND ${CMAKE_COMMAND}
-      --build ${CMAKE_CURRENT_BINARY_DIR}
-      --config $<CONFIG>
-      --target dogfood-check
-    COMMAND ${CMAKE_COMMAND}
       -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
       -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
       -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_assets.cmake
-    COMMAND ${CMAKE_COMMAND}
-      --build ${CMAKE_CURRENT_BINARY_DIR}
-      --config $<CONFIG>
-      --target release-workflow-check
     COMMAND ${CMAKE_COMMAND}
       -DSECUREKIT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
       -DSECUREKIT_PACKAGE_CHECK_ROOT=${CMAKE_CURRENT_BINARY_DIR}/package-check
       -DSECUREKIT_PROJECT_NAME=${PROJECT_NAME}
       -DSECUREKIT_PROJECT_VERSION:STRING=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_preflight.cmake
+    DEPENDS
+      check
+      examples-check
+      dogfood-check
+      release-workflow-check
     USES_TERMINAL)
 elseif(TARGET check)
   add_custom_target(release-preflight

@@ -197,6 +197,25 @@ _securekit_require_text(
   "--target release-preflight")
 
 _securekit_require_terms(
+  "release-preflight target dependencies"
+  "${_securekit_cmakelists_text}"
+  "add_custom_target(release-preflight"
+  "DEPENDS"
+  "check"
+  "examples-check"
+  "dogfood-check"
+  "release-workflow-check")
+
+_securekit_forbid_terms(
+  "release-preflight nested build"
+  "${_securekit_cmakelists_text}"
+  "--target check"
+  "--target examples-check"
+  "--target package-check"
+  "--target dogfood-check"
+  "--target release-workflow-check")
+
+_securekit_require_terms(
   "roadmap scope guard"
   "${_securekit_roadmap_text}"
   "## Intake Rules"
@@ -204,9 +223,8 @@ _securekit_require_terms(
   "dogfood-check"
   "no repeated friction"
   "Release Trust"
-  "No queued feature work"
-  "real repeated friction"
-  "parked item has a proven gate"
+  "Fix Queue"
+  "Do not leave accepted fixes deferred"
   "Keep v0.x public API changes minimal"
   "Active roadmap items must name an existing SecureKit surface"
   "External audit or roadmap notes are triage input only"
@@ -234,7 +252,11 @@ _securekit_forbid_terms(
   "securekit_full_analysis_2026-06-28.md"
   "Already resolved"
   "Already resolved, keep guarded"
-  "Accepted as release-confidence work")
+  "Accepted as release-confidence work"
+  "## Parked"
+  "Parked"
+  "parked"
+  "These are blocked candidates")
 
 _securekit_require_terms(
   "dogfooding record"
