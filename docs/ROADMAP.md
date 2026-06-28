@@ -65,11 +65,6 @@ the change is required.
 - Package-manager recipes: add recipes after release archives are validated.
   - check: consumer project builds against the published recipe and the release
     archive checksum matches `SHA256SUMS.txt`
-- Add benchmarks for crypto/file paths after the release checks stay green.
-  - check: benchmark target builds and reports stable local measurements
-- Expand negative compatibility fixtures for uncovered `FORMAT.md` reject rules.
-  - check: compare `docs/FORMAT.md` with `tests/fixtures/negative/README.md`,
-    then run `cmake --build build --config Release --target release-preflight`
 - Run focused external security review after the release trust pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface

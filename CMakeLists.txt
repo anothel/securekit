@@ -50,6 +50,7 @@ find_program(CLANG_FORMAT_EXE
 if(CLANG_FORMAT_EXE)
   file(GLOB_RECURSE _securekit_format_sources CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/securekit/*.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
@@ -128,6 +129,17 @@ target_compile_options(securekit_example_basic PRIVATE ${_securekit_compile_opti
 add_custom_target(examples-check
   COMMAND $<TARGET_FILE:securekit_example_basic>
   DEPENDS securekit_example_basic
+  USES_TERMINAL)
+
+add_executable(securekit_benchmarks EXCLUDE_FROM_ALL
+  benchmarks/crypto_file_bench.cpp)
+target_link_libraries(securekit_benchmarks PRIVATE securekit::securekit)
+target_compile_features(securekit_benchmarks PRIVATE cxx_std_20)
+target_compile_options(securekit_benchmarks PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
+
+add_custom_target(benchmarks-check
+  COMMAND $<TARGET_FILE:securekit_benchmarks>
+  DEPENDS securekit_benchmarks
   USES_TERMINAL)
 
 if(SECUREKIT_BUILD_FUZZ)
@@ -286,6 +298,7 @@ if(SECUREKIT_BUILD_TESTS)
   target_compile_options(securekit_tests PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
   target_compile_definitions(securekit_tests PRIVATE
     SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+    SECUREKIT_FORMAT_DOC="${CMAKE_CURRENT_SOURCE_DIR}/docs/FORMAT.md"
     SECUREKIT_EXPECTED_VERSION="${PROJECT_VERSION}"
     SECUREKIT_EXPECTED_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
     SECUREKIT_EXPECTED_VERSION_MINOR=${PROJECT_VERSION_MINOR}
@@ -375,6 +388,7 @@ if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/package/check_release_preflight.cmake
     DEPENDS
       check
+      benchmarks-check
       examples-check
       dogfood-check
       release-workflow-check

@@ -35,6 +35,7 @@ set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
 set(_securekit_coverage "${SECUREKIT_SOURCE_DIR}/docs/COVERAGE.md")
 set(_securekit_cli_doc "${SECUREKIT_SOURCE_DIR}/docs/CLI.md")
+set(_securekit_benchmarks_doc "${SECUREKIT_SOURCE_DIR}/docs/BENCHMARKS.md")
 set(_securekit_dependency_policy "${SECUREKIT_SOURCE_DIR}/docs/DEPENDENCY_POLICY.md")
 set(_securekit_verify_release "${SECUREKIT_SOURCE_DIR}/docs/VERIFY_RELEASE.md")
 set(_securekit_dogfooding "${SECUREKIT_SOURCE_DIR}/docs/DOGFOODING.md")
@@ -47,6 +48,7 @@ set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/
 set(_securekit_dependabot "${SECUREKIT_SOURCE_DIR}/.github/dependabot.yml")
 set(_securekit_example_cmakelists "${SECUREKIT_SOURCE_DIR}/examples/basic/CMakeLists.txt")
 set(_securekit_example_main "${SECUREKIT_SOURCE_DIR}/examples/basic/main.cpp")
+set(_securekit_benchmark_source "${SECUREKIT_SOURCE_DIR}/benchmarks/crypto_file_bench.cpp")
 set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
 set(_securekit_aead_header "${SECUREKIT_SOURCE_DIR}/include/securekit/aead.hpp")
 set(_securekit_base64_header "${SECUREKIT_SOURCE_DIR}/include/securekit/base64.hpp")
@@ -71,6 +73,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_fuzzing}"
     "${_securekit_coverage}"
     "${_securekit_cli_doc}"
+    "${_securekit_benchmarks_doc}"
     "${_securekit_dependency_policy}"
     "${_securekit_verify_release}"
     "${_securekit_dogfooding}"
@@ -83,6 +86,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_dependabot}"
     "${_securekit_example_cmakelists}"
     "${_securekit_example_main}"
+    "${_securekit_benchmark_source}"
     "${_securekit_public_header}"
     "${_securekit_aead_header}"
     "${_securekit_base64_header}"
@@ -110,6 +114,7 @@ file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
 file(READ "${_securekit_coverage}" _securekit_coverage_text)
 file(READ "${_securekit_cli_doc}" _securekit_cli_doc_text)
+file(READ "${_securekit_benchmarks_doc}" _securekit_benchmarks_doc_text)
 file(READ "${_securekit_dependency_policy}" _securekit_dependency_policy_text)
 file(READ "${_securekit_verify_release}" _securekit_verify_release_text)
 file(READ "${_securekit_dogfooding}" _securekit_dogfooding_text)
@@ -122,6 +127,7 @@ file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_
 file(READ "${_securekit_dependabot}" _securekit_dependabot_text)
 file(READ "${_securekit_example_cmakelists}" _securekit_example_cmakelists_text)
 file(READ "${_securekit_example_main}" _securekit_example_main_text)
+file(READ "${_securekit_benchmark_source}" _securekit_benchmark_source_text)
 file(READ "${_securekit_public_header}" _securekit_public_header_text)
 file(READ "${_securekit_aead_header}" _securekit_aead_header_text)
 file(READ "${_securekit_base64_header}" _securekit_base64_header_text)
@@ -212,6 +218,7 @@ _securekit_require_terms(
   "add_custom_target(release-preflight"
   "DEPENDS"
   "check"
+  "benchmarks-check"
   "examples-check"
   "dogfood-check"
   "release-workflow-check")
@@ -246,6 +253,11 @@ _securekit_require_terms(
   "roadmap repository-specific candidates"
   "${_securekit_roadmap_text}"
   "Package-manager recipes")
+_securekit_forbid_terms(
+  "roadmap completed benchmark or fixture queue items"
+  "${_securekit_roadmap_text}"
+  "Add benchmarks for crypto/file paths"
+  "Expand negative compatibility fixtures")
 
 _securekit_forbid_terms(
   "roadmap analysis dump"
@@ -669,6 +681,31 @@ _securekit_require_terms(
   "SECUREKIT_ENABLE_COVERAGE"
   "coverage-report"
   "docs/COVERAGE.md")
+_securekit_require_terms(
+  "CMake benchmark target"
+  "${_securekit_cmakelists_text}"
+  "securekit_benchmarks"
+  "benchmarks/crypto_file_bench.cpp"
+  "benchmarks-check")
+_securekit_require_terms(
+  "benchmark source surfaces"
+  "${_securekit_benchmark_source_text}"
+  "sha256_64k"
+  "aead_roundtrip_64k"
+  "file_roundtrip_2m"
+  "securekit::sha256"
+  "securekit::encrypt"
+  "securekit::decrypt"
+  "securekit::seal_file"
+  "securekit::open_file")
+_securekit_require_terms(
+  "benchmark documentation"
+  "${_securekit_benchmarks_doc_text}"
+  "cmake --build build --config Release --target benchmarks-check"
+  "sha256_64k"
+  "aead_roundtrip_64k"
+  "file_roundtrip_2m"
+  "not a performance guarantee")
 
 _securekit_require_text(
   "README local target release-preflight"

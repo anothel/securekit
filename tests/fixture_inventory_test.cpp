@@ -21,6 +21,11 @@ std::filesystem::path fixture_dir()
 	return std::filesystem::path(SECUREKIT_TEST_FIXTURE_DIR);
 }
 
+std::filesystem::path format_doc()
+{
+	return std::filesystem::path(SECUREKIT_FORMAT_DOC);
+}
+
 std::string read_text_file(const std::filesystem::path &path)
 {
 	std::ifstream in(path);
@@ -146,6 +151,13 @@ void expect_text_contains_terms(std::string_view text, std::string_view descript
 	}
 }
 
+void expect_format_rule_is_mapped(std::string_view format, std::string_view readme, std::string_view format_term, std::string_view readme_term)
+{
+	EXPECT_NE(format.find(format_term), std::string_view::npos) << "FORMAT.md missing expected rule: " << format_term;
+	EXPECT_NE(readme.find(readme_term), std::string_view::npos)
+	    << "negative fixture README missing mapped rule: " << readme_term;
+}
+
 std::uint32_t read_be32(const securekit::bytes &bytes, std::size_t offset)
 {
 	return (static_cast<std::uint32_t>(std::to_integer<unsigned char>(bytes[offset])) << 24u) |
@@ -195,6 +207,25 @@ TEST(FixtureInventory, NegativeReadmeMapsFormatRulesToRegressionTests)
 	                                                                                 "`File.StreamRejectsTrailingDataBeforeWritingFinalPlaintext`",
 	                                                                                 "`File.PasswordStreamRejectsTrailingDataBeforeWritingFinalPlaintext`",
 	                                                                             });
+}
+
+TEST(FixtureInventory, FormatRejectRulesStayMappedToNegativeFixtures)
+{
+	const std::string format = read_text_file(format_doc());
+	const std::string readme = read_text_file(fixture_dir() / "negative" / "README.md");
+
+	expect_format_rule_is_mapped(format, readme, "malformed headers", "malformed magic");
+	expect_format_rule_is_mapped(format, readme, "unsupported versions", "unsupported version");
+	expect_format_rule_is_mapped(format, readme, "unsupported chunk\nsizes", "unsupported chunk size");
+	expect_format_rule_is_mapped(format, readme, "truncated records", "truncated records");
+	expect_format_rule_is_mapped(format, readme, "non-monotonic chunk indexes", "non-monotonic");
+	expect_format_rule_is_mapped(format, readme, "non-final short chunks", "non-final short chunk");
+	expect_format_rule_is_mapped(format, readme, "chunks after the final chunk", "chunk after final");
+	expect_format_rule_is_mapped(format, readme, "missing final chunks", "missing final chunk");
+	expect_format_rule_is_mapped(format, readme, "unsupported cipher IDs", "unsupported cipher");
+	expect_format_rule_is_mapped(format, readme, "unsupported KDF IDs", "unsupported KDF");
+	expect_format_rule_is_mapped(format, readme, "unsupported flags", "unsupported flags");
+	expect_format_rule_is_mapped(format, readme, "unsupported scrypt parameters", "unsupported scrypt parameters");
 }
 
 TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)
