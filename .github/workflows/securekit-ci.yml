@@ -469,7 +469,7 @@ jobs:
           (cd dist && rm -f SHA256SUMS.txt && sha256sum * > SHA256SUMS.txt)
 
       - name: Attest release assets
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
 
