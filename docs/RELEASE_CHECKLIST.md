@@ -9,6 +9,9 @@ for tags matching `v*`.
 - Update `project(... VERSION x.y.z)` in `CMakeLists.txt`.
 - Confirm `SECURITY.md`, `docs/FORMAT.md`, and `docs/SECURITY_MODEL.md` still
   match the shipped behavior.
+- Confirm `docs/RELEASE_NOTES.md` is the release notes source of truth for the
+  version being tagged. Do not introduce a separate `CHANGELOG.md` unless the
+  release policy changes first.
 - Confirm the private vulnerability reporting path in `SECURITY.md` still works.
 - Use the matching tag name `vx.y.z`.
 - Do not push the tag until the version change is already on `main`.
@@ -88,8 +91,9 @@ After the tag workflow finishes, check the GitHub Release for:
   name to avoid asset-name collisions.
 - GitHub artifact attestations for `SHA256SUMS.txt` and release archives.
 - Release title `SecureKit vX.Y.Z`.
-- GitHub-generated release notes are present and match the tagged changes well
-  enough for users.
+- Release notes mention the same user-visible changes as `docs/RELEASE_NOTES.md`.
+  Edit GitHub-generated notes when they omit CLI, format, package, SBOM, or
+  provenance changes.
 
 Download `SHA256SUMS.txt`, verify checksums, and verify GitHub artifact
 attestations for the checksum file and at least one archive:
@@ -103,6 +107,10 @@ gh attestation verify securekit-0.2.0-source.tar.gz --repo anothel/securekit
 Replace the archive name with the released version and asset you downloaded.
 Inspect `securekit-X.Y.Z-release.spdx.json` to map release assets to their
 SHA-256 checksums without unpacking every archive.
+
+If a fuzz build is available for the release commit, run `fuzz-smoke` as an
+extra parser smoke check. Do not block a release on long-running fuzz unless a
+scheduled fuzz owner and corpus policy are already in place.
 
 ## 7. Failure Handling
 

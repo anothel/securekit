@@ -37,6 +37,7 @@ set(_securekit_dogfooding "${SECUREKIT_SOURCE_DIR}/docs/DOGFOODING.md")
 set(_securekit_release_notes "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_NOTES.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
+set(_securekit_internals "${SECUREKIT_SOURCE_DIR}/docs/INTERNALS.md")
 set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
 set(_securekit_example_cmakelists "${SECUREKIT_SOURCE_DIR}/examples/basic/CMakeLists.txt")
 set(_securekit_example_main "${SECUREKIT_SOURCE_DIR}/examples/basic/main.cpp")
@@ -66,6 +67,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_release_notes}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
+    "${_securekit_internals}"
     "${_securekit_negative_fixtures_readme}"
     "${_securekit_example_cmakelists}"
     "${_securekit_example_main}"
@@ -98,6 +100,7 @@ file(READ "${_securekit_dogfooding}" _securekit_dogfooding_text)
 file(READ "${_securekit_release_notes}" _securekit_release_notes_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
+file(READ "${_securekit_internals}" _securekit_internals_text)
 file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
 file(READ "${_securekit_example_cmakelists}" _securekit_example_cmakelists_text)
 file(READ "${_securekit_example_main}" _securekit_example_main_text)
@@ -218,6 +221,20 @@ _securekit_require_terms(
   "diagnostic routes")
 
 _securekit_require_terms(
+  "roadmap repository-specific analysis triage"
+  "${_securekit_roadmap_text}"
+  "Public contract comments"
+  "path open, stream rollback, password byte handling"
+  "Internal boundary pressure"
+  "`src/file.cpp` and `src/cli/main.cpp` split gates"
+  "Format Negative Coverage Audit"
+  "Packet Stream Key Cleanup Investigation"
+  "Public Contract Drift Audit"
+  "`src/file.cpp` internal split"
+  "README split into `docs/CLI.md` or `docs/API.md`"
+  "Package-manager recipes")
+
+_securekit_require_terms(
   "dogfooding record"
   "${_securekit_dogfooding_text}"
   "cmake --build build --config Release --target dogfood-check"
@@ -279,6 +296,16 @@ _securekit_require_terms(
   "asset, or security-reporting surface"
   "triage input, not implementation scope"
   "`docs/ROADMAP.md` records the active split")
+
+_securekit_require_terms(
+  "README release notes and internal boundary docs"
+  "${_securekit_readme_text}"
+  "The release notes source of truth is"
+  "GitHub Release notes should be"
+  "edited to match it"
+  "SECUREKIT_BUILD_FUZZ"
+  "[docs/FUZZING.md](docs/FUZZING.md)"
+  "[docs/INTERNALS.md](docs/INTERNALS.md)")
 
 _securekit_require_terms(
   "README CLI verify entry point"
@@ -351,6 +378,23 @@ _securekit_require_terms(
   "Do not check in generated fuzz output")
 
 _securekit_require_terms(
+  "internal boundary document"
+  "${_securekit_internals_text}"
+  "Current Ownership"
+  "`src/file.cpp`"
+  "`SKF1` and `SKP1` file format parsing/serialization"
+  "path open temp-file commit"
+  "password header handling"
+  "Split Gates"
+  "must not change public C++ APIs, CLI command shape, or `SKT1`/`SKF1`/`SKP1`"
+  "`file_format_internal.*`"
+  "`file_io_internal.*`"
+  "`file_crypto_internal.*`"
+  "`password_kdf_internal.*`"
+  "Do not split it just because it is long."
+  "--target release-preflight")
+
+_securekit_require_terms(
   "CMake examples check target"
   "${_securekit_cmakelists_text}"
   "securekit_example_basic"
@@ -401,11 +445,14 @@ _securekit_require_terms(
   "${_securekit_hash_header_text}"
   "sha256"
   "hmac_sha256"
-  "hkdf_sha256")
+  "hkdf_sha256"
+  "output_size == 0 returns an empty vector")
 _securekit_require_terms(
   "public compare header API mapping"
   "${_securekit_compare_header_text}"
-  "constant_time_equal")
+  "constant_time_equal"
+  "Input lengths are"
+  "must not be secret")
 _securekit_require_terms(
   "public random header API mapping"
   "${_securekit_random_header_text}"
@@ -416,7 +463,9 @@ _securekit_require_terms(
   "public AEAD header API mapping"
   "${_securekit_aead_header_text}"
   "encrypt"
-  "decrypt")
+  "decrypt"
+  "Authenticates the whole SKT1 packet before returning plaintext"
+  "generic authentication failure")
 _securekit_require_terms(
   "public key wrap header API mapping"
   "${_securekit_key_wrap_header_text}"
@@ -433,7 +482,12 @@ _securekit_require_terms(
   "seal_file"
   "open_file"
   "seal_file_with_password"
-  "open_file_with_password")
+  "open_file_with_password"
+  "refuses an existing output path"
+  "temporary file"
+  "Stream overload writes to caller-owned output"
+  "Password bytes are used exactly as supplied"
+  "no trimming, normalization")
 _securekit_require_terms(
   "public version header API mapping"
   "${_securekit_version_header_text}"
@@ -533,7 +587,12 @@ _securekit_require_terms(
   "GitHub artifact attestations"
   "securekit-X.Y.Z-release.spdx.json"
   "gh attestation verify SHA256SUMS.txt --repo anothel/securekit"
-  "sha256sum -c SHA256SUMS.txt")
+  "sha256sum -c SHA256SUMS.txt"
+  "docs/RELEASE_NOTES.md"
+  "Do not introduce a separate `CHANGELOG.md`"
+  "Release notes mention the same user-visible changes"
+  "run `fuzz-smoke`"
+  "extra parser smoke check")
 _securekit_require_terms(
   "README release provenance claim"
   "${_securekit_readme_text}"

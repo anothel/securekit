@@ -112,6 +112,7 @@ provenance attestation wiring.
 | `SECUREKIT_BUILD_TESTS` | `BUILD_TESTING` | Build unit, fixture, and CLI tests. |
 | `SECUREKIT_BUILD_CLI` | `ON` | Build the `securekit` CLI executable. |
 | `SECUREKIT_INSTALL_CLI` | `ON` | Install the CLI. Requires `SECUREKIT_BUILD_CLI=ON`. |
+| `SECUREKIT_BUILD_FUZZ` | `OFF` | Build optional libFuzzer smoke targets. See [docs/FUZZING.md](docs/FUZZING.md). |
 | `SECUREKIT_WARNINGS_AS_ERRORS` | `OFF` | Treat SecureKit compiler warnings as errors. |
 
 Release package validation targets `package-check` and `release-preflight`
@@ -188,8 +189,9 @@ cmake --build build --config Release --target release-preflight
 
 For the full release procedure, see
 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
-For the current release notes draft, see
-[docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
+The release notes source of truth is
+[docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md); GitHub Release notes should be
+edited to match it when generated notes are too thin.
 
 Security issues should not be reported through public GitHub issues. See
 [SECURITY.md](SECURITY.md) for the reporting policy.
@@ -667,6 +669,8 @@ uses the same runtime value.
 The compatibility reference for serialized `SKT1`, `SKF1`, and `SKP1` data is
 [docs/FORMAT.md](docs/FORMAT.md). Security boundaries and operational limits are
 documented in [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md).
+Internal ownership boundaries and split gates are documented in
+[docs/INTERNALS.md](docs/INTERNALS.md).
 
 ## AES-256-GCM Packet Format
 

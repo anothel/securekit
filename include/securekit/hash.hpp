@@ -12,6 +12,8 @@ namespace securekit
 
 SECUREKIT_API digest256 sha256(std::span<const std::byte> input);
 SECUREKIT_API digest256 hmac_sha256(std::span<const std::byte> key, std::span<const std::byte> input);
+
+// Derives exactly output_size bytes. output_size == 0 returns an empty vector.
 SECUREKIT_API bytes hkdf_sha256(
     std::span<const std::byte> key_material,
     std::span<const std::byte> salt,

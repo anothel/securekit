@@ -11,6 +11,10 @@ namespace securekit
 {
 
 SECUREKIT_API bytes encrypt(std::span<const std::byte> plaintext, const key256 &key, std::span<const std::byte> aad = {});
+
+// Authenticates the whole SKT1 packet before returning plaintext. Wrong keys,
+// wrong AAD, modified ciphertext, modified nonces, and tag failures report a
+// generic authentication failure.
 SECUREKIT_API bytes decrypt(std::span<const std::byte> packet, const key256 &key, std::span<const std::byte> aad = {});
 
 } // namespace securekit
