@@ -34,6 +34,7 @@ set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
 set(_securekit_coverage "${SECUREKIT_SOURCE_DIR}/docs/COVERAGE.md")
+set(_securekit_cli_doc "${SECUREKIT_SOURCE_DIR}/docs/CLI.md")
 set(_securekit_dependency_policy "${SECUREKIT_SOURCE_DIR}/docs/DEPENDENCY_POLICY.md")
 set(_securekit_verify_release "${SECUREKIT_SOURCE_DIR}/docs/VERIFY_RELEASE.md")
 set(_securekit_dogfooding "${SECUREKIT_SOURCE_DIR}/docs/DOGFOODING.md")
@@ -69,6 +70,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_kdf_agility}"
     "${_securekit_fuzzing}"
     "${_securekit_coverage}"
+    "${_securekit_cli_doc}"
     "${_securekit_dependency_policy}"
     "${_securekit_verify_release}"
     "${_securekit_dogfooding}"
@@ -107,6 +109,7 @@ file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
 file(READ "${_securekit_coverage}" _securekit_coverage_text)
+file(READ "${_securekit_cli_doc}" _securekit_cli_doc_text)
 file(READ "${_securekit_dependency_policy}" _securekit_dependency_policy_text)
 file(READ "${_securekit_verify_release}" _securekit_verify_release_text)
 file(READ "${_securekit_dogfooding}" _securekit_dogfooding_text)
@@ -244,7 +247,6 @@ _securekit_require_terms(
   "${_securekit_roadmap_text}"
   "`src/file.cpp` internal split"
   "CLI split"
-  "README split into `docs/CLI.md` or `docs/API.md`"
   "Package-manager recipes")
 
 _securekit_forbid_terms(
@@ -318,18 +320,20 @@ _securekit_require_terms(
   "${_securekit_readme_text}"
   "Release Surface Contract"
   "Public claims are limited to the C++ APIs listed in Public API"
-  "listed in CLI"
+  "listed in [docs/CLI.md](docs/CLI.md)"
   "`SKT1`, `SKF1`, and `SKP1` formats"
-  "`release-preflight` checks these docs against public"
+  "and packaged CMake surfaces described here"
+  "docs against public headers"
   "CLI command usage"
-  "install/export/package artifacts"
+  "install/export/package"
+  "artifacts, release assets"
   "release assets"
   "External audits and roadmap notes are handled through this contract"
   "Items that"
   "do not map to the C++ API, CLI, `SKT1`/`SKF1`/`SKP1`, CMake package"
   "asset, or security-reporting surface"
   "triage input, not implementation scope"
-  "`docs/ROADMAP.md` records the active split")
+  "`docs/ROADMAP.md` records the active work queue")
 
 _securekit_require_terms(
   "README release notes and internal boundary docs"
@@ -342,8 +346,13 @@ _securekit_require_terms(
   "[docs/INTERNALS.md](docs/INTERNALS.md)")
 
 _securekit_require_terms(
-  "README CLI verify entry point"
+  "README CLI entry point"
   "${_securekit_readme_text}"
+  "[docs/CLI.md](docs/CLI.md)")
+
+_securekit_require_terms(
+  "CLI verify entry point"
+  "${_securekit_cli_doc_text}"
   "securekit verify-file"
   "securekit verify-file-password"
   "without creating a plaintext output file"

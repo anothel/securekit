@@ -72,9 +72,6 @@ the change is required.
 - CLI split: move command handling out of `src/cli/main.cpp` without changing command
   shape or exit codes.
   - check: `cmake --build build --config Release --target release-preflight`
-- README split into `docs/CLI.md` or `docs/API.md`: move detail out, leaving README as the
-  short entry point.
-  - check: `cmake --build build --config Release --target release-preflight`
 - Package-manager recipes: add recipes after release archives are validated.
   - check: consumer project builds against the published recipe and the release
     archive checksum matches `SHA256SUMS.txt`
