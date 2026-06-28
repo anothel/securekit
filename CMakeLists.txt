@@ -16,22 +16,54 @@ option(SECUREKIT_WARNINGS_AS_ERRORS "Treat SecureKit build warnings as errors" O
 option(SECUREKIT_BUILD_CLI "Build SecureKit CLI" ON)
 option(SECUREKIT_INSTALL_CLI "Install SecureKit CLI" ON)
 option(SECUREKIT_BUILD_FUZZ "Build SecureKit libFuzzer targets" OFF)
+option(SECUREKIT_ENABLE_COVERAGE "Build with GCC/Clang coverage instrumentation" OFF)
 
 if(SECUREKIT_INSTALL_CLI AND NOT SECUREKIT_BUILD_CLI)
   message(FATAL_ERROR "SECUREKIT_INSTALL_CLI=ON requires SECUREKIT_BUILD_CLI=ON")
 endif()
 
 set(_securekit_compile_options)
+set(_securekit_coverage_options)
 if(MSVC)
   list(APPEND _securekit_compile_options /W4 /permissive-)
   if(SECUREKIT_WARNINGS_AS_ERRORS)
     list(APPEND _securekit_compile_options /WX)
+  endif()
+  if(SECUREKIT_ENABLE_COVERAGE)
+    message(FATAL_ERROR "SECUREKIT_ENABLE_COVERAGE=ON requires GCC or Clang")
   endif()
 else()
   list(APPEND _securekit_compile_options -Wall -Wextra -Wpedantic)
   if(SECUREKIT_WARNINGS_AS_ERRORS)
     list(APPEND _securekit_compile_options -Werror)
   endif()
+  if(SECUREKIT_ENABLE_COVERAGE)
+    list(APPEND _securekit_coverage_options --coverage -O0 -g)
+  endif()
+endif()
+
+find_program(CLANG_FORMAT_EXE
+  NAMES clang-format
+  HINTS
+    "$ENV{ProgramFiles}/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin"
+    "$ENV{ProgramFiles}/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/bin")
+if(CLANG_FORMAT_EXE)
+  file(GLOB_RECURSE _securekit_format_sources CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/securekit/*.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.hpp)
+  add_custom_target(format-check
+    COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${_securekit_format_sources}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    USES_TERMINAL)
+else()
+  add_custom_target(format-check
+    COMMAND ${CMAKE_COMMAND} -E echo "format-check requires clang-format on PATH"
+    COMMAND ${CMAKE_COMMAND} -E false
+    USES_TERMINAL)
 endif()
 
 add_library(securekit
@@ -69,7 +101,8 @@ if(BUILD_SHARED_LIBS)
   target_compile_definitions(securekit PUBLIC SECUREKIT_SHARED)
 endif()
 
-target_compile_options(securekit PRIVATE ${_securekit_compile_options})
+target_compile_options(securekit PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
+target_link_options(securekit PUBLIC ${_securekit_coverage_options})
 
 if(SECUREKIT_BUILD_CLI)
   add_executable(securekit_cli
@@ -80,14 +113,14 @@ if(SECUREKIT_BUILD_CLI)
   target_link_libraries(securekit_cli PRIVATE securekit::securekit)
   target_compile_features(securekit_cli PRIVATE cxx_std_20)
 
-  target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options})
+  target_compile_options(securekit_cli PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
 endif()
 
 add_executable(securekit_example_basic EXCLUDE_FROM_ALL
   examples/basic/main.cpp)
 target_link_libraries(securekit_example_basic PRIVATE securekit::securekit)
 target_compile_features(securekit_example_basic PRIVATE cxx_std_20)
-target_compile_options(securekit_example_basic PRIVATE ${_securekit_compile_options})
+target_compile_options(securekit_example_basic PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
 
 add_custom_target(examples-check
   COMMAND $<TARGET_FILE:securekit_example_basic>
@@ -247,7 +280,7 @@ if(SECUREKIT_BUILD_TESTS)
 
   target_link_libraries(securekit_tests PRIVATE securekit::securekit GTest::gtest_main)
   target_compile_features(securekit_tests PRIVATE cxx_std_20)
-  target_compile_options(securekit_tests PRIVATE ${_securekit_compile_options})
+  target_compile_options(securekit_tests PRIVATE ${_securekit_compile_options} ${_securekit_coverage_options})
   target_compile_definitions(securekit_tests PRIVATE
     SECUREKIT_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
     SECUREKIT_EXPECTED_VERSION="${PROJECT_VERSION}"
@@ -300,6 +333,28 @@ if(SECUREKIT_BUILD_TESTS)
       --output-on-failure
     DEPENDS ${_securekit_check_dependencies}
     USES_TERMINAL)
+
+  find_program(GCOVR_EXE NAMES gcovr)
+  if(SECUREKIT_ENABLE_COVERAGE AND GCOVR_EXE)
+    add_custom_target(coverage-report
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/coverage
+      COMMAND ${GCOVR_EXE}
+        --root ${CMAKE_CURRENT_SOURCE_DIR}
+        --object-directory ${CMAKE_CURRENT_BINARY_DIR}
+        --filter ${CMAKE_CURRENT_SOURCE_DIR}/include
+        --filter ${CMAKE_CURRENT_SOURCE_DIR}/src
+        --exclude ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        --html-details ${CMAKE_CURRENT_BINARY_DIR}/coverage/securekit.html
+        --xml ${CMAKE_CURRENT_BINARY_DIR}/coverage/coverage.xml
+        --print-summary
+      DEPENDS check
+      USES_TERMINAL)
+  else()
+    add_custom_target(coverage-report
+      COMMAND ${CMAKE_COMMAND} -E echo "coverage-report requires -DSECUREKIT_ENABLE_COVERAGE=ON, GCC or Clang, and gcovr"
+      COMMAND ${CMAKE_COMMAND} -E false
+      USES_TERMINAL)
+  endif()
 endif()
 
 if(TARGET check AND SECUREKIT_BUILD_CLI AND SECUREKIT_INSTALL_CLI)

@@ -18,7 +18,7 @@ securekit::bytes bytes_from_text(std::string_view text)
 	return out;
 }
 
-}  // namespace
+} // namespace
 
 int main()
 {

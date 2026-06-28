@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
-#include "securekit/error.hpp"
 #include "fixture_utils.hpp"
+#include "securekit/error.hpp"
 
 namespace
 {

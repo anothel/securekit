@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
+#include "fixture_utils.hpp"
 #include "securekit/aead.hpp"
 #include "securekit/error.hpp"
-#include "fixture_utils.hpp"
 
 namespace
 {

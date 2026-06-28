@@ -5,6 +5,12 @@ SecureKit is a small C++20 security utility library.
 SecureKit does not implement crypto algorithms. It wraps OpenSSL 3.x behind a small
 byte-oriented C++ API.
 
+Security status: SecureKit has not had an external security audit. It is a
+small OpenSSL-backed utility library with compatibility fixtures, CI, fuzz
+smoke targets, package checks, release checksums, an SPDX SBOM, and GitHub
+artifact attestations. Do not treat it as a substitute for a full security
+review in high-risk systems.
+
 ## What This Project Is
 
 SecureKit is for application code that needs common binary and crypto helpers without
@@ -33,6 +39,17 @@ The current identity is:
 - AES-256-GCM key wrapping helpers.
 - Chunked file sealing and opening with path and stream APIs.
 - Password-based chunked file sealing and opening with `SKP1` and scrypt.
+
+## Which API Should I Use?
+
+| Goal | Prefer | Why |
+| --- | --- | --- |
+| Encrypt a small message | `securekit::encrypt` / `securekit::decrypt` | Plaintext is returned only after authentication succeeds. |
+| Seal a file with a raw key | Path-based `securekit::seal_file` / `securekit::open_file` | Open refuses existing outputs, writes a temporary file, and commits only after authentication succeeds. |
+| Seal a file with a password | Path-based `securekit::seal_file_with_password` / `securekit::open_file_with_password` | Uses the fixed `SKP1` scrypt profile and the same path-output safety behavior. |
+| Verify an encrypted file before restore | `securekit verify-file` / `securekit verify-file-password` | Authenticates without creating a plaintext output file. |
+| Process an `SKT1` packet incrementally | `securekit::packet_encryptor` / `securekit::packet_decryptor` | Advanced use only; decrypted chunks are unverified until `finalize()` succeeds. |
+| Stream file data through caller-owned streams | Stream overloads or CLI `--out -` | Advanced use only; caller must discard output if the operation fails. |
 
 ## Non-goals
 
@@ -76,8 +93,14 @@ Generic CMake:
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSECUREKIT_BUILD_TESTS=ON
 cmake --build build --config Release --target check
+cmake --build build --config Release --target format-check
 cmake --build build --config Release --target package-check
 ```
+
+`format-check` requires `clang-format` on `PATH` and checks the repository's
+C++ sources against `.clang-format`.
+For coverage, configure a separate GCC/Clang build with
+`-DSECUREKIT_ENABLE_COVERAGE=ON`, then run `coverage-report`.
 
 Windows with vcpkg:
 
@@ -113,6 +136,7 @@ provenance attestation wiring.
 | `SECUREKIT_BUILD_CLI` | `ON` | Build the `securekit` CLI executable. |
 | `SECUREKIT_INSTALL_CLI` | `ON` | Install the CLI. Requires `SECUREKIT_BUILD_CLI=ON`. |
 | `SECUREKIT_BUILD_FUZZ` | `OFF` | Build optional libFuzzer smoke targets. See [docs/FUZZING.md](docs/FUZZING.md). |
+| `SECUREKIT_ENABLE_COVERAGE` | `OFF` | Add GCC/Clang coverage instrumentation for the non-blocking `coverage-report` target. See [docs/COVERAGE.md](docs/COVERAGE.md). |
 | `SECUREKIT_WARNINGS_AS_ERRORS` | `OFF` | Treat SecureKit compiler warnings as errors. |
 
 Release package validation targets `package-check` and `release-preflight`
@@ -189,6 +213,8 @@ cmake --build build --config Release --target release-preflight
 
 For the full release procedure, see
 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+For user-side artifact verification, see
+[docs/VERIFY_RELEASE.md](docs/VERIFY_RELEASE.md).
 The release notes source of truth is
 [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md); GitHub Release notes should be
 edited to match it when generated notes are too thin.
@@ -446,6 +472,11 @@ int main()
 define text encoding conversion helpers in v1.
 
 ## Streaming Packet Example
+
+Most callers should use one-shot `securekit::decrypt` or path-based
+`securekit::open_file` first. Packet streaming is for callers that must process
+an `SKT1` packet incrementally and can buffer plaintext until authentication
+finishes.
 
 ```cpp
 securekit::packet_encryptor encryptor(key, aad);

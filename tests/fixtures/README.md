@@ -23,6 +23,21 @@ compatibility change replaces them.
 Malformed compatibility fixtures live under `negative/` and must name the
 specific `docs/FORMAT.md` rejection rule they protect.
 
+## Provenance and Regeneration
+
+These are SecureKit v1 known-answer vectors, not external standard vectors.
+They were generated from fixed keys, nonces, passwords, plaintext, AAD, and
+format parameters listed below, then committed as lowercase serialized hex.
+
+Regenerate a fixture only for an intentional compatibility change or a newly
+covered format rule. The same change must update this README, keep baseline
+fixture names unless the v1 compatibility contract intentionally changes, and
+pass `FixtureInventory.*` plus `release-preflight`.
+
+Do not refresh fixture bytes just because the implementation changed. Existing
+bytes must continue to open unless the change includes a documented format
+break and migration decision.
+
 ## Inventory
 
 Files are lowercase hex encodings of serialized packets/files:

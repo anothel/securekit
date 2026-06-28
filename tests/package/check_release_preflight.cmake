@@ -33,12 +33,17 @@ set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
+set(_securekit_coverage "${SECUREKIT_SOURCE_DIR}/docs/COVERAGE.md")
+set(_securekit_dependency_policy "${SECUREKIT_SOURCE_DIR}/docs/DEPENDENCY_POLICY.md")
+set(_securekit_verify_release "${SECUREKIT_SOURCE_DIR}/docs/VERIFY_RELEASE.md")
 set(_securekit_dogfooding "${SECUREKIT_SOURCE_DIR}/docs/DOGFOODING.md")
 set(_securekit_release_notes "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_NOTES.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 set(_securekit_internals "${SECUREKIT_SOURCE_DIR}/docs/INTERNALS.md")
+set(_securekit_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/README.md")
 set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
+set(_securekit_dependabot "${SECUREKIT_SOURCE_DIR}/.github/dependabot.yml")
 set(_securekit_example_cmakelists "${SECUREKIT_SOURCE_DIR}/examples/basic/CMakeLists.txt")
 set(_securekit_example_main "${SECUREKIT_SOURCE_DIR}/examples/basic/main.cpp")
 set(_securekit_public_header "${SECUREKIT_SOURCE_DIR}/include/securekit/securekit.hpp")
@@ -63,12 +68,17 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_security_model}"
     "${_securekit_kdf_agility}"
     "${_securekit_fuzzing}"
+    "${_securekit_coverage}"
+    "${_securekit_dependency_policy}"
+    "${_securekit_verify_release}"
     "${_securekit_dogfooding}"
     "${_securekit_release_notes}"
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
     "${_securekit_internals}"
+    "${_securekit_fixtures_readme}"
     "${_securekit_negative_fixtures_readme}"
+    "${_securekit_dependabot}"
     "${_securekit_example_cmakelists}"
     "${_securekit_example_main}"
     "${_securekit_public_header}"
@@ -96,12 +106,17 @@ file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
+file(READ "${_securekit_coverage}" _securekit_coverage_text)
+file(READ "${_securekit_dependency_policy}" _securekit_dependency_policy_text)
+file(READ "${_securekit_verify_release}" _securekit_verify_release_text)
 file(READ "${_securekit_dogfooding}" _securekit_dogfooding_text)
 file(READ "${_securekit_release_notes}" _securekit_release_notes_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 file(READ "${_securekit_internals}" _securekit_internals_text)
+file(READ "${_securekit_fixtures_readme}" _securekit_fixtures_readme_text)
 file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
+file(READ "${_securekit_dependabot}" _securekit_dependabot_text)
 file(READ "${_securekit_example_cmakelists}" _securekit_example_cmakelists_text)
 file(READ "${_securekit_example_main}" _securekit_example_main_text)
 file(READ "${_securekit_public_header}" _securekit_public_header_text)
@@ -345,6 +360,16 @@ _securekit_require_terms(
   "release archive checksum")
 
 _securekit_require_terms(
+  "positive fixture provenance"
+  "${_securekit_fixtures_readme_text}"
+  "## Provenance and Regeneration"
+  "not external standard vectors"
+  "fixed keys, nonces, passwords, plaintext, AAD"
+  "Do not refresh fixture bytes"
+  "FixtureInventory.*"
+  "release-preflight")
+
+_securekit_require_terms(
   "negative compatibility fixture matrix"
   "${_securekit_negative_fixtures_readme_text}"
   "## Coverage Matrix"
@@ -373,6 +398,36 @@ _securekit_require_terms(
   "tests/fuzz/corpus"
   "Minimized crash reproducers"
   "Do not check in generated fuzz output")
+
+_securekit_require_terms(
+  "coverage reporting policy"
+  "${_securekit_coverage_text}"
+  "Coverage is observational"
+  "not a release gate"
+  "SECUREKIT_ENABLE_COVERAGE=ON"
+  "coverage-report"
+  "gcovr"
+  "securekit.html"
+  "coverage.xml")
+
+_securekit_require_terms(
+  "dependency update policy"
+  "${_securekit_dependency_policy_text}"
+  "GitHub Actions"
+  ".github/dependabot.yml"
+  "release-workflow-check"
+  "GoogleTest"
+  "FetchContent"
+  "OpenSSL Crypto 3.0 or newer"
+  "Do not vendor OpenSSL"
+  "release-preflight")
+
+_securekit_require_terms(
+  "Dependabot GitHub Actions updates"
+  "${_securekit_dependabot_text}"
+  "package-ecosystem: github-actions"
+  "interval: weekly"
+  "open-pull-requests-limit: 5")
 
 _securekit_require_terms(
   "internal boundary document"
@@ -570,6 +625,22 @@ foreach(_securekit_target_name IN ITEMS check package-check release-workflow-che
     "${_securekit_target_name}")
 endforeach()
 
+_securekit_require_terms(
+  "CMake coverage target"
+  "${_securekit_cmakelists_text}"
+  "SECUREKIT_ENABLE_COVERAGE"
+  "coverage-report"
+  "GCOVR_EXE"
+  "--html-details"
+  "--xml"
+  "--print-summary")
+_securekit_require_terms(
+  "README coverage target"
+  "${_securekit_readme_text}"
+  "SECUREKIT_ENABLE_COVERAGE"
+  "coverage-report"
+  "docs/COVERAGE.md")
+
 _securekit_require_text(
   "README local target release-preflight"
   "${_securekit_readme_text}"
@@ -590,6 +661,23 @@ _securekit_require_terms(
   "Release notes mention the same user-visible changes"
   "run `fuzz-smoke`"
   "extra parser smoke check")
+_securekit_require_terms(
+  "release verification user guide"
+  "${_securekit_verify_release_text}"
+  "SHA256SUMS.txt"
+  "sha256sum -c SHA256SUMS.txt"
+  "Get-FileHash"
+  "gh attestation verify SHA256SUMS.txt --repo anothel/securekit"
+  "securekit-X.Y.Z-release.spdx.json"
+  "Source vs Binary Archives"
+  "What This Does Not Prove")
+_securekit_require_terms(
+  "release checklist dependency hygiene"
+  "${_securekit_release_checklist_text}"
+  "docs/DEPENDENCY_POLICY.md"
+  "release-workflow-check"
+  "OpenSSL or GoogleTest"
+  "release-preflight")
 _securekit_require_terms(
   "README release provenance claim"
   "${_securekit_readme_text}"

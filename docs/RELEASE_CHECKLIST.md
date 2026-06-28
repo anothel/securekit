@@ -107,6 +107,12 @@ gh attestation verify securekit-0.2.0-source.tar.gz --repo anothel/securekit
 Replace the archive name with the released version and asset you downloaded.
 Inspect `securekit-X.Y.Z-release.spdx.json` to map release assets to their
 SHA-256 checksums without unpacking every archive.
+Keep the user-facing verification steps in `docs/VERIFY_RELEASE.md` aligned
+with this checklist.
+
+Check `docs/DEPENDENCY_POLICY.md` before dependency or workflow updates. Action
+updates must keep `release-workflow-check` passing; OpenSSL or GoogleTest
+changes must keep `release-preflight` passing.
 
 If a fuzz build is available for the release commit, run `fuzz-smoke` as an
 extra parser smoke check. Do not block a release on long-running fuzz unless a
