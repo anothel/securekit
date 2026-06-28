@@ -60,25 +60,6 @@ No queued feature work. This is a maintenance audit, not a feature start.
 Promote one parked item only after dogfooding records real repeated friction,
 proves the item's gate, and names one runnable check.
 
-### 1. Format Negative Coverage Audit
-
-Surface: `docs/FORMAT.md`, `tests/fixtures/negative`, file and packet tests.
-
-Problem:
-The fixture matrix must stay aligned with malformed `SKT1`, `SKF1`, and `SKP1`
-reject rules as the format docs evolve. Do not add fixtures just to grow counts.
-
-Check:
-
-- Compare `docs/FORMAT.md` compatibility rules with
-  `tests/fixtures/negative/README.md`.
-- Add a fixture or generated test only for a specific uncovered reject rule.
-- Run the smallest matching test, then `release-preflight`.
-
-Done:
-Every uncovered rule either has a named regression check or is explicitly
-documented as covered by an in-test mutation.
-
 ## Parked
 
 These are blocked candidates, not queued work. Move one to `Now` or `Next` only

@@ -227,7 +227,6 @@ _securekit_require_terms(
   "path open, stream rollback, password byte handling"
   "Internal boundary pressure"
   "`src/file.cpp` and `src/cli/main.cpp` split gates"
-  "Format Negative Coverage Audit"
   "`src/file.cpp` internal split"
   "README split into `docs/CLI.md` or `docs/API.md`"
   "Package-manager recipes")
