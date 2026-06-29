@@ -249,7 +249,7 @@ _securekit_require_terms(
   "## Current Plan"
   "dogfood-check"
   "no repeated friction"
-  "Release Trust"
+  "Release-impacting work"
   "Fix Queue"
   "Do not leave accepted fixes deferred"
   "Keep v0.x public API changes minimal"
@@ -257,13 +257,15 @@ _securekit_require_terms(
   "External audit or roadmap notes are triage input only"
   "Node.js"
   "backend middleware"
-  "Package and release trust")
+  "Package Publishing"
+  "Package-manager recipe publication"
+  "rollback")
 
 _securekit_require_terms(
   "roadmap repository-specific candidates"
   "${_securekit_roadmap_text}"
   "Package-manager recipe publication"
-  "consumer project builds against the published recipe")
+  "consumer project builds against each published recipe")
 _securekit_forbid_terms(
   "roadmap completed benchmark or fixture queue items"
   "${_securekit_roadmap_text}"

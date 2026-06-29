@@ -29,6 +29,13 @@ Release-impacting work must pass the matching configured build directory:
 cmake --build build --config Release --target release-preflight
 ```
 
+Before tagging a release, verify package archives, source archives,
+`SHA256SUMS.txt`, release SPDX SBOM, GitHub artifact attestations, and release
+notes source of truth.
+
+`release-preflight` includes `dogfood-check`. If no repeated friction is
+recorded, do not promote an API expansion or split.
+
 ## Intake Rules
 
 Broad audit documents must be split before implementation. Each accepted item
@@ -45,27 +52,23 @@ Completed items leave the roadmap. Use Git history and `docs/RELEASE_NOTES.md` f
 
 ### Now
 
-Release Trust:
+Package Publishing:
 
-- Package and release trust is the active release-confidence track.
-- Run `release-preflight` on the current tree before release-impacting work is
-  called complete.
-- Before tagging v0.2.1 or later, verify package archives, source archives,
-  `SHA256SUMS.txt`, release SPDX SBOM, GitHub artifact attestations, and release
-  notes source of truth.
-- Run `dogfood-check` after package generation. If no repeated friction is
-  recorded, do not promote a deferred split or API expansion.
+- Package-manager recipe publication is the active package-channel track.
+- Publish generated Homebrew, Conan, and vcpkg recipes only after the matching
+  GitHub Release assets are uploaded and attested.
+- Verify each recipe source URL points at the released
+  `securekit-X.Y.Z-source.tar.gz` and its checksum matches `SHA256SUMS.txt`.
+- check: consumer project builds against each published recipe
+- rollback: remove or replace the package recipe update if checksum or consumer
+  build verification fails
 
 ### Fix Queue
 
-After the `Now` release-confidence pass, work through these fixes. Each item
-must keep the current public API and format contracts unless its own check proves
-the change is required.
+After the `Now` package publication pass, work through these fixes. Each item
+must keep the current public API and format contracts unless its own check
+proves the change is required.
 
-- Package-manager recipe publication: publish generated recipes after GitHub
-  Release assets are uploaded and attested.
-  - check: consumer project builds against the published recipe and the recipe
-    archive checksum matches `SHA256SUMS.txt`
-- Run focused external security review after the release trust pass.
+- Run focused external security review after the package publication pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface
