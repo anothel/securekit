@@ -9,7 +9,7 @@ Download these files from the same GitHub Release:
 
 - `SHA256SUMS.txt`
 - The source archive you plan to use, for example
-  `securekit-0.2.0-source.tar.gz`
+  `securekit-0.2.1-source.tar.gz`
 - The binary archive for your platform, if you use one
 - `securekit-X.Y.Z-release.spdx.json`, if you need SBOM metadata
 
@@ -26,7 +26,7 @@ sha256sum -c SHA256SUMS.txt
 On Windows PowerShell, compare each listed digest with:
 
 ```powershell
-Get-FileHash .\securekit-0.2.0-source.tar.gz -Algorithm SHA256
+Get-FileHash .\securekit-0.2.1-source.tar.gz -Algorithm SHA256
 ```
 
 The digest must match the corresponding line in `SHA256SUMS.txt`.
@@ -37,7 +37,7 @@ Use GitHub CLI:
 
 ```sh
 gh attestation verify SHA256SUMS.txt --repo anothel/securekit
-gh attestation verify securekit-0.2.0-source.tar.gz --repo anothel/securekit
+gh attestation verify securekit-0.2.1-source.tar.gz --repo anothel/securekit
 ```
 
 Replace the archive name with the asset you downloaded. Verification should

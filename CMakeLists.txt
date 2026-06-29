@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(
   securekit
-  VERSION 0.2.0
+  VERSION 0.2.1
   DESCRIPTION "SecureKit security utilities"
   LANGUAGES CXX)
 

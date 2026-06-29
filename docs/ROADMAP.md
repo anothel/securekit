@@ -50,7 +50,7 @@ Release Trust:
 - Package and release trust is the active release-confidence track.
 - Run `release-preflight` on the current tree before release-impacting work is
   called complete.
-- Before tagging v0.2.0 or later, verify package archives, source archives,
+- Before tagging v0.2.1 or later, verify package archives, source archives,
   `SHA256SUMS.txt`, release SPDX SBOM, GitHub artifact attestations, and release
   notes source of truth.
 - Run `dogfood-check` after package generation. If no repeated friction is

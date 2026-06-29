@@ -831,9 +831,9 @@ _securekit_require_terms(
   "release provenance attestation wiring")
 
 _securekit_require_terms(
-  "v0.2.0 release notes"
+  "current release notes"
   "${_securekit_release_notes_text}"
-  "## v0.2.0"
+  "## v${SECUREKIT_PROJECT_VERSION}"
   "`securekit verify-file`"
   "`securekit verify-file-password`"
   "checked basic C++ example"
