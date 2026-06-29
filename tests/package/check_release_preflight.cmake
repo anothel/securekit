@@ -45,6 +45,7 @@ set(_securekit_release_notes "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_NOTES.md")
 set(_securekit_release_checklist "${SECUREKIT_SOURCE_DIR}/docs/RELEASE_CHECKLIST.md")
 set(_securekit_roadmap "${SECUREKIT_SOURCE_DIR}/docs/ROADMAP.md")
 set(_securekit_internals "${SECUREKIT_SOURCE_DIR}/docs/INTERNALS.md")
+set(_securekit_package_recipe_check "${SECUREKIT_SOURCE_DIR}/tests/package/check_package_recipes.cmake")
 set(_securekit_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/README.md")
 set(_securekit_negative_fixtures_readme "${SECUREKIT_SOURCE_DIR}/tests/fixtures/negative/README.md")
 set(_securekit_dependabot "${SECUREKIT_SOURCE_DIR}/.github/dependabot.yml")
@@ -85,6 +86,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_release_checklist}"
     "${_securekit_roadmap}"
     "${_securekit_internals}"
+    "${_securekit_package_recipe_check}"
     "${_securekit_fixtures_readme}"
     "${_securekit_negative_fixtures_readme}"
     "${_securekit_dependabot}"
@@ -128,6 +130,7 @@ file(READ "${_securekit_release_notes}" _securekit_release_notes_text)
 file(READ "${_securekit_release_checklist}" _securekit_release_checklist_text)
 file(READ "${_securekit_roadmap}" _securekit_roadmap_text)
 file(READ "${_securekit_internals}" _securekit_internals_text)
+file(READ "${_securekit_package_recipe_check}" _securekit_package_recipe_check_text)
 file(READ "${_securekit_fixtures_readme}" _securekit_fixtures_readme_text)
 file(READ "${_securekit_negative_fixtures_readme}" _securekit_negative_fixtures_readme_text)
 file(READ "${_securekit_dependabot}" _securekit_dependabot_text)
@@ -227,7 +230,8 @@ _securekit_require_terms(
   "benchmarks-check"
   "examples-check"
   "dogfood-check"
-  "release-workflow-check")
+  "release-workflow-check"
+  "check_package_recipes.cmake")
 
 _securekit_forbid_terms(
   "release-preflight nested build"
@@ -258,7 +262,8 @@ _securekit_require_terms(
 _securekit_require_terms(
   "roadmap repository-specific candidates"
   "${_securekit_roadmap_text}"
-  "Package-manager recipes")
+  "Package-manager recipe publication"
+  "consumer project builds against the published recipe")
 _securekit_forbid_terms(
   "roadmap completed benchmark or fixture queue items"
   "${_securekit_roadmap_text}"
@@ -412,7 +417,9 @@ _securekit_require_terms(
   "CMake project against the installed package"
   "FetchContent"
   "release source archive"
-  "release archive checksum")
+  "release archive checksum"
+  "package-recipes"
+  "Homebrew, Conan, and vcpkg recipe")
 
 _securekit_require_terms(
   "positive fixture provenance"
@@ -795,7 +802,10 @@ _securekit_require_terms(
   "Do not introduce a separate `CHANGELOG.md`"
   "Release notes mention the same user-visible changes"
   "run `fuzz-smoke`"
-  "extra parser smoke check")
+  "extra parser smoke check"
+  "Publish Package Recipes"
+  "package-recipes"
+  "checksum matches `SHA256SUMS.txt`")
 _securekit_require_terms(
   "release verification user guide"
   "${_securekit_verify_release_text}"
@@ -830,8 +840,22 @@ _securekit_require_terms(
   "negative compatibility coverage"
   "release SPDX SBOM"
   "GitHub provenance attestation checks"
+  "Homebrew, Conan, and vcpkg recipe draft generation"
   "No intentional `SKT1`, `SKF1`, or `SKP1` format change."
   "No breaking C++ API change.")
+
+_securekit_require_terms(
+  "package recipe generator"
+  "${_securekit_package_recipe_check_text}"
+  "package-recipes"
+  "homebrew/securekit.rb"
+  "conan/conanfile.py"
+  "vcpkg/portfile.cmake"
+  "vcpkg/vcpkg.json"
+  "SHA256SUMS.txt"
+  "file(SHA256"
+  "file(SHA512"
+  "https://github.com/anothel/securekit/releases/download/v\${SECUREKIT_PROJECT_VERSION}/")
 
 _securekit_require_terms(
   "SECURITY private advisory path"

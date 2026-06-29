@@ -62,8 +62,9 @@ After the `Now` release-confidence pass, work through these fixes. Each item
 must keep the current public API and format contracts unless its own check proves
 the change is required.
 
-- Package-manager recipes: add recipes after release archives are validated.
-  - check: consumer project builds against the published recipe and the release
+- Package-manager recipe publication: publish generated recipes after GitHub
+  Release assets are uploaded and attested.
+  - check: consumer project builds against the published recipe and the recipe
     archive checksum matches `SHA256SUMS.txt`
 - Run focused external security review after the release trust pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake

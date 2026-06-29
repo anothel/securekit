@@ -50,7 +50,9 @@ run `securekit --version`.
 then checks SemVer shape, README and release-checklist version examples,
 documented local target names, package artifact version prefixes, staged release
 assets, `SHA256SUMS.txt`, the release SPDX SBOM, and release provenance
-attestation wiring.
+attestation wiring. It also writes Homebrew, Conan, and vcpkg recipe drafts
+under `<build>/package-check/package-recipes` from the staged source archive URL
+and checksum.
 
 On Windows with dynamically linked OpenSSL, configure the build with
 `SECUREKIT_OPENSSL_RUNTIME_DIR` so tests and package checks can run installed
@@ -110,6 +112,15 @@ SHA-256 checksums without unpacking every archive.
 Keep the user-facing verification steps in `docs/VERIFY_RELEASE.md` aligned
 with this checklist.
 
+## 7. Publish Package Recipes
+
+After the GitHub Release assets are uploaded and attested, copy the matching
+recipe draft from `<build>/package-check/package-recipes` into the target
+package channel. Verify that the recipe source URL points at the uploaded
+`securekit-X.Y.Z-source.tar.gz` and that its checksum matches `SHA256SUMS.txt`.
+Then build a fresh consumer project through that package channel before
+announcing the recipe.
+
 Check `docs/DEPENDENCY_POLICY.md` before dependency or workflow updates. Action
 updates must keep `release-workflow-check` passing; OpenSSL or GoogleTest
 changes must keep `release-preflight` passing.
@@ -118,7 +129,7 @@ If a fuzz build is available for the release commit, run `fuzz-smoke` as an
 extra parser smoke check. Do not block a release on long-running fuzz unless a
 scheduled fuzz owner and corpus policy are already in place.
 
-## 7. Failure Handling
+## 8. Failure Handling
 
 If the release workflow fails before assets are uploaded, fix the issue on
 `main`, then create a new version tag for the fixed commit.

@@ -9,6 +9,8 @@
 - Added the checked basic C++ example and release archive consumption recipe.
 - Added release SPDX SBOM generation and GitHub provenance attestation checks
   for release assets.
+- Added Homebrew, Conan, and vcpkg recipe draft generation from checked release
+  archive checksums.
 
 ### Hardened
 

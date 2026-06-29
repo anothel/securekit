@@ -251,6 +251,9 @@ foreach(_securekit_source_artifact IN LISTS _securekit_source_artifacts)
     "/tests/package/check_package\\.cmake(\r?\n|$)")
   _securekit_require_archive_member(
     "${_securekit_source_artifact}"
+    "/tests/package/check_package_recipes\\.cmake(\r?\n|$)")
+  _securekit_require_archive_member(
+    "${_securekit_source_artifact}"
     "/docs/RELEASE_CHECKLIST\\.md(\r?\n|$)")
   _securekit_require_archive_member(
     "${_securekit_source_artifact}"
