@@ -46,7 +46,7 @@ jobs:
         run: vcpkg install openssl:x64-windows
 
       - name: Cache GoogleTest
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/_deps
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -145,7 +145,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
 
       - name: Cache GoogleTest
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/_deps
           key: ${{ runner.os }}-gcc-Release-static-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -200,7 +200,7 @@ jobs:
         run: vcpkg install openssl:x64-windows
 
       - name: Cache GoogleTest
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/_deps
           key: ${{ runner.os }}-msvc-Release-shared-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -262,7 +262,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang libssl-dev ninja-build
 
       - name: Cache GoogleTest
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/_deps
           key: ${{ runner.os }}-clang-Debug-sanitizer-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
@@ -300,7 +300,7 @@ jobs:
         run: brew install ninja openssl@3
 
       - name: Cache GoogleTest
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/_deps
           key: ${{ runner.os }}-appleclang-Release-googletest-v1.14.0-${{ hashFiles('CMakeLists.txt') }}
