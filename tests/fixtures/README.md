@@ -9,7 +9,7 @@ Fixture inventory must include at least:
 - Three `SKT1` AEAD packet fixtures named skt1-aes256-gcm-*.hex.
 - Two `SKT1` key wrapping fixtures named skt1-key-wrap*.hex.
 - Three `SKF1` file fixtures named skf1-*.hex.
-- Two `SKP1` password file fixtures named skp1-*.hex.
+- Three `SKP1` password file fixtures named skp1-*.hex.
 
 Every hex fixture must be lowercase, canonical, non-empty, even-length
 hex and documented exactly once in this README.
@@ -51,6 +51,7 @@ Files are lowercase hex encodings of serialized packets/files:
 - `skf1-empty-aad.hex`: `SKF1` file containing empty plaintext, key `00..00`, AAD `fixture:empty`.
 - `skf1-binary-aad.hex`: `SKF1` file containing binary plaintext, key `00..1f`, AAD `fixture:binary`.
 - `skp1-known-password-file.hex`: `SKP1` file containing `known SKP1 vector`, password `known SKP1 password`, AAD `fixture:aad`.
+- `skp1-empty-aad.hex`: `SKP1` file containing empty plaintext, password `known SKP1 empty password`, AAD `fixture:password:empty`.
 - `skp1-binary-aad.hex`: `SKP1` file containing binary plaintext, password `known SKP1 binary password`, AAD `fixture:password:binary`.
 - `negative/skt1-missing-tag-format-minimum-size.hex`: malformed `SKT1` packet shorter than the 33-byte minimum.
 - `negative/skt1-bad-magic.hex`: malformed `SKT1` packet with wrong magic.

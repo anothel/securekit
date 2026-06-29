@@ -38,3 +38,27 @@ build-fuzz/securekit_fuzz_file tests/fixtures tests/fuzz/corpus
   and a regression test names the protected rule.
 - Do not check in generated fuzz output, large random corpora, secrets, or
   environment-specific files.
+
+## Scheduled Job Policy
+
+Scheduled fuzzing is owned by the maintainer who owns release readiness for the
+target branch. It must run the existing `fuzz-smoke` target first; longer runs
+are promoted only after repeated useful local signal from the same targets.
+
+Runtime limit: each scheduled target gets a fixed wall-clock limit, recorded in
+the workflow or scheduler config, and the whole job must time out instead of
+running indefinitely.
+
+Artifact policy: keep only minimized crash inputs, sanitizer logs, target name,
+commit SHA, compiler version, and command line. Do not upload generated corpora,
+large random inputs, passwords, keys, plaintext samples, or environment-specific
+build trees.
+
+Failure triage path:
+
+1. Reproduce the crash locally with the saved input and exact target.
+2. Classify the failure as parser bug, expected rejection, sanitizer-only
+   finding, infrastructure failure, or duplicate.
+3. Add or update a focused unit test, negative fixture, or corpus seed.
+4. Fix the root cause, rerun `fuzz-smoke`, and keep only the minimized
+   reproducer when it protects a parser path not already covered.

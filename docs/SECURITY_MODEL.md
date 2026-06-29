@@ -100,6 +100,24 @@ CLI file commands inherit the same distinction:
   recovered plaintext, and report authentication success with exit code 0 and
   failure with exit code 1
 
+## Future Streaming Format Gate
+
+No additional streaming format may be added until its design names exactly who
+owns unauthenticated output.
+
+Allowed choices are:
+
+- verified-output-only: SecureKit buffers or owns temporary output and exposes
+  plaintext only after final authentication succeeds;
+- explicit early-plaintext: the API name and docs state that plaintext is
+  unauthenticated until final authentication succeeds, and caller-owned output
+  cannot be rolled back by SecureKit.
+
+The design must map each new rejection rule to `docs/FORMAT.md` and either a
+negative fixture or a generated regression test when the fixture would be too
+large. It must also state whether path output, stream output, and CLI stdout can
+leave observable bytes after failure.
+
 ## Password-Based Encryption
 
 `SKP1` accepts password bytes exactly as supplied. SecureKit does not normalize

@@ -418,8 +418,10 @@ _securekit_require_terms(
   "positive fixture provenance"
   "${_securekit_fixtures_readme_text}"
   "## Provenance and Regeneration"
+  "Three `SKP1` password file fixtures"
   "not external standard vectors"
   "fixed keys, nonces, passwords, plaintext, AAD"
+  "skp1-empty-aad.hex"
   "Do not refresh fixture bytes"
   "FixtureInventory.*"
   "release-preflight")
@@ -442,17 +444,25 @@ _securekit_require_terms(
   "duplicate index is generated in test"
   "Generic authentication failures"
   "Path output safety"
-  "Stream rollback limits")
+  "Stream rollback limits"
+  "Future streaming formats"
+  "plaintext-before-auth behavior"
+  "output ownership")
 
 _securekit_require_terms(
-  "fuzz corpus policy"
+  "fuzz corpus and scheduled job policy"
   "${_securekit_fuzzing_text}"
   "## Corpus Policy"
   "Keep checked-in corpus entries small, stable, and format-focused."
   "tests/fixtures"
   "tests/fuzz/corpus"
   "Minimized crash reproducers"
-  "Do not check in generated fuzz output")
+  "Do not check in generated fuzz output"
+  "## Scheduled Job Policy"
+  "release readiness"
+  "fixed wall-clock limit"
+  "Artifact policy"
+  "Failure triage path")
 
 _securekit_require_terms(
   "coverage reporting policy"
@@ -872,6 +882,9 @@ _securekit_require_terms(
   "Scrypt N"
   "## Compatibility Rules"
   "## Security Notes"
+  "Future streaming formats"
+  "plaintext-before-auth"
+  "output ownership"
   "unverified"
   "Stream open APIs")
 
@@ -883,6 +896,7 @@ _securekit_require_terms(
   "## Non-Goals"
   "## AEAD Authentication Rules"
   "## File Output Safety"
+  "## Future Streaming Format Gate"
   "## Password-Based Encryption"
   "## Error Message Policy"
   "## Known Limitations"
@@ -905,6 +919,9 @@ _securekit_require_terms(
   "docs/PUBLIC_API_POLICY.md"
   "docs/OPENSSL_POLICY.md"
   "OpenSSL Providers and Backend Errors"
+  "verified-output-only"
+  "explicit early-plaintext"
+  "negative fixture"
   "default library context"
   "provider configuration"
   "FIPS providers"
@@ -915,6 +932,11 @@ _securekit_require_terms(
   "KDF agility downgrade and fixture gates"
   "${_securekit_kdf_agility_text}"
   "# SecureKit KDF Agility Policy"
+  "## Current SKP1 Profile Spec"
+  "`SKP1` version `0x01`"
+  "`tests/fixtures/skp1-known-password-file.hex`"
+  "`tests/fixtures/skp1-empty-aad.hex`"
+  "`tests/fixtures/skp1-binary-aad.hex`"
   "Downgrade Policy"
   "fail closed"
   "memory and time upper bounds"

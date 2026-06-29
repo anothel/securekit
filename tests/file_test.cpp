@@ -421,6 +421,26 @@ TEST(File, OpensKnownSkp1Fixture)
 	std::filesystem::remove(opened_path);
 }
 
+TEST(File, OpensKnownSkp1EmptyFixtureWithAad)
+{
+	const auto sealed_path = test_path("known-password-empty-fixture.skp");
+	const auto opened_path = test_path("known-password-empty-fixture-opened.bin");
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+
+	const securekit::bytes password = bytes_from_text("known SKP1 empty password");
+	const securekit::bytes aad = bytes_from_text("fixture:password:empty");
+	const securekit::bytes fixture = securekit::test::read_hex_fixture("skp1-empty-aad.hex");
+
+	write_file(sealed_path, fixture);
+	securekit::open_file_with_password(sealed_path, opened_path, password, aad);
+
+	EXPECT_TRUE(read_file(opened_path).empty());
+
+	std::filesystem::remove(sealed_path);
+	std::filesystem::remove(opened_path);
+}
+
 TEST(File, OpensKnownSkp1BinaryFixtureWithAad)
 {
 	const auto sealed_path = test_path("known-password-binary-fixture.skp");

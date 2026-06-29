@@ -238,8 +238,8 @@ TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)
 	    << "SKT1 key wrap fixtures should cover non-zero and zero wrapped keys";
 	EXPECT_GE(count_names_with_prefix(names, "skf1-"), 3u)
 	    << "SKF1 file fixtures should cover normal, empty, and binary/AAD files";
-	EXPECT_GE(count_names_with_prefix(names, "skp1-"), 2u)
-	    << "SKP1 password file fixtures should cover text and binary/AAD files";
+	EXPECT_GE(count_names_with_prefix(names, "skp1-"), 3u)
+	    << "SKP1 password file fixtures should cover text, empty/AAD, and binary/AAD files";
 
 	expect_fixture_exists(names, "skt1-aes256-gcm-aad.hex");
 	expect_fixture_exists(names, "skt1-aes256-gcm-empty.hex");
@@ -250,6 +250,7 @@ TEST(FixtureInventory, CoversEverySupportedWireFormatFamily)
 	expect_fixture_exists(names, "skf1-empty-aad.hex");
 	expect_fixture_exists(names, "skf1-binary-aad.hex");
 	expect_fixture_exists(names, "skp1-known-password-file.hex");
+	expect_fixture_exists(names, "skp1-empty-aad.hex");
 	expect_fixture_exists(names, "skp1-binary-aad.hex");
 }
 

@@ -68,14 +68,3 @@ the change is required.
 - Run focused external security review after the release trust pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface
-- Password-file KDF profile design: write the spec before adding another profile.
-  - check: spec covers format bytes, downgrade behavior, bounds, fixture policy,
-    and at least three known-answer vectors
-- Additional streaming format threat model: decide plaintext-before-auth and output
-  ownership before adding any format.
-  - check: threat model maps to `docs/FORMAT.md`, `docs/SECURITY_MODEL.md`, and
-    negative fixtures
-- Scheduled fuzzing plan: promote only after `fuzz-smoke` gives repeated useful
-  signal and an owner exists.
-  - check: scheduled job has owner, runtime limit, artifact policy, and failure
-    triage path

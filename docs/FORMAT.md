@@ -161,6 +161,13 @@ the same generic file authentication error.
 - Existing `SKT1`, `SKF1`, and `SKP1` behavior must not silently change under
   the same magic/version pair.
 
+Future streaming formats must define output ownership and plaintext-before-auth
+behavior before bytes are accepted. The current `SKT1`, `SKF1`, and `SKP1`
+contracts stay unchanged: packet streaming can expose unverified plaintext
+before `finalize(tag)`, path file open commits only after all authentication
+succeeds, and stream file open writes to caller-owned output that SecureKit
+cannot roll back.
+
 ## Security Notes
 
 `packet_decryptor::update()` can return plaintext before the packet tag is

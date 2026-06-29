@@ -10,6 +10,29 @@ SecureKit v1 has one password-file KDF profile:
 silently reinterpret stored parameters, upgrade files during read, or fall back
 to weaker settings after a failed stronger profile attempt.
 
+## Current SKP1 Profile Spec
+
+The current profile is `SKP1` version `0x01`, cipher `0x01`, KDF `0x01`, flags
+`0x00`, chunk size `0x00100000`, 32-byte scrypt salt, 8-byte nonce prefix,
+scrypt `N=32768`, `r=8`, and `p=1`. These are serialized in the byte positions
+defined by `docs/FORMAT.md`.
+
+Downgrade behavior is fail-closed: unsupported magic, version, cipher, KDF,
+flags, chunk size, or scrypt parameters return the malformed/unsupported file
+path. Readers do not retry with weaker parameters or expose whether password,
+AAD, ciphertext, nonce, or tag was wrong.
+
+The fixed implementation bound is `maxmem=64 MiB`. Files declaring parameters
+outside the current profile are rejected before any plaintext is released by
+path APIs.
+
+Current known-answer vectors:
+
+- `tests/fixtures/skp1-known-password-file.hex`: non-empty plaintext and AAD.
+- `tests/fixtures/skp1-empty-aad.hex`: empty plaintext with AAD.
+- `tests/fixtures/skp1-binary-aad.hex`: binary plaintext with binary-range
+  bytes and AAD.
+
 ## Downgrade Policy
 
 New password-file KDF behavior must use a new explicit format revision or magic
