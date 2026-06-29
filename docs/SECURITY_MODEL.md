@@ -138,6 +138,31 @@ reported separately as `invalid_packet`.
 The CLI maps public failures in these categories to exit code 1, writes the
 short diagnostic to stderr, and writes no stdout for failed commands.
 
+The public API shape policy is recorded in `docs/PUBLIC_API_POLICY.md`.
+
+## OpenSSL Providers and Backend Errors
+
+SecureKit uses OpenSSL's default library context and the provider configuration
+already active in the process. It does not load providers, create an
+`OSSL_LIB_CTX`, set property queries, or switch between default, legacy, and
+FIPS providers.
+
+Applications that require FIPS mode or custom provider selection must configure
+OpenSSL before calling SecureKit. AES-256-GCM, SHA-256, HMAC-SHA-256,
+HKDF-SHA-256, scrypt, and OpenSSL's random byte APIs must be available from
+that configuration.
+
+OpenSSL allocation, initialization, cipher, digest, MAC, KDF, or
+random-generation failures are reported as
+`securekit::error_code::backend_failure`. SecureKit does not add OpenSSL
+error-queue details to public exception messages. AEAD packet and file
+authentication failures are reported as
+`securekit::error_code::authentication_failed` with generic messages. Malformed
+or unsupported packet and file structure is reported as
+`securekit::error_code::invalid_packet`.
+
+The provider and FIPS support policy is recorded in `docs/OPENSSL_POLICY.md`.
+
 ## Known Limitations
 
 - No portable secure erasure guarantee.

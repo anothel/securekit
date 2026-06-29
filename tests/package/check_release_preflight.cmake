@@ -31,6 +31,8 @@ set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
 set(_securekit_contributing "${SECUREKIT_SOURCE_DIR}/CONTRIBUTING.md")
 set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
+set(_securekit_public_api_policy "${SECUREKIT_SOURCE_DIR}/docs/PUBLIC_API_POLICY.md")
+set(_securekit_openssl_policy "${SECUREKIT_SOURCE_DIR}/docs/OPENSSL_POLICY.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
 set(_securekit_fuzzing "${SECUREKIT_SOURCE_DIR}/docs/FUZZING.md")
 set(_securekit_coverage "${SECUREKIT_SOURCE_DIR}/docs/COVERAGE.md")
@@ -69,6 +71,8 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_contributing}"
     "${_securekit_format}"
     "${_securekit_security_model}"
+    "${_securekit_public_api_policy}"
+    "${_securekit_openssl_policy}"
     "${_securekit_kdf_agility}"
     "${_securekit_fuzzing}"
     "${_securekit_coverage}"
@@ -110,6 +114,8 @@ file(READ "${_securekit_security}" _securekit_security_text)
 file(READ "${_securekit_contributing}" _securekit_contributing_text)
 file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
+file(READ "${_securekit_public_api_policy}" _securekit_public_api_policy_text)
+file(READ "${_securekit_openssl_policy}" _securekit_openssl_policy_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
 file(READ "${_securekit_fuzzing}" _securekit_fuzzing_text)
 file(READ "${_securekit_coverage}" _securekit_coverage_text)
@@ -258,6 +264,12 @@ _securekit_forbid_terms(
   "${_securekit_roadmap_text}"
   "Add benchmarks for crypto/file paths"
   "Expand negative compatibility fixtures")
+_securekit_forbid_terms(
+  "roadmap completed public review queue items"
+  "${_securekit_roadmap_text}"
+  "Public error/API shape review"
+  "Public object-lifecycle review"
+  "OpenSSL provider/FIPS policy")
 
 _securekit_forbid_terms(
   "roadmap analysis dump"
@@ -353,6 +365,8 @@ _securekit_require_terms(
   "edited to match it"
   "SECUREKIT_BUILD_FUZZ"
   "[docs/FUZZING.md](docs/FUZZING.md)"
+  "[docs/PUBLIC_API_POLICY.md](docs/PUBLIC_API_POLICY.md)"
+  "[docs/OPENSSL_POLICY.md](docs/OPENSSL_POLICY.md)"
   "[docs/INTERNALS.md](docs/INTERNALS.md)")
 
 _securekit_require_terms(
@@ -462,6 +476,51 @@ _securekit_require_terms(
   "OpenSSL Crypto 3.0 or newer"
   "Do not vendor OpenSSL"
   "release-preflight")
+
+_securekit_require_terms(
+  "public API policy"
+  "${_securekit_public_api_policy_text}"
+  "current exception boundary"
+  "`securekit::error`"
+  "`securekit::error_code`"
+  "No public API change"
+  "no format change"
+  "affected APIs"
+  "result-style API"
+  "migration cost"
+  "Rollback path"
+  "caller"
+  "worse with exceptions"
+  "No current caller"
+  "free-function oriented"
+  "`packet_encryptor`"
+  "`packet_decryptor`"
+  "named current lifecycle state")
+
+_securekit_require_terms(
+  "OpenSSL provider policy"
+  "${_securekit_openssl_policy_text}"
+  "OpenSSL Crypto 3.0 or newer"
+  "default library context"
+  "provider configuration"
+  "does not load providers"
+  "does not create an"
+  "`OSSL_LIB_CTX`"
+  "does not set property queries"
+  "FIPS"
+  "`securekit::error_code::backend_failure`"
+  "`securekit::error_code::authentication_failed`"
+  "`securekit::error_code::invalid_packet`"
+  "`release-preflight`"
+  "AES-256-GCM"
+  "SHA-256"
+  "HMAC-SHA-256"
+  "HKDF-SHA-256"
+  "scrypt"
+  "random bytes"
+  "No public API change"
+  "no format change"
+  "rollback path")
 
 _securekit_require_terms(
   "Dependabot GitHub Actions updates"
@@ -843,6 +902,12 @@ _securekit_require_terms(
   "invalid_packet"
   "authentication_failed"
   "backend_failure"
+  "docs/PUBLIC_API_POLICY.md"
+  "docs/OPENSSL_POLICY.md"
+  "OpenSSL Providers and Backend Errors"
+  "default library context"
+  "provider configuration"
+  "FIPS providers"
   "Release assets are checksummed and provenance-attested by GitHub Actions"
   "Release assets include a generated SPDX SBOM")
 

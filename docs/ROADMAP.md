@@ -68,14 +68,6 @@ the change is required.
 - Run focused external security review after the release trust pass.
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface
-- Public error/API shape review: decide whether exceptions remain the v1 boundary
-  or a result-style API is needed for current users.
-  - check: proposal names affected APIs, migration cost, rollback path, and one
-    caller that is currently worse with exceptions
-- Public object-lifecycle review: decide whether more OO APIs are needed beyond
-  packet streaming.
-  - check: proposal names a current lifecycle state that free functions cannot
-    express cleanly
 - Password-file KDF profile design: write the spec before adding another profile.
   - check: spec covers format bytes, downgrade behavior, bounds, fixture policy,
     and at least three known-answer vectors
@@ -83,10 +75,6 @@ the change is required.
   ownership before adding any format.
   - check: threat model maps to `docs/FORMAT.md`, `docs/SECURITY_MODEL.md`, and
     negative fixtures
-- OpenSSL provider/FIPS policy: decide support policy before adding provider or
-  FIPS helpers.
-  - check: policy states supported OpenSSL versions, failure behavior, and release
-    test coverage
 - Scheduled fuzzing plan: promote only after `fuzz-smoke` gives repeated useful
   signal and an owner exists.
   - check: scheduled job has owner, runtime limit, artifact policy, and failure

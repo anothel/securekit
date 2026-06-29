@@ -553,6 +553,10 @@ uses the same runtime value.
 The compatibility reference for serialized `SKT1`, `SKF1`, and `SKP1` data is
 [docs/FORMAT.md](docs/FORMAT.md). Security boundaries and operational limits are
 documented in [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md).
+Public API shape decisions are documented in
+[docs/PUBLIC_API_POLICY.md](docs/PUBLIC_API_POLICY.md). OpenSSL provider and
+FIPS support policy is documented in
+[docs/OPENSSL_POLICY.md](docs/OPENSSL_POLICY.md).
 Internal ownership boundaries and split gates are documented in
 [docs/INTERNALS.md](docs/INTERNALS.md).
 
