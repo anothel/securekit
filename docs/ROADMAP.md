@@ -69,6 +69,38 @@ After the `Now` package publication pass, work through these fixes. Each item
 must keep the current public API and format contracts unless its own check
 proves the change is required.
 
-- Run focused external security review after the package publication pass.
+- Prepare and run focused external security review after the package publication
+  pass.
+  - surfaces: `SKT1` packet parser/reject rules, `SKF1`/`SKP1` file parsing,
+    path output safety, stream/stdout output ownership, AAD handling,
+    password-derived key handling, and release/security-reporting docs
   - check: findings map to an existing API, CLI command, serialized format, CMake
     package surface, release asset, or security-reporting surface
+  - rollback: keep un-mapped findings as triage notes until they name a
+    SecureKit surface and regression check
+
+- Turn accepted external-review findings into one protected change each.
+  - surfaces: public C++ APIs, CLI commands, `SKT1`/`SKF1`/`SKP1` fixtures,
+    `tests/fuzz/corpus`, and `docs/SECURITY_MODEL.md`
+  - check: each fix adds or names a regression test, negative fixture, or
+    minimized corpus seed before `release-preflight`
+  - rollback: revert the smallest finding fix if its regression check is wrong
+    or changes public API/format behavior without an approved gate
+
+- Record a coverage baseline for security-critical branches before adding any
+  percentage gate.
+  - surfaces: `coverage-report`, `docs/COVERAGE.md`, parser reject paths, file
+    rollback paths, CLI error mapping, and OpenSSL backend failure handling
+  - check: `coverage-report` output produces a baseline note and a checklist of
+    uncovered critical branches
+  - rollback: keep coverage observational if the baseline is unstable or lacks
+    an owner
+
+- Revisit file implementation boundaries only when review or repeated edits
+  show the current split is still too hard to maintain.
+  - surfaces: `src/file.cpp`, `src/file_detail.hpp`, `src/file_crypto.cpp`,
+    `src/file_io.cpp`, and `docs/INTERNALS.md`
+  - check: `check` and `release-preflight` pass with no public C++ API, CLI, or
+    `SKT1`/`SKF1`/`SKP1` format change
+  - rollback: stop at the current split if the change only moves code without
+    reducing a named review or maintenance risk

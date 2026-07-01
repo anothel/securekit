@@ -1,0 +1,66 @@
+name: Fuzz
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 11 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: ubuntu-latest clang scheduled fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang libssl-dev ninja-build
+
+      - name: Configure CMake
+        env:
+          CC: clang
+          CXX: clang++
+        run: >
+          cmake -S . -B build-fuzz -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DSECUREKIT_BUILD_FUZZ=ON
+          -DSECUREKIT_BUILD_TESTS=OFF
+          -DSECUREKIT_BUILD_CLI=OFF
+          -DSECUREKIT_INSTALL_CLI=OFF
+
+      - name: Fuzz smoke
+        run: cmake --build build-fuzz --target fuzz-smoke
+
+      - name: Bounded fuzz
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fuzz-artifacts
+          clang++ --version > fuzz-artifacts/compiler.txt
+          printf 'sha=%s\n' "$GITHUB_SHA" > fuzz-artifacts/run.txt
+          targets=(
+            securekit_fuzz_hex
+            securekit_fuzz_base64
+            securekit_fuzz_base64url
+            securekit_fuzz_skt1
+            securekit_fuzz_file
+          )
+          for target in "${targets[@]}"; do
+            cmd=(build-fuzz/"$target" -max_total_time=60 -artifact_prefix=fuzz-artifacts/"$target"- tests/fixtures tests/fuzz/corpus)
+            printf '%q ' "${cmd[@]}" | tee "fuzz-artifacts/$target.command.txt"
+            printf '\n' | tee -a "fuzz-artifacts/$target.command.txt"
+            "${cmd[@]}" 2>&1 | tee "fuzz-artifacts/$target.log"
+          done
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-artifacts-${{ github.sha }}
+          path: fuzz-artifacts/
+          retention-days: 7

@@ -27,6 +27,16 @@ build-fuzz/securekit_fuzz_skt1 tests/fixtures tests/fuzz/corpus
 build-fuzz/securekit_fuzz_file tests/fixtures tests/fuzz/corpus
 ```
 
+## GitHub Scheduled Fuzzing
+
+`.github/workflows/fuzz.yml` runs weekly and on manual dispatch. The scheduled
+job builds the optional libFuzzer targets, runs `fuzz-smoke` first, then runs
+each fuzz target with `-max_total_time=60`. The job has `timeout-minutes: 30`.
+
+Failure artifacts are uploaded for seven days under `fuzz-artifacts`. They are
+limited to target logs, command lines, compiler version, commit SHA, and
+libFuzzer crash artifacts emitted through `-artifact_prefix`.
+
 ## Corpus Policy
 
 - Keep checked-in corpus entries small, stable, and format-focused.
