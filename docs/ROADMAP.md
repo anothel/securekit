@@ -69,8 +69,7 @@ After the `Now` package publication pass, work through these fixes. Each item
 must keep the current public API and format contracts unless its own check
 proves the change is required.
 
-- Prepare and run focused external security review after the package publication
-  pass.
+- Run focused external security review after the package publication pass.
   - surfaces: `SKT1` packet parser/reject rules, `SKF1`/`SKP1` file parsing,
     path output safety, stream/stdout output ownership, AAD handling,
     password-derived key handling, and release/security-reporting docs

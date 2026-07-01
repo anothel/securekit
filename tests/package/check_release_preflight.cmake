@@ -31,6 +31,7 @@ set(_securekit_security "${SECUREKIT_SOURCE_DIR}/SECURITY.md")
 set(_securekit_contributing "${SECUREKIT_SOURCE_DIR}/CONTRIBUTING.md")
 set(_securekit_format "${SECUREKIT_SOURCE_DIR}/docs/FORMAT.md")
 set(_securekit_security_model "${SECUREKIT_SOURCE_DIR}/docs/SECURITY_MODEL.md")
+set(_securekit_external_security_review "${SECUREKIT_SOURCE_DIR}/docs/EXTERNAL_SECURITY_REVIEW.md")
 set(_securekit_public_api_policy "${SECUREKIT_SOURCE_DIR}/docs/PUBLIC_API_POLICY.md")
 set(_securekit_openssl_policy "${SECUREKIT_SOURCE_DIR}/docs/OPENSSL_POLICY.md")
 set(_securekit_kdf_agility "${SECUREKIT_SOURCE_DIR}/docs/KDF_AGILITY.md")
@@ -72,6 +73,7 @@ foreach(_securekit_required_file IN ITEMS
     "${_securekit_contributing}"
     "${_securekit_format}"
     "${_securekit_security_model}"
+    "${_securekit_external_security_review}"
     "${_securekit_public_api_policy}"
     "${_securekit_openssl_policy}"
     "${_securekit_kdf_agility}"
@@ -116,6 +118,7 @@ file(READ "${_securekit_security}" _securekit_security_text)
 file(READ "${_securekit_contributing}" _securekit_contributing_text)
 file(READ "${_securekit_format}" _securekit_format_text)
 file(READ "${_securekit_security_model}" _securekit_security_model_text)
+file(READ "${_securekit_external_security_review}" _securekit_external_security_review_text)
 file(READ "${_securekit_public_api_policy}" _securekit_public_api_policy_text)
 file(READ "${_securekit_openssl_policy}" _securekit_openssl_policy_text)
 file(READ "${_securekit_kdf_agility}" _securekit_kdf_agility_text)
@@ -953,6 +956,29 @@ _securekit_require_terms(
   "FIPS providers"
   "Release assets are checksummed and provenance-attested by GitHub Actions"
   "Release assets include a generated SPDX SBOM")
+
+_securekit_require_terms(
+  "external security review packet"
+  "${_securekit_external_security_review_text}"
+  "# SecureKit External Security Review Packet"
+  "Review timing"
+  "after package publication"
+  "Review Scope"
+  "`SKT1` packet parser/reject rules"
+  "`SKF1`/`SKP1` file parsing"
+  "path output safety"
+  "stream/stdout output ownership"
+  "AAD handling"
+  "password-derived key handling"
+  "release/security-reporting docs"
+  "Out Of Scope"
+  "Finding Intake"
+  "affected API, CLI command, serialized format, CMake package surface, release asset, or security-reporting surface"
+  "Regression Gate"
+  "negative fixture"
+  "tests/fuzz/corpus"
+  "release-preflight"
+  "Rollback")
 
 _securekit_require_terms(
   "KDF agility downgrade and fixture gates"
